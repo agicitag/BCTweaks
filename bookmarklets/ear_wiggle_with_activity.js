@@ -7,11 +7,12 @@ var secondaryEarColor = "#893121";
 var delay = 350; /* in ms */
 
 /* Do the activity */
+var focusGroup = Player.FocusGroup;
 Player.FocusGroup = {Name:"ItemEars"};
 ActivityRun(Player, ActivityAllowedForGroup(Player, "ItemEars").find(function(activity){
   return activity.Name == "Wiggle";
 }));
-Player.FocusGroup = null;
+Player.FocusGroup = focusGroup;
 setTimeout(wiggleEars,500);
 
 /* Do the animation */
