@@ -13,7 +13,6 @@ ActivityRun(Player, ActivityAllowedForGroup(Player, "ItemEars").find(function(ac
   return activity.Name == "Wiggle";
 }));
 Player.FocusGroup = focusGroup;
-setTimeout(wiggleEars,500);
 
 /* Do the animation */
 function wiggleEars(){
@@ -22,4 +21,6 @@ function wiggleEars(){
     setTimeout(function(){InventoryWear(Player, mainEar, "HairAccessory2", mainEarColor );},i*delay+delay/2);
   }
 }
+setTimeout(wiggleEars,500);
+
 })();
