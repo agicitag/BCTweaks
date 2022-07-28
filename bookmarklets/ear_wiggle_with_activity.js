@@ -2,7 +2,7 @@ javascript: (() => {
 
 var mainEar = "PuppyEars2";
 var secondaryEar = "FoxEars1";
-var mainEarColor = "#893121";
+var mainEarColor = "#893121";  /* You can also set multiple colors like ["#893121", "Default"] */
 var secondaryEarColor = "#893121";
 var delay = 350; /* in ms */
 
