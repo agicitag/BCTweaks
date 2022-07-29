@@ -6,14 +6,17 @@ javascript: (() => {
   var secondaryEarColor = "#893121";
   var delay = 350; /* in ms */
   var numberWiggles = 2;
+  var showActivity = true;
 
   /* Do the activity */
-  var focusGroup = Player.FocusGroup;
-  Player.FocusGroup = {Name:"ItemEars"};
-  ActivityRun(Player, ActivityAllowedForGroup(Player, "ItemEars").find(function(activity){
-    return activity.Name == "Wiggle";
-  }));
-  Player.FocusGroup = focusGroup;
+  if(showActivity){
+    var focusGroup = Player.FocusGroup;
+    Player.FocusGroup = {Name:"ItemEars"};
+    ActivityRun(Player, ActivityAllowedForGroup(Player, "ItemEars").find(function(activity){
+      return activity.Name == "Wiggle";
+    }));
+    Player.FocusGroup = focusGroup;
+  }
 
   /* Do the animation */
   function wiggleEars(){
