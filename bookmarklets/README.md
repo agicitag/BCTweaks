@@ -1,5 +1,5 @@
 # Bookmarklets
-These code snippets are intended to be used as bookmarklets, meaning you have to create a bookmark in your browser and copy the code into the adress bar of the bookmark. Its probably best to have it in the bookmark bar, so you have an easily clickable button to trigger the desired effect. I think it does not work on mobile or tablet, but I'm happy to be proven wrong. If you know how to do it, feel free to contact me and I will add how to do it.
+These code snippets are intended to be used as bookmarklets, meaning you have to create a bookmark in your browser and copy the code into the adress bar of the bookmark. Its probably best to have it in the bookmark bar, so you have an easily clickable button to trigger the desired effect. I think it does not work on mobile or tablet, but I'm happy to be proven wrong. If you know how to do it, feel free to contact me and I will add how to do it. I'm Julia #80525 ingame.
 
 # Configuration
 The code is easily configurable through the vars at the top. Just copy the code into any text editor of your choice, edit it like you wish and then paste it into the adress bar of the bookmark. Following are some explanations on how to do that.
