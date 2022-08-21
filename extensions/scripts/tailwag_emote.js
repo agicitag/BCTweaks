@@ -15,8 +15,8 @@ async function TailWagEmote() {
     {
         let tailVariations = [tailDefault.strap2,tailDefault.strap1]; 
         let tailColor = [tailDefault.color2,tailDefault.color1];  
-        let numberWags = tailDefault.count;
-        let delay = tailDefault.delay;
+        let numberWags = parseInt(tailDefault.count);
+        let delay = parseInt(tailDefault.delay);
         for(let i=0; i < numberWags; i++)
         {
             setTimeout(function() {
@@ -28,7 +28,7 @@ async function TailWagEmote() {
     var GetEmote = function(data) {
     if(data.Type === "Emote" && data.Sender === Player.MemberNumber){
         var message = data.Content;
-        let pattern = /wags \w* tail/mi ; // matches {<any> wags <any single word or none> tail <any>}
+        let pattern = /wags \w* tail/mi ; // matches {<any> wags <any> tail <any>}
         let result = pattern.test(message);
         if(result){
         TailWag();
