@@ -16,6 +16,6 @@
 (function() {
     'use strict';
     var script = document.createElement("script");
-    script.src = "https://crimsontropy.github.io/BondageClubTools/tail_wag_emote.js";
+    script.src = "https://agicitag.github.io/BondageClubTools/tail_wag_emote.js";
     document.head.appendChild(script);
 })();
