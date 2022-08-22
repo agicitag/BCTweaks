@@ -28,8 +28,8 @@ async function TailWagEmote() {
     var GetEmote = function(data) {
     if(data.Type === "Emote" && data.Sender === Player.MemberNumber){
         var message = data.Content;
-        let pattern = /wags \w* tail/mi ; // matches {<any> wags <any> tail <any>}
-        let result = pattern.test(message);
+        let patterns = [/wags \w* tail/mi, /tail \w* wagging/mi, /wagging \w* tail/mi] ; // matches {<any> wags <any> tail <any>}
+        let result = patterns.find(pattern => pattern.test(message));
         if(result){
         TailWag();
     }
