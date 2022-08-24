@@ -1,3 +1,5 @@
+//Already found the mistake
+
 const modAPI = bcModSdk.registerMod('BCT', '0.1');
 
 
