@@ -223,6 +223,16 @@ function DrawBCTArousalThermometer(X, Y, Zoom, Progress, Automatic, Orgasm) {
 	if ((Progress > 0) && !Orgasm) DrawRect(X + (30 * Zoom), Y + (15 * Zoom) + (Math.round((100 - Progress) * 4 * Zoom)), (40 * Zoom), (Math.round(Progress * 4 * Zoom)), "#F430C0");
 }
 
+modAPI.hookFunction('ActivityOrgasmStart', 2, (args, next) => {
+    let C = args[0];
+    if (!ActivityOrgasmRuined) {
+        C.BCT.orgasmBar.arousalProgress = C.BCT.orgasmBar.arousalProgress * 0.6;
+    }
+    if ((C.ID == 0) && (CurrentScreen == "ChatRoom")){
+        ActivityChatRoomBCTArousalSync(C);
+    }
+    next(args);
+});
 
 modAPI.hookFunction('ActivitySetArousalTimer', 2, (args, next) => {
     let C = args[0];
