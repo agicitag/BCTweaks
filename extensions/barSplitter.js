@@ -52,6 +52,9 @@ registerSocketListener("ChatRoomSync", () => {
 });
 
 
+//send Initilization when pasted when already in a chatroom
+sendBctInitilization(true);
+
 async function parseSync(data) {
     await waitFor(() => ServerSocket && ServerIsConnected);
     if (data.Type === HIDDEN && data.Content === BCT_MSG) {
