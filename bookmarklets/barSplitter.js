@@ -1,3 +1,6 @@
+
+Currently crashes, dont use!
+
 javascript: (() => {
 
 	const BCT_VERSION = "0.1",
