@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Tail wag script loader
+// @name         Bar Splitter Script Loader
 // @namespace    https://www.bondageprojects.com/
 // @version      0.1
-// @description  Allows tail wagging using emotes
+// @description  Splits the BC arousal bar into an orgasm and an arousal bar
 // @author       agicitag
 // @match https://bondageprojects.elementfx.com/*
 // @match https://www.bondageprojects.elementfx.com/*
