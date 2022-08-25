@@ -179,7 +179,7 @@ async function BarSplit(){
 
 	function DrawBCTArousalMeter(C, X, Y, Zoom) {
 		if(C.BCT != null){
-			Y = Y + 125;
+			Y = Y + 125 * Zoom;
 			if (ActivityAllowed() && PreferenceArousalAtLeast(C, "Manual"))
 				if (C.ID == 0 || (C.ArousalSettings.Visible == "Access" && C.AllowItem) || C.ArousalSettings.Visible == "All")
 					if (C.ID == 0 || (Player.ArousalSettings.ShowOtherMeter == null) || Player.ArousalSettings.ShowOtherMeter) {
@@ -282,6 +282,7 @@ async function BarSplit(){
 			let Pos = args[6];
 			// Handle clicks on the BCT arousal bar only if the BC arousal bar is not zoomed
 			if(!C.ArousalZoom){
+				let zoneMovement = 125 * Zoom;
 				// If the arousal meter is shown for that character, we can interact with it
 				if (PreferenceArousalAtLeast(C, "Manual")) {
 					let MeterShow = C.ID === 0;
@@ -294,20 +295,20 @@ async function BarSplit(){
 					}
 					if (MeterShow) {
 						// The arousal meter can be maximized or minimized by clicking on it
-						if (MouseIn(CharX + 60 * Zoom, CharY + 400 * Zoom + 125, 80 * Zoom, 100 * Zoom) && !C.BCT.orgasmBar.arousalZoom) { C.BCT.orgasmBar.arousalZoom = true; return; }
-						if (MouseIn(CharX + 50 * Zoom, CharY + 615 * Zoom + 125, 100 * Zoom, 85 * Zoom) && C.BCT.orgasmBar.arousalZoom) { C.BCT.orgasmBar.arousalZoom = false; return; }
+						if (MouseIn(CharX + 60 * Zoom, CharY + 400 * Zoom + zoneMovement, 80 * Zoom, 100 * Zoom) && !C.BCT.orgasmBar.arousalZoom) { C.BCT.orgasmBar.arousalZoom = true; return; }
+						if (MouseIn(CharX + 50 * Zoom, CharY + 615 * Zoom + zoneMovement, 100 * Zoom, 85 * Zoom) && C.BCT.orgasmBar.arousalZoom) { C.BCT.orgasmBar.arousalZoom = false; return; }
 
 						// If the player can manually control her arousal, we set the progress manual
-						if (C.ID === 0 && MouseIn(CharX + 50 * Zoom, CharY + 200 * Zoom + 125, 100 * Zoom, 500 * Zoom) && C.BCT.orgasmBar.arousalZoom) {
+						if (C.ID === 0 && MouseIn(CharX + 50 * Zoom, CharY + 200 * Zoom + zoneMovement, 100 * Zoom, 500 * Zoom) && C.BCT.orgasmBar.arousalZoom) {
 							if (PreferenceArousalAtLeast(Player, "Manual") && !PreferenceArousalAtLeast(Player, "Automatic")) {
-								var Arousal = Math.round((CharY + 625 * Zoom + 125 - MouseY) / (4 * Zoom));
+								var Arousal = Math.round((CharY + 625 * Zoom + zoneMovement - MouseY) / (4 * Zoom));
 								ActivitySetBCTArousal(Player, Arousal);
 							}
 							return;
 						}
 
 						// Don't do anything if the thermometer is clicked without access to it
-						if (MouseIn(CharX + 50 * Zoom, CharY + 200 * Zoom + 125, 100 * Zoom, 415 * Zoom) && C.BCT.orgasmBar.arousalZoom) return;
+						if (MouseIn(CharX + 50 * Zoom, CharY + 200 * Zoom + zoneMovement, 100 * Zoom, 415 * Zoom) && C.BCT.orgasmBar.arousalZoom) return;
 					}
 				}
 			}
