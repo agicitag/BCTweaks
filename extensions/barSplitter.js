@@ -237,6 +237,12 @@ modAPI.hookFunction('ActivitySetArousalTimer', 2, (args, next) => {
 		if (Progress < -25) Progress = -25;
 		if (Progress > 25) Progress = 25;
 
+		// Limit max arousal values
+		var Max = ((Activity == null || Activity.MaxProgress == null) || (Activity.MaxProgress > 100)) ? 100 : Activity.MaxProgress;
+		//if ((Max > 95) && !PreferenceGetZoneOrgasm(C, Zone)) Max = 95;
+		//if ((Max > 67) && (Zone == "ActivityOnOther")) Max = 67;
+		if ((Progress > 0) && (C.BCT.orgasmBar.arousalProgress + Progress > Max)) Progress = (Max - C.BCT.orgasmBar.arousalProgress >= 0) ? Max - C.BCT.orgasmBar.arousalProgress : 0;
+
 		// If we must apply a progress timer change, we publish it
 		if (C.BCT.orgasmBar.ProgressTimer !== Progress) {
 			C.BCT.orgasmBar.ProgressTimer = Progress;
