@@ -227,11 +227,9 @@ async function runBCT(){
 						sender.BCT = {};
 						sender.BCT.version = message.bctVersion;
 						sender.BCT.bctSettings = message.bctSettings;
-						if(message.bctSettings["splitOrgasmArousal"] === true){
-							sender.BCT.splitOrgasmArousal = {};
-							sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
-							sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;
-						}
+						sender.BCT.splitOrgasmArousal = {};
+						sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
+						sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;						
 						if(message.replyRequested){
 							sendBctInitilization(false);
 						}
@@ -671,8 +669,8 @@ async function runBCT(){
 
 		modAPI.hookFunction('DrawArousalMeter', 2, (args, next) => {
 			if(	!args[0].BCT
-				|| !args[0].BCT.splitOrgasmArousal.arousalZoom
-				|| args[0].BCT.bctSettings.splitOrgasmArousal.value === false){
+				|| args[0].BCT.bctSettings.splitOrgasmArousal.value === false
+				|| !args[0].BCT.splitOrgasmArousal.arousalZoom){
 				next(args[0], args[1], args[2], args[3]);
 			}
 			if(!args[0].ArousalZoom && args[0].BCT != null && args[0].BCT.bctSettings.splitOrgasmArousal.value === true){
