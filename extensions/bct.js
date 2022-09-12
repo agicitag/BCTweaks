@@ -274,7 +274,7 @@ async function runBCT(){
 						}			
 					} catch (error) {
 						console.error("Error parsing BCT Message from: "  + sender.Name + ".");
-						console.log(error);
+						// console.log(error);
 					}
 				}
 			}
