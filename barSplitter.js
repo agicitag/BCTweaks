@@ -35,6 +35,27 @@ async function BarSplit(){
 		}
 	}
 
+	async function beepDeprecated() {
+		await waitFor(() => !!Player?.AccountName);
+		await sleep(5000);
+		bctBeepNotify("BCT","Your version of BCT is deprecated and will crash if you meet people with the new Version.\n" +
+							"Go to: https://github.com/agicitag/BondageClubTools/tree/gh-pages/extensions/bct.js to view the new version or" +
+							"https://agicitag.github.io/BondageClubTools/extensions/loaders/bctLoader.user.js to install it.");
+	}
+
+	function bctBeepNotify (title, text){
+		modAPI.callOriginal("ServerAccountBeep", [
+			{
+				MemberNumber: Player.MemberNumber,
+				MemberName: "BCT",
+				ChatRoomName: title,
+				Private: true,
+				Message: text,
+				ChatRoomSpace: "",
+			},
+		]);
+	}
+
 	function sendBctInitilization(requestReply){
 		const bctInitilizationMessage = {
 			Type: HIDDEN,
@@ -65,6 +86,7 @@ async function BarSplit(){
 
 	//send Initilization when pasted when already in a chatroom
 	sendBctInitilization(true);
+	beepDeprecated();
 
 	async function parseSync(data) {
 		await waitFor(() => ServerSocket && ServerIsConnected);
