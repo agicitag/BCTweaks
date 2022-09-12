@@ -20,9 +20,24 @@ async function runBCT(){
 	
 	const bctSettingsKey = () => `bctSettings.${Player?.AccountName}`;
 
+	const listeners = [];
+	function registerSocketListener(event, listener) {
+		if (!listeners.some((l) => l[1] === listener)) {
+			listeners.push([event, listener]);
+			ServerSocket.on(event, listener);
+		}
+	}	
+	registerSocketListener("ChatRoomSync", () => {
+		sendBctInitilization(true);
+	});
+	registerSocketListener("ChatRoomMessage", (data) => {
+		parseSync(data);
+	});
+
 	await bctSettingsLoad();
 	splitOrgasmArousal()
 	settingsPage();
+	tailWagging();
 	//send Initilization when pasted when already in a chatroom
 	sendBctInitilization(true);
 	
@@ -52,7 +67,36 @@ async function runBCT(){
 			orgasmDecayMultiplier: {
 				value: 1.0,
 				shared: true
-			}
+			},
+			tailWaggingEnable: {
+				value: false,
+				shared: false
+			},
+			tailWaggingTailOneName: {
+				value: "PuppyTailStrap1",
+				shared: false
+			},
+			tailWaggingTailOneColor: {
+				value: "#431A12",
+				shared: false
+			},
+			tailWaggingTailTwoName: {
+				value: "WolfTailStrap3",
+				shared: false
+			},
+			tailWaggingTailTwoColor: {
+				value: "#310D0C",
+				shared: false
+			},
+			tailWaggingDelay: {
+				value: 500,
+				shared: false
+			},
+			tailWaggingCount: {
+				value: 3,
+				shared: false
+			},
+			
 		};
 		
 		Player.BCT = {};
@@ -174,22 +218,6 @@ async function runBCT(){
 		]);
 	}
 
-	const listeners = [];
-	function registerSocketListener(event, listener) {
-		if (!listeners.some((l) => l[1] === listener)) {
-			listeners.push([event, listener]);
-			ServerSocket.on(event, listener);
-		}
-	}
-	
-	registerSocketListener("ChatRoomSync", () => {
-		sendBctInitilization(true);
-	});
-
-	registerSocketListener("ChatRoomMessage", (data) => {
-		parseSync(data);
-	});
-
 	function sendBctInitilization(requestReply){
 		const bctInitilizationMessage = {
 			Type: HIDDEN,
@@ -276,7 +304,8 @@ async function runBCT(){
 			BCTTailwag: "Tail Wagging",
 		};
 
-		PreferenceSubscreenList.push("BCTSettings");
+		// keep same position in menu
+		PreferenceSubscreenList.splice(13, 0 ,"BCTSettings");
 
 		modAPI.hookFunction("TextGet", 2, (args, next) => {
 			if(args[0] == "HomepageBCTSettings") return "BCT Settings";
@@ -397,6 +426,8 @@ async function runBCT(){
 		};
 
 		PreferenceSubscreenBCTTailwagLoad = function () {
+			ElementCreateInput("InputTailWaggingCount", "text", Player.BCT.bctSettings.tailWaggingCount.value, "100");
+			ElementCreateInput("InputTailWaggingDelay", "text", Player.BCT.bctSettings.tailWaggingDelay.value, "100");
 		}
 
 		PreferenceSubscreenBCTTailwagRun = function () {
@@ -404,17 +435,62 @@ async function runBCT(){
 			DrawCharacter(Player, 50, 50, 0.9);
 			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
 
+			if (PreferenceMessage != "") DrawText(PreferenceMessage, 1100, 125, "Red", "Black");
+
+			MainCanvas.textAlign = "left";
+			DrawText("- Tail Wagging Settings -", 500, 125, "Black", "Gray");
+			DrawCheckbox(500, 200, 64, 64, "Enable Tail Wagging", Player.BCT.bctSettings.tailWaggingEnable.value);
+
+			DrawText("Number Tail Wags:", 500, 450, "Black", "Gray");
+			ElementPosition("InputTailWaggingCount", 1100, 437, 200);
+			DrawText("Tail Wagging Delay (in ms):", 500, 525, "Black", "Gray");
+			ElementPosition("InputTailWaggingDelay", 1100, 512, 200);
+
+			MainCanvas.textAlign = "center";
+			DrawButton(500, 275, 250, 64, "Update Main Tail", "White", "");
+			DrawButton(500, 350, 250, 64, "Update Secondary Tail", "White", "");
+
 		}
 
 		PreferenceSubscreenBCTTailwagClick = function () {
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
 
+			// Checkboxes
+			if (MouseIn(500, 200, 64, 64)) Player.BCT.bctSettings.tailWaggingEnable.value = !Player.BCT.bctSettings.tailWaggingEnable.value;
+
+			// Boxes
+			if (MouseIn(500, 275, 250, 64)){
+				if(!InventoryGet(Player,"TailStraps")){
+					PreferenceMessage = "No Tail Equipped"
+				}
+				else{
+					Player.BCT.bctSettings.tailWaggingTailOneName.value = InventoryGet(Player,"TailStraps").Asset.Name;
+					Player.BCT.bctSettings.tailWaggingTailOneColor.value = InventoryGet(Player,"TailStraps").Color;		
+				}
+			}
+			if (MouseIn(500, 350, 250, 64)){
+				if(!InventoryGet(Player,"TailStraps")){
+					PreferenceMessage = "No Tail Equipped"
+				}
+				else{
+					Player.BCT.bctSettings.tailWaggingTailTwoName.value = InventoryGet(Player,"TailStraps").Asset.Name;
+					Player.BCT.bctSettings.tailWaggingTailTwoColor.value = InventoryGet(Player,"TailStraps").Color;	
+				}
+			}
 		}
 
 		PreferenceSubscreenBCTTailwagExit = function () {
-			PreferenceSubscreen = "BCTSettings";
-			PreferenceMessage = "";
+			if(CommonIsNumeric(ElementValue("InputTailWaggingCount"))
+				&& CommonIsNumeric(ElementValue("InputTailWaggingDelay"))){
+				Player.BCT.bctSettings.tailWaggingCount.value = parseInt(ElementValue("InputTailWaggingCount"));
+				Player.BCT.bctSettings.tailWaggingDelay.value = parseInt(ElementValue("InputTailWaggingDelay"));
+				ElementRemove("InputTailWaggingCount");
+				ElementRemove("InputTailWaggingDelay");
+				PreferenceSubscreen = "BCTSettings";
+				PreferenceMessage = "";
+			}
+			else PreferenceMessage = "Put a valid number"
 		};
 	}
 
@@ -440,8 +516,6 @@ async function runBCT(){
 				break;
 			}
 	});
-
-
 
 	//Bar Splitter
 	function splitOrgasmArousal(){
@@ -784,6 +858,44 @@ async function runBCT(){
 
 	}
 
+	//Tail Wagging
+	function tailWagging(){
+
+		registerSocketListener("ChatRoomMessage", (data) => {
+			getEmote(data);
+		});
+
+		function getEmote(data) {
+			if(Player.BCT.bctSettings.tailWaggingEnable.value === true){
+				if(data.Type === "Emote" && data.Sender === Player.MemberNumber){
+					var message = data.Content;
+					let patterns = [/wags.*tail/mi, /tail.*wagging/mi, /wagging.*tail/mi] ; // matches {<any> wags <any> tail <any>}
+					let result = patterns.find(pattern => pattern.test(message));
+					if(result){
+						tailWag();
+					}
+				}
+			}
+		}
+
+		function tailWag(){
+			for(var i = 0; i<Player.BCT.bctSettings.tailWaggingCount.value; i++){
+				setTimeout(function(){InventoryWear(
+					Player,
+					Player.BCT.bctSettings.tailWaggingTailTwoName.value,
+					"TailStraps",
+					Player.BCT.bctSettings.tailWaggingTailTwoColor.value
+					);},i * Player.BCT.bctSettings.tailWaggingDelay.value * 2);
+				setTimeout(function(){InventoryWear(
+					Player,
+					Player.BCT.bctSettings.tailWaggingTailOneName.value,
+					"TailStraps",
+					Player.BCT.bctSettings.tailWaggingTailOneColor.value
+					);},i * Player.BCT.bctSettings.tailWaggingDelay.value * 2 + Player.BCT.bctSettings.tailWaggingDelay.value);
+			  }
+		}
+
+	}
 
 	// Images
 	const IMAGES = {
