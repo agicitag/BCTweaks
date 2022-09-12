@@ -96,6 +96,10 @@ async function runBCT(){
 				value: 3,
 				shared: false
 			},
+			menuButtonFixEnabled: {
+				value: true,
+				shared: false
+			},
 			
 		};
 		
@@ -303,10 +307,12 @@ async function runBCT(){
 		const bctSettingsCategories = [
 			"BCTArousal",
 			"BCTTailwag",
+			"BCTTweaks",
 		];
 		const bctSettingCategoryLabels = {
 			BCTArousal: "Arousal Bar",
 			BCTTailwag: "Tail Wagging",
+			BCTTweaks: "Tweaks",
 		};
 
 		// keep same position in menu
@@ -497,28 +503,66 @@ async function runBCT(){
 			}
 			else PreferenceMessage = "Put a valid number"
 		};
+
+		PreferenceSubscreenBCTTweaksLoad = function () {
+
+		}
+
+		PreferenceSubscreenBCTTweaksRun = function () {
+			// Draw the player & controls
+			DrawCharacter(Player, 50, 50, 0.9);
+			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
+			
+			if (PreferenceMessage != "") DrawText(PreferenceMessage, 1100, 125, "Red", "Black");
+
+			MainCanvas.textAlign = "left";
+			DrawText("- Tweaks Settings -", 500, 125, "Black", "Gray");
+
+			DrawCheckbox(500, 200, 64, 64, "Enable Menu Button Hitbox Fix", Player.BCT.bctSettings.menuButtonFixEnabled.value);
+
+
+		}
+
+		PreferenceSubscreenBCTTweaksClick = function () {
+			// Exit button
+			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
+
+			if (MouseIn(500, 200, 64, 64)) Player.BCT.bctSettings.menuButtonFixEnabled.value = !Player.BCT.bctSettings.menuButtonFixEnabled.value;
+
+		}
+
+		PreferenceSubscreenBCTTweaksExit = function () {
+			PreferenceSubscreen = "BCTSettings";
+			PreferenceMessage = "";
+		};
 	}
 
 	//fix wrong settings button hitboxes (changed 500 to 420)
 	modAPI.hookFunction("PreferenceClick", 2, (args, next) => {
-	if (ControllerActive == true) {
-			ClearButtons();
-		}
-		// Pass the click into the opened subscreen
-		if (PreferenceSubscreen != "") return CommonDynamicFunction("PreferenceSubscreen" + PreferenceSubscreen + "Click()");
-
-		// Exit button
-		if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
-
-		// Open the selected subscreen
-		for (let A = 0; A < PreferenceSubscreenList.length; A++)
-			if (MouseIn(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90)) {
-				if (typeof window["PreferenceSubscreen" + PreferenceSubscreenList[A] + "Load"] === "function")
-					CommonDynamicFunction("PreferenceSubscreen" + PreferenceSubscreenList[A] + "Load()");
-				PreferenceSubscreen = PreferenceSubscreenList[A];
-				PreferencePageCurrent = 1;
-				break;
+		if(Player.BCT.bctSettings.menuButtonFixEnabled.value === true){
+			if (ControllerActive == true) {
+				ClearButtons();
 			}
+			// Pass the click into the opened subscreen
+			if (PreferenceSubscreen != "") return CommonDynamicFunction("PreferenceSubscreen" + PreferenceSubscreen + "Click()");
+
+			// Exit button
+			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
+
+			// Open the selected subscreen
+			for (let A = 0; A < PreferenceSubscreenList.length; A++){
+				if (MouseIn(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90)) {
+					if (typeof window["PreferenceSubscreen" + PreferenceSubscreenList[A] + "Load"] === "function")
+						CommonDynamicFunction("PreferenceSubscreen" + PreferenceSubscreenList[A] + "Load()");
+					PreferenceSubscreen = PreferenceSubscreenList[A];
+					PreferencePageCurrent = 1;
+					break;
+				}
+			}
+		}
+		else{
+			next(args);
+		}
 	});
 
 	//Bar Splitter
