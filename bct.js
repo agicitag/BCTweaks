@@ -32,11 +32,27 @@ async function runBCT(){
 		const BCT_DEFAULT_SETTINGS = {
 			splitOrgasmArousal: {
 				value: false,
-				shared: true,
+				shared: true
 				// applySetting(){
 				// 	Player.BCT.splitOrgasmArousal.enabled = this.value;
 				// }
 			},
+			arousalProgressMultiplier: {
+				value: 1.0,
+				shared: true
+			},
+			arousalDecayMultiplier: {
+				value: 1.0,
+				shared: true
+			},
+			orgasmProgressMultiplier: {
+				value: 1.0,
+				shared: true
+			},
+			orgasmDecayMultiplier: {
+				value: 1.0,
+				shared: true
+			}
 		};
 		
 		Player.BCT = {};
@@ -327,7 +343,10 @@ async function runBCT(){
 		};
 
 		PreferenceSubscreenBCTArousalLoad = function () {
-			ElementCreateInput("InputArousalMultiplier", "text", Player.Nickname, "100");
+			ElementCreateInput("InputArousalProgressMultiplier", "text", Player.BCT.bctSettings.arousalProgressMultiplier.value, "100");
+			ElementCreateInput("InputOrgasmProgressMultiplier", "text", Player.BCT.bctSettings.orgasmProgressMultiplier.value, "100");
+			ElementCreateInput("InputArousalDecayMultiplier", "text", Player.BCT.bctSettings.arousalDecayMultiplier.value, "100");
+			ElementCreateInput("InputOrgasmDecayMultiplier", "text", Player.BCT.bctSettings.orgasmDecayMultiplier.value, "100");
 		}
 
 		PreferenceSubscreenBCTArousalRun = function () {
@@ -340,8 +359,14 @@ async function runBCT(){
 			MainCanvas.textAlign = "left";
 			DrawText("- Arousal Bar Settings -", 500, 125, "Black", "Gray");
 			DrawText("Arousal Progress Multiplier:", 500, 225, "Black", "Gray");
-			ElementPosition("InputArousalMultiplier", 1000, 212, 100);
-			DrawCheckbox(500, 325, 64, 64, "Split Arousal Bar", Player.BCT.bctSettings.splitOrgasmArousal.value);
+			ElementPosition("InputArousalProgressMultiplier", 1050, 212, 200);
+			DrawText("Orgasm Progress Multiplier:", 500, 300, "Black", "Gray");
+			ElementPosition("InputOrgasmProgressMultiplier", 1050, 287, 200);
+			DrawText("Arousal Decay Multiplier:", 500, 375, "Black", "Gray");
+			ElementPosition("InputArousalDecayMultiplier", 1050, 362, 200);
+			DrawText("Orgasm Decay Multiplier:", 500, 450, "Black", "Gray");
+			ElementPosition("InputOrgasmDecayMultiplier", 1050, 437, 200);
+			DrawCheckbox(500, 525, 64, 64, "Split Arousal Bar", Player.BCT.bctSettings.splitOrgasmArousal.value);
 
 		}
 
@@ -350,14 +375,23 @@ async function runBCT(){
 			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
 
 			//Checkboxes
-			if (MouseIn(500, 325, 64, 64)) Player.BCT.bctSettings.splitOrgasmArousal.value = !Player.BCT.bctSettings.splitOrgasmArousal.value;
+			if (MouseIn(500, 525, 64, 64)) Player.BCT.bctSettings.splitOrgasmArousal.value = !Player.BCT.bctSettings.splitOrgasmArousal.value;
 
 		}
 
 		PreferenceSubscreenBCTArousalExit = function () {
-			if(CommonIsNumeric(ElementValue("InputArousalMultiplier"))){
-				// Player.Nickname = ElementValue("InputArousalMultiplier");
-				ElementRemove("InputArousalMultiplier");
+			if(CommonIsNumeric(ElementValue("InputArousalProgressMultiplier"))
+				&& CommonIsNumeric(ElementValue("InputOrgasmProgressMultiplier"))
+				&& CommonIsNumeric(ElementValue("InputArousalDecayMultiplier"))
+				&& CommonIsNumeric(ElementValue("InputOrgasmDecayMultiplier"))){
+				Player.BCT.bctSettings.arousalProgressMultiplier.value = ElementValue("InputArousalProgressMultiplier");
+				Player.BCT.bctSettings.orgasmProgressMultiplier.value = ElementValue("InputOrgasmProgressMultiplier");
+				Player.BCT.bctSettings.arousalDecayMultiplier.value = ElementValue("InputArousalDecayMultiplier");
+				Player.BCT.bctSettings.orgasmDecayMultiplier.value = ElementValue("InputOrgasmDecayMultiplier");
+				ElementRemove("InputArousalProgressMultiplier");
+				ElementRemove("InputOrgasmProgressMultiplier");
+				ElementRemove("InputArousalDecayMultiplier");
+				ElementRemove("InputOrgasmDecayMultiplier");
 				PreferenceSubscreen = "BCTSettings";
 				PreferenceMessage = "";
 			}
@@ -548,34 +582,39 @@ async function runBCT(){
 		});
 
 		modAPI.hookFunction('ActivitySetArousalTimer', 2, (args, next) => {
-
 			let C = args[0];
-			if(C.BCT != null && C.BCT.bctSettings.splitOrgasmArousal.value === true){
-				let Activity = args[1];
-				let Zone = args[2];
-				let Progress = args[3];
-				
-				// If there's already a progress timer running, we add it's value but divide it by 2 to lessen the impact, the progress must be between -25 and 25
-				if ((C.BCT.splitOrgasmArousal.ProgressTimer == null) || (typeof C.BCT.splitOrgasmArousal.ProgressTimer !== "number") || isNaN(C.BCT.splitOrgasmArousal.ProgressTimer)) C.BCT.splitOrgasmArousal.ProgressTimer = 0;
-				Progress = Math.round((C.BCT.splitOrgasmArousal.ProgressTimer / 2) + Progress);
-				if (Progress < -25) Progress = -25;
-				if (Progress > 25) Progress = 25;
 
-				// Limit max arousal values
-				var Max = ((Activity == null || Activity.MaxProgress == null) || (Activity.MaxProgress > 100)) ? 100 : Activity.MaxProgress;
-				//if ((Max > 95) && !PreferenceGetZoneOrgasm(C, Zone)) Max = 95;
-				//if ((Max > 67) && (Zone == "ActivityOnOther")) Max = 67;
-				if ((Progress > 0) && (C.BCT.splitOrgasmArousal.arousalProgress + Progress > Max)) Progress = (Max - C.BCT.splitOrgasmArousal.arousalProgress >= 0) ? Max - C.BCT.splitOrgasmArousal.arousalProgress : 0;
+			if(C.BCT != null){
+				if(C.BCT.bctSettings.splitOrgasmArousal.value === true){
+					let Activity = args[1];
+					let Zone = args[2];
+					let Progress = args[3];
 
-				// If we must apply a progress timer change, we publish it
-				if (C.BCT.splitOrgasmArousal.ProgressTimer !== Progress) {
-					C.BCT.splitOrgasmArousal.ProgressTimer = Progress;
-					ActivityChatRoomBCTArousalSync(C);
+					//Arousal Progress Multiplier
+					Progress = Progress * C.BCT.bctSettings.arousalProgressMultiplier.value;
+					
+					// If there's already a progress timer running, we add it's value but divide it by 2 to lessen the impact, the progress must be between -25 and 25
+					if ((C.BCT.splitOrgasmArousal.ProgressTimer == null) || (typeof C.BCT.splitOrgasmArousal.ProgressTimer !== "number") || isNaN(C.BCT.splitOrgasmArousal.ProgressTimer)) C.BCT.splitOrgasmArousal.ProgressTimer = 0;
+					Progress = Math.round((C.BCT.splitOrgasmArousal.ProgressTimer / 2) + Progress);
+					if (Progress < -25) Progress = -25;
+					if (Progress > 25) Progress = 25;
+
+					// Limit max arousal values
+					var Max = ((Activity == null || Activity.MaxProgress == null) || (Activity.MaxProgress > 100)) ? 100 : Activity.MaxProgress;
+					//if ((Max > 95) && !PreferenceGetZoneOrgasm(C, Zone)) Max = 95;
+					//if ((Max > 67) && (Zone == "ActivityOnOther")) Max = 67;
+					if ((Progress > 0) && (C.BCT.splitOrgasmArousal.arousalProgress + Progress > Max)) Progress = (Max - C.BCT.splitOrgasmArousal.arousalProgress >= 0) ? Max - C.BCT.splitOrgasmArousal.arousalProgress : 0;
+
+					// If we must apply a progress timer change, we publish it
+					if (C.BCT.splitOrgasmArousal.ProgressTimer !== Progress) {
+						C.BCT.splitOrgasmArousal.ProgressTimer = Progress;
+						ActivityChatRoomBCTArousalSync(C);
+					}
 				}
+				args[3] = args[3] * C.BCT.bctSettings.orgasmProgressMultiplier.value;
 			}
-			
 			//only let the orgasm bar progress if its and orgasm zone
-			if(PreferenceGetZoneOrgasm(C, args[2] || C.BCT.bctSettings.splitOrgasmArousal.value === false)){
+			if(!C.BCT || PreferenceGetZoneOrgasm(C, args[2]) || C.BCT.bctSettings.splitOrgasmArousal.value === false){
 				next(args);
 			}
 
@@ -648,7 +687,6 @@ async function runBCT(){
 
 		modAPI.hookFunction('TimerProcess', 2, (args, next) => {
 			if (ActivityAllowed()) {
-
 				// Arousal can change every second, based on ProgressTimer
 				if ((BCTTimerLastArousalProgress + 1000 < CurrentTime) || (BCTTimerLastArousalProgress - 1000 > CurrentTime)) {
 					BCTTimerLastArousalProgress = CurrentTime;
@@ -713,23 +751,28 @@ async function runBCT(){
 				if ((BCTTimerLastArousalDecay + 12000 < CurrentTime) || (BCTTimerLastArousalDecay - 12000 > CurrentTime)) {
 					BCTTimerLastArousalDecay = CurrentTime;
 					for (let C = 0; C < Character.length; C++){
-						if(Character[C].BCT != null && Character[C].BCT.bctSettings.splitOrgasmArousal.value === true){
+						if(Character[C].BCT != null){
 							if (PreferenceArousalAtLeast(Character[C], "Hybrid")){
-								if ((Character[C].BCT.splitOrgasmArousal.arousalProgress != null) && (typeof Character[C].BCT.splitOrgasmArousal.arousalProgress === "number") && !isNaN(Character[C].BCT.splitOrgasmArousal.arousalProgress) && (Character[C].BCT.splitOrgasmArousal.arousalProgress > 0)) {
-									if ((Character[C].BCT.splitOrgasmArousal.ProgressTimer == null) || (typeof Character[C].BCT.splitOrgasmArousal.ProgressTimer !== "number") || isNaN(Character[C].BCT.splitOrgasmArousal.ProgressTimer) || (Character[C].BCT.splitOrgasmArousal.ProgressTimer == 0)) {
-
-										// If the character is egged, we find the highest intensity factor
-										let Factor = -1;
-										for (let A = 0; A < Character[C].Appearance.length; A++) {
-											let Item = Character[C].Appearance[A];
-											let ZoneFactor = PreferenceGetZoneFactor(Character[C], Item.Asset.ArousalZone) - 2;
-											if (InventoryItemHasEffect(Item, "Egged", true) && (Item.Property != null) && (Item.Property.Intensity != null) && (typeof Item.Property.Intensity === "number") && !isNaN(Item.Property.Intensity) && (Item.Property.Intensity >= 0) && (ZoneFactor >= 0) && (Item.Property.Intensity + ZoneFactor > Factor))
-												Factor = Item.Property.Intensity + ZoneFactor;
+								// If the character is egged, we find the highest intensity factor
+								let Factor = -1;
+								for (let A = 0; A < Character[C].Appearance.length; A++) {
+									let Item = Character[C].Appearance[A];
+									let ZoneFactor = PreferenceGetZoneFactor(Character[C], Item.Asset.ArousalZone) - 2;
+									if (InventoryItemHasEffect(Item, "Egged", true) && (Item.Property != null) && (Item.Property.Intensity != null) && (typeof Item.Property.Intensity === "number") && !isNaN(Item.Property.Intensity) && (Item.Property.Intensity >= 0) && (ZoneFactor >= 0) && (Item.Property.Intensity + ZoneFactor > Factor))
+										Factor = Item.Property.Intensity + ZoneFactor;
+								}
+								if(Character[C].BCT.bctSettings.splitOrgasmArousal.value === true){
+									if ((Character[C].BCT.splitOrgasmArousal.arousalProgress != null) && (typeof Character[C].BCT.splitOrgasmArousal.arousalProgress === "number") && !isNaN(Character[C].BCT.splitOrgasmArousal.arousalProgress) && (Character[C].BCT.splitOrgasmArousal.arousalProgress > 0)) {
+										if ((Character[C].BCT.splitOrgasmArousal.ProgressTimer == null) || (typeof Character[C].BCT.splitOrgasmArousal.ProgressTimer !== "number") || isNaN(Character[C].BCT.splitOrgasmArousal.ProgressTimer) || (Character[C].BCT.splitOrgasmArousal.ProgressTimer == 0)) {
+											// No arousal decay if there's a vibrating item running
+											if (Factor < 0) BCTActivityTimerProgress(Character[C], -1 * Character[C].BCT.bctSettings.arousalDecayMultiplier.value);
 										}
-
-										// No decay if there's a vibrating item running
-										if (Factor < 0) BCTActivityTimerProgress(Character[C], -1);
-
+									}
+								}
+								// No orgasm decay if there's a vibrating item running
+								if ((Character[C].ArousalSettings.Progress != null) && (typeof Character[C].ArousalSettings.Progress === "number") && !isNaN(Character[C].ArousalSettings.Progress) && (Character[C].ArousalSettings.Progress > 0)) {
+									if ((Character[C].ArousalSettings.ProgressTimer == null) || (typeof Character[C].ArousalSettings.ProgressTimer !== "number") || isNaN(Character[C].ArousalSettings.ProgressTimer) || (Character[C].ArousalSettings.ProgressTimer == 0)) {
+										if (Factor < 0) ActivityTimerProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier.value));
 									}
 								}
 							}
