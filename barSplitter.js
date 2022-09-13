@@ -39,8 +39,7 @@ async function BarSplit(){
 		await waitFor(() => !!Player?.AccountName);
 		await sleep(5000);
 		bctBeepNotify("BCT","Your version of BCT is deprecated and will crash if you meet people with the new Version.\n" +
-							"Go to: https://github.com/agicitag/BondageClubTools/tree/gh-pages/extensions/bct.js to view the new version or " +
-							"https://agicitag.github.io/BondageClubTools/extensions/loaders/bctLoader.user.js to install it.");
+							"Go to: https://github.com/agicitag/BondageClubTools to view the new version.");
 	}
 
 	function bctBeepNotify (title, text){
