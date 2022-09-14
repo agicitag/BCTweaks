@@ -1,4 +1,4 @@
-const BCT_VERSION = "0.2";
+const BCT_VERSION = "0.2.1";
 const BCT_Settings_Version = 2;
 
 async function runBCT(){
@@ -841,7 +841,7 @@ async function runBCT(){
 									// Activity impacts the progress slowly over time, if there's an activity running, vibrations are ignored
 									if ((Character[C].BCT.splitOrgasmArousal.ProgressTimer != null) && (typeof Character[C].BCT.splitOrgasmArousal.ProgressTimer === "number") && !isNaN(Character[C].BCT.splitOrgasmArousal.ProgressTimer) && (Character[C].BCT.splitOrgasmArousal.ProgressTimer != 0)) {
 										if (Character[C].BCT.splitOrgasmArousal.ProgressTimer < 0) {
-											Character[C].BCT.splitOrgasmArousal.ProgressTimer++;
+											Character[C].BCT.splitOrgasmArousal.ProgressTimer = 0;
 											
 											BCTActivityTimerProgress(Character[C], -1);
 											BCTActivityVibratorLevel(Character[C], 0);																
@@ -917,6 +917,10 @@ async function runBCT(){
 									// No orgasm decay if there's a vibrating item running
 									if ((Character[C].ArousalSettings.Progress != null) && (typeof Character[C].ArousalSettings.Progress === "number") && !isNaN(Character[C].ArousalSettings.Progress) && (Character[C].ArousalSettings.Progress > 0)) {
 										if ((Character[C].ArousalSettings.ProgressTimer == null) || (typeof Character[C].ArousalSettings.ProgressTimer !== "number") || isNaN(Character[C].ArousalSettings.ProgressTimer) || (Character[C].ArousalSettings.ProgressTimer == 0)) {
+											// If BCE's alternate arousal is used, we need to update that as well
+											if(Character[C].BCEArousal){
+												Character[C].BCEArousalProgress = Character[C].BCEArousalProgress +  (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier.value)
+											}
 											if (Factor < 0) ActivityTimerProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier.value));
 										}
 									}
