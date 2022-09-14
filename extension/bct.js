@@ -1,4 +1,4 @@
-const BCT_VERSION = "0.2";
+const BCT_VERSION = "0.2.1";
 const BCT_Settings_Version = 2;
 
 async function runBCT(){
@@ -31,7 +31,7 @@ async function runBCT(){
 		sendBctInitilization(true);
 	});
 	registerSocketListener("ChatRoomMessage", (data) => {
-		parseSync(data);
+		parseMessage(data);
 	});
 
 	await bctSettingsLoad();
@@ -245,7 +245,7 @@ async function runBCT(){
 		ServerSend("ChatRoomChat", bctInitilizationMessage);
 	}
 	
-	async function parseSync(data) {
+	async function parseMessage(data) {
 		await waitFor(() => ServerSocket && ServerIsConnected);
 		if (data.Type === HIDDEN && data.Content === BCT_MSG) {
 			const sender = Character.find((a) => a.MemberNumber === data.Sender);
@@ -256,29 +256,33 @@ async function runBCT(){
 				if (data.Dictionary[0].message) {
 					let message = data.Dictionary[0].message;
 					try {
-						if (message.type === BCT_MSG_INITILIZATION_SYNC) {
-							sender.BCT = {};
-							sender.BCT.version = message.bctVersion;
-							sender.BCT.bctSettings = message.bctSettings;
-							sender.BCT.splitOrgasmArousal = {};
-							sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
-							sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;						
-							if(message.replyRequested){
-								sendBctInitilization(false);
-							}
+						switch(message.type){
+							case BCT_MSG_INITILIZATION_SYNC:
+								sender.BCT = {};
+								sender.BCT.version = message.bctVersion;
+								sender.BCT.bctSettings = message.bctSettings;
+								sender.BCT.splitOrgasmArousal = {};
+								sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
+								sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;						
+								if(message.replyRequested)	sendBctInitilization(false);
+								break;
+							case BCT_MSG_ACTIVITY_AROUSAL_SYNC:
+								sender.BCT.version = message.bctVersion;
+								sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
+								sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;
+								break;
+							case BCT_MSG_SETTINGS_SYNC:
+								sender.BCT.version = message.bctVersion;
+								sender.BCT.bctSettings = message.bctSettings;
+								break;
+							default:
+								console.log("Unidentified BCT message:");
+								console.log(message);
 						}
-						else if (message.type === BCT_MSG_ACTIVITY_AROUSAL_SYNC) {
-							sender.BCT.version = message.bctVersion;
-							sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
-							sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;
-						}
-						else if (message.type === BCT_MSG_SETTINGS_SYNC) {
-							sender.BCT.version = message.bctVersion;
-							sender.BCT.bctSettings = message.bctSettings;
-						}			
+		
 					} catch (error) {
 						console.error("Error parsing BCT Message from: "  + sender.Name + ".");
-						// console.log(error);
+						console.log(error);
 					}
 				}
 			}
@@ -841,7 +845,7 @@ async function runBCT(){
 									// Activity impacts the progress slowly over time, if there's an activity running, vibrations are ignored
 									if ((Character[C].BCT.splitOrgasmArousal.ProgressTimer != null) && (typeof Character[C].BCT.splitOrgasmArousal.ProgressTimer === "number") && !isNaN(Character[C].BCT.splitOrgasmArousal.ProgressTimer) && (Character[C].BCT.splitOrgasmArousal.ProgressTimer != 0)) {
 										if (Character[C].BCT.splitOrgasmArousal.ProgressTimer < 0) {
-											Character[C].BCT.splitOrgasmArousal.ProgressTimer++;
+											Character[C].BCT.splitOrgasmArousal.ProgressTimer = 0;
 											
 											BCTActivityTimerProgress(Character[C], -1);
 											BCTActivityVibratorLevel(Character[C], 0);																
@@ -917,6 +921,10 @@ async function runBCT(){
 									// No orgasm decay if there's a vibrating item running
 									if ((Character[C].ArousalSettings.Progress != null) && (typeof Character[C].ArousalSettings.Progress === "number") && !isNaN(Character[C].ArousalSettings.Progress) && (Character[C].ArousalSettings.Progress > 0)) {
 										if ((Character[C].ArousalSettings.ProgressTimer == null) || (typeof Character[C].ArousalSettings.ProgressTimer !== "number") || isNaN(Character[C].ArousalSettings.ProgressTimer) || (Character[C].ArousalSettings.ProgressTimer == 0)) {
+											// If BCE's alternate arousal is used, we need to update that as well
+											if(Character[C].BCEArousal){
+												Character[C].BCEArousalProgress = Character[C].BCEArousalProgress +  (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier.value)
+											}
 											if (Factor < 0) ActivityTimerProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier.value));
 										}
 									}

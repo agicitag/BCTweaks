@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Tail wag script loader
+// @name         BCT Loader
 // @namespace    https://www.bondageprojects.com/
-// @version      0.1
-// @description  Allows tail wagging using emotes
-// @author       Haruhi
+// @version      0.2.1
+// @description  BC extension adding several little useful tweaks to BC.
+// @author       agicitag
 // @match https://bondageprojects.elementfx.com/*
 // @match https://www.bondageprojects.elementfx.com/*
 // @match https://bondage-europe.com/*
@@ -16,6 +16,6 @@
 (function() {
     'use strict';
     var script = document.createElement("script");
-    script.src = "https://agicitag.github.io/BondageClubTools/tail_wag_emote.js";
+    script.src = "https://agicitag.github.io/BondageClubTools/extension/bct.js";
     document.head.appendChild(script);
 })();
