@@ -31,7 +31,7 @@ async function runBCT(){
 		sendBctInitilization(true);
 	});
 	registerSocketListener("ChatRoomMessage", (data) => {
-		parseSync(data);
+		parseMessage(data);
 	});
 
 	await bctSettingsLoad();
@@ -245,7 +245,7 @@ async function runBCT(){
 		ServerSend("ChatRoomChat", bctInitilizationMessage);
 	}
 	
-	async function parseSync(data) {
+	async function parseMessage(data) {
 		await waitFor(() => ServerSocket && ServerIsConnected);
 		if (data.Type === HIDDEN && data.Content === BCT_MSG) {
 			const sender = Character.find((a) => a.MemberNumber === data.Sender);
@@ -256,29 +256,33 @@ async function runBCT(){
 				if (data.Dictionary[0].message) {
 					let message = data.Dictionary[0].message;
 					try {
-						if (message.type === BCT_MSG_INITILIZATION_SYNC) {
-							sender.BCT = {};
-							sender.BCT.version = message.bctVersion;
-							sender.BCT.bctSettings = message.bctSettings;
-							sender.BCT.splitOrgasmArousal = {};
-							sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
-							sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;						
-							if(message.replyRequested){
-								sendBctInitilization(false);
-							}
+						switch(message.type){
+							case BCT_MSG_INITILIZATION_SYNC:
+								sender.BCT = {};
+								sender.BCT.version = message.bctVersion;
+								sender.BCT.bctSettings = message.bctSettings;
+								sender.BCT.splitOrgasmArousal = {};
+								sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
+								sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;						
+								if(message.replyRequested)	sendBctInitilization(false);
+								break;
+							case BCT_MSG_ACTIVITY_AROUSAL_SYNC:
+								sender.BCT.version = message.bctVersion;
+								sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
+								sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;
+								break;
+							case BCT_MSG_SETTINGS_SYNC:
+								sender.BCT.version = message.bctVersion;
+								sender.BCT.bctSettings = message.bctSettings;
+								break;
+							default:
+								console.log("Unidentified BCT message:");
+								console.log(message);
 						}
-						else if (message.type === BCT_MSG_ACTIVITY_AROUSAL_SYNC) {
-							sender.BCT.version = message.bctVersion;
-							sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
-							sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;
-						}
-						else if (message.type === BCT_MSG_SETTINGS_SYNC) {
-							sender.BCT.version = message.bctVersion;
-							sender.BCT.bctSettings = message.bctSettings;
-						}			
+		
 					} catch (error) {
 						console.error("Error parsing BCT Message from: "  + sender.Name + ".");
-						// console.log(error);
+						console.log(error);
 					}
 				}
 			}
