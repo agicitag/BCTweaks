@@ -345,6 +345,9 @@ async function runBCT(){
 			MainCanvas.textAlign = "left";
 			DrawText("- Bondage Club Tools Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
+
+			DrawText("Your BCT version: " + BCT_VERSION, 1450+400/2, 775, "Black", "Gray");
+			DrawButton(1450, 825, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
 			
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 865, 125, "Red", "Black");
 			
@@ -365,6 +368,7 @@ async function runBCT(){
 			
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
+			if (MouseIn(1450, 825, 400, 90)) window.open("https://github.com/agicitag/BondageClubTools/blob/gh-pages/extension/Changelog.md", "_blank");
 			
 			// Open the selected subscreen
 			for (let A = 0; A < bctSettingsCategories.length; A++){
