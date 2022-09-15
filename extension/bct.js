@@ -1,5 +1,5 @@
-const BCT_VERSION = "0.2.1";
-const BCT_Settings_Version = 2;
+const BCT_VERSION = "0.3";
+const BCT_Settings_Version = 3;
 
 async function runBCT(){
 	
@@ -51,6 +51,10 @@ async function runBCT(){
 				// applySetting(){
 				// 	Player.BCT.splitOrgasmArousal.enabled = this.value;
 				// }
+			},
+			arousalbarLocation: {
+				value: "Bottom",
+				shared: false
 			},
 			arousalProgressMultiplier: {
 				value: 1.0,
@@ -206,7 +210,7 @@ async function runBCT(){
 	async function beepChangelog() {
 		await waitFor(() => !!Player?.AccountName);
 		await sleep(5000);
-		bctBeepNotify("BCT Changelog", "BCT got updated.");
+		bctBeepNotify("BCT updated", "BCT got updated. You can find the changelog in the settings.");
 	}
 
 	function bctBeepNotify (title, text){
@@ -333,6 +337,13 @@ async function runBCT(){
 			return next(args);
 		});
 
+		function BCTPreferenceDrawBackNextButton(Left, Top, Width, Height, List, Index) {
+			DrawBackNextButton(Left, Top, Width, Height, List[Index], "White", "",
+				() => List[PreferenceGetPreviousIndex(List, Index)],
+				() => List[PreferenceGetNextIndex(List, Index)],
+			);
+		}
+
 		PreferenceSubscreenBCTSettingsLoad = function () {
 			currentPageNumber = 0;
 		};
@@ -388,11 +399,16 @@ async function runBCT(){
 			PreferenceMessage = "";
 		};
 
+		let arousalbarLocationPreferenceList = ["Bottom", "Right"];
+		let arousalbarLocationPreferenceIndex = 0;
+
 		PreferenceSubscreenBCTArousalLoad = function () {
 			ElementCreateInput("InputArousalProgressMultiplier", "text", Player.BCT.bctSettings.arousalProgressMultiplier.value, "100");
 			ElementCreateInput("InputOrgasmProgressMultiplier", "text", Player.BCT.bctSettings.orgasmProgressMultiplier.value, "100");
 			ElementCreateInput("InputArousalDecayMultiplier", "text", Player.BCT.bctSettings.arousalDecayMultiplier.value, "100");
 			ElementCreateInput("InputOrgasmDecayMultiplier", "text", Player.BCT.bctSettings.orgasmDecayMultiplier.value, "100");
+
+			arousalbarLocationPreferenceIndex = (arousalbarLocationPreferenceList.indexOf(Player.BCT.bctSettings.arousalbarLocation.value) < 0) ? 0 : arousalbarLocationPreferenceList.indexOf(Player.BCT.bctSettings.arousalbarLocation.value);
 		}
 
 		PreferenceSubscreenBCTArousalRun = function () {
@@ -412,7 +428,11 @@ async function runBCT(){
 			ElementPosition("InputArousalDecayMultiplier", 1050, 362, 200);
 			DrawText("Orgasm Decay Multiplier:", 500, 450, "Black", "Gray");
 			ElementPosition("InputOrgasmDecayMultiplier", 1050, 437, 200);
-			DrawCheckbox(500, 525, 64, 64, "Split Arousal Bar", Player.BCT.bctSettings.splitOrgasmArousal.value);
+			DrawCheckbox(500, 500, 64, 64, "Split Arousal Bar", Player.BCT.bctSettings.splitOrgasmArousal.value);
+			DrawText("Arousal Bar Location:", 500, 600, "Black", "Gray");
+
+			MainCanvas.textAlign = "center";
+			BCTPreferenceDrawBackNextButton(1050 - 350/2, 570, 350, 60, arousalbarLocationPreferenceList, arousalbarLocationPreferenceIndex);
 
 		}
 
@@ -420,8 +440,15 @@ async function runBCT(){
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
 
-			//Checkboxes
-			if (MouseIn(500, 525, 64, 64)) Player.BCT.bctSettings.splitOrgasmArousal.value = !Player.BCT.bctSettings.splitOrgasmArousal.value;
+			// Checkboxes
+			if (MouseIn(500, 500, 64, 64)) Player.BCT.bctSettings.splitOrgasmArousal.value = !Player.BCT.bctSettings.splitOrgasmArousal.value;
+
+			// BackNextButtons
+			if (MouseIn(1050 - 350/2, 570, 350, 60)) {
+				if (MouseX <= 1050 - 350/2 + 350/2) arousalbarLocationPreferenceIndex = PreferenceGetPreviousIndex(arousalbarLocationPreferenceList, arousalbarLocationPreferenceIndex);
+				else arousalbarLocationPreferenceIndex = PreferenceGetNextIndex(arousalbarLocationPreferenceList, arousalbarLocationPreferenceIndex);
+				Player.BCT.bctSettings.arousalbarLocation.value = arousalbarLocationPreferenceList[arousalbarLocationPreferenceIndex];
+			}
 
 		}
 
@@ -442,6 +469,14 @@ async function runBCT(){
 				PreferenceMessage = "";
 			}
 			else PreferenceMessage = "Put a valid number"
+
+			// Unzoom all arousal bars on changing to setting the arousal bar to "Bottom", to prevent both bars being zoomed
+			// and thus none of the bars being shown
+			if (Player.BCT.bctSettings.arousalbarLocation.value === "Bottom"){
+				for (char of Character){
+					if(char.BCT?.splitOrgasmArousal?.arousalZoom) char.BCT.splitOrgasmArousal.arousalZoom = false;
+				}
+			}
 		};
 
 		PreferenceSubscreenBCTTailwagLoad = function () {
@@ -648,7 +683,8 @@ async function runBCT(){
 
 		function DrawBCTArousalMeter(C, X, Y, Zoom) {
 			if(C.BCT != null){
-				Y = Y + 125 * Zoom;
+				if (Player.BCT.bctSettings.arousalbarLocation.value == "Right") X = X + 300 * Zoom;
+				else Y = Y + 125 * Zoom;
 				if (ActivityAllowed() && PreferenceArousalAtLeast(C, "Manual"))
 					if (C.ID == 0 || (C.ArousalSettings.Visible == "Access" && C.AllowItem) || C.ArousalSettings.Visible == "All")
 						if (C.ID == 0 || (Player.ArousalSettings.ShowOtherMeter == null) || Player.ArousalSettings.ShowOtherMeter) {
@@ -772,8 +808,7 @@ async function runBCT(){
 					let ClickY = args[5];
 					let Pos = args[6];
 					// Handle clicks on the BCT arousal bar only if the BC arousal bar is not zoomed
-					if(!C.ArousalZoom){
-						let zoneMovement = 125 * Zoom;
+					if(!C.ArousalZoom || Player.BCT.bctSettings.arousalbarLocation.value === "Right"){
 						// If the arousal meter is shown for that character, we can interact with it
 						if (PreferenceArousalAtLeast(C, "Manual")) {
 							let MeterShow = C.ID === 0;
@@ -785,21 +820,25 @@ async function runBCT(){
 								}
 							}
 							if (MeterShow) {
+								let arousalMeterYMovement = 0;
+								let arousalMeterXMovement = 0;
+								if (Player.BCT.bctSettings.arousalbarLocation.value == "Right") arousalMeterXMovement = 300 * Zoom;
+								else arousalMeterYMovement = 125 * Zoom;
 								// The arousal meter can be maximized or minimized by clicking on it
-								if (MouseIn(CharX + 60 * Zoom, CharY + 400 * Zoom + zoneMovement, 80 * Zoom, 100 * Zoom) && !C.BCT.splitOrgasmArousal.arousalZoom) { C.BCT.splitOrgasmArousal.arousalZoom = true; return; }
-								if (MouseIn(CharX + 50 * Zoom, CharY + 615 * Zoom + zoneMovement, 100 * Zoom, 85 * Zoom) && C.BCT.splitOrgasmArousal.arousalZoom) { C.BCT.splitOrgasmArousal.arousalZoom = false; return; }
+								if (MouseIn(CharX + 60 * Zoom + arousalMeterXMovement, CharY + 400 * Zoom + arousalMeterYMovement, 80 * Zoom, 100 * Zoom) && !C.BCT.splitOrgasmArousal.arousalZoom) { C.BCT.splitOrgasmArousal.arousalZoom = true; return; }
+								if (MouseIn(CharX + 50 * Zoom + arousalMeterXMovement, CharY + 615 * Zoom + arousalMeterYMovement, 100 * Zoom, 85 * Zoom) && C.BCT.splitOrgasmArousal.arousalZoom) { C.BCT.splitOrgasmArousal.arousalZoom = false; return; }
 	
 								// If the player can manually control her arousal, we set the progress manual
-								if (C.ID === 0 && MouseIn(CharX + 50 * Zoom, CharY + 200 * Zoom + zoneMovement, 100 * Zoom, 500 * Zoom) && C.BCT.splitOrgasmArousal.arousalZoom) {
+								if (C.ID === 0 && MouseIn(CharX + 50 * Zoom + arousalMeterXMovement, CharY + 200 * Zoom + arousalMeterYMovement, 100 * Zoom, 500 * Zoom) && C.BCT.splitOrgasmArousal.arousalZoom) {
 									if (PreferenceArousalAtLeast(Player, "Manual") && !PreferenceArousalAtLeast(Player, "Automatic")) {
-										var Arousal = Math.round((CharY + 625 * Zoom + zoneMovement - MouseY) / (4 * Zoom));
+										var Arousal = Math.round((CharY + 625 * Zoom + arousalMeterYMovement - MouseY) / (4 * Zoom));
 										ActivitySetBCTArousal(Player, Arousal);
 									}
 									return;
 								}
 	
 								// Don't do anything if the thermometer is clicked without access to it
-								if (MouseIn(CharX + 50 * Zoom, CharY + 200 * Zoom + zoneMovement, 100 * Zoom, 415 * Zoom) && C.BCT.splitOrgasmArousal.arousalZoom) return;
+								if (MouseIn(CharX + 50 * Zoom + arousalMeterXMovement, CharY + 200 * Zoom + arousalMeterYMovement, 100 * Zoom, 415 * Zoom) && C.BCT.splitOrgasmArousal.arousalZoom) return;
 							}
 						}
 					}
@@ -818,10 +857,14 @@ async function runBCT(){
 			try {
 				if(	!args[0].BCT
 					|| args[0].BCT.bctSettings.splitOrgasmArousal.value === false
-					|| !args[0].BCT.splitOrgasmArousal.arousalZoom){
+					|| !args[0].BCT.splitOrgasmArousal.arousalZoom
+					|| Player.BCT.bctSettings.arousalbarLocation.value === "Right"){
 					next(args[0], args[1], args[2], args[3]);
 				}
-				if(!args[0].ArousalZoom && args[0].BCT != null && args[0].BCT.bctSettings.splitOrgasmArousal.value === true){
+				if((!args[0].ArousalZoom
+					&& args[0].BCT != null
+					&& args[0].BCT.bctSettings.splitOrgasmArousal.value === true)
+					|| Player.BCT?.bctSettings?.arousalbarLocation?.value === "Right"){
 					DrawBCTArousalMeter(args[0], args[1], args[2], args[3]);
 				}
 			} catch (error) {

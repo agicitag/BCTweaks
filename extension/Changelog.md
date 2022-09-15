@@ -3,6 +3,7 @@
 ### Features:
 - Added a textbox showing the currently installed version in the settings menu
 - Added a button to access the changelog in the settings menu
+- Added a setting to position the arousal bar either below the orgasm bar or on the right of the character
 
 ## 0.2.1
 ### Bugfixes:
