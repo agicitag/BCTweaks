@@ -631,11 +631,11 @@ async function runBCT(){
 			PreferenceSubscreen = "BCTArousal";
 			addMenuInput(200, "Arousal Progress Multiplier:", "arousalProgressMultiplier", "InputArousalProgressMultiplier",
 			"Sets a multiplier for the arousal progress. E.g. if an activity would normally result in a progress of 10%, " +
-			"with a multiplier of 0.5 it only results in a progress of 5%."
+			"with a multiplier of 0.5 it only results in a progress of 5%. BC limits the progress for one action at 25%."
 			);
 			addMenuInput(200, "Orgasm Progress Multiplier:", "orgasmProgressMultiplier", "InputOrgasmProgressMultiplier",
 			"Sets a multiplier for the orgasm progress. E.g. if an activity would normally result in a progress of 10%, " +
-			"with a multiplier of 0.5 it only results in a progress of 5%."
+			"with a multiplier of 0.5 it only results in a progress of 5%. BC limits the progress for one action at 25%."
 			);
 			addMenuInput(200, "Arousal Decay Multiplier:", "arousalDecayMultiplier", "InputArousalDecayMultiplier",
 			"Sets a multiplier for the arousal decay. Normally arousal progress decays by 1% every 12 seconds. With a multiplier of " +
