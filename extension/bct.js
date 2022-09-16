@@ -34,6 +34,14 @@ async function runBCT(){
 		parseMessage(data);
 	});
 
+	const SHARED_SETTINGS = [
+		"splitOrgasmArousal",
+		"arousalProgressMultiplier",
+		"arousalDecayMultiplier",
+		"orgasmProgressMultiplier",
+		"orgasmDecayMultiplier"
+	];
+
 	await bctSettingsLoad();
 	splitOrgasmArousal()
 	settingsPage();
@@ -45,65 +53,20 @@ async function runBCT(){
 		await waitFor(() => !!Player?.AccountName);
 
 		const BCT_DEFAULT_SETTINGS = {
-			splitOrgasmArousal: {
-				value: false,
-				shared: true
-				// applySetting(){
-				// 	Player.BCT.splitOrgasmArousal.enabled = this.value;
-				// }
-			},
-			arousalbarLocation: {
-				value: "Bottom",
-				shared: false
-			},
-			arousalProgressMultiplier: {
-				value: 1.0,
-				shared: true
-			},
-			arousalDecayMultiplier: {
-				value: 1.0,
-				shared: true
-			},
-			orgasmProgressMultiplier: {
-				value: 1.0,
-				shared: true
-			},
-			orgasmDecayMultiplier: {
-				value: 1.0,
-				shared: true
-			},
-			tailWaggingEnable: {
-				value: false,
-				shared: false
-			},
-			tailWaggingTailOneName: {
-				value: "PuppyTailStrap1",
-				shared: false
-			},
-			tailWaggingTailOneColor: {
-				value: "#431A12",
-				shared: false
-			},
-			tailWaggingTailTwoName: {
-				value: "WolfTailStrap3",
-				shared: false
-			},
-			tailWaggingTailTwoColor: {
-				value: "#310D0C",
-				shared: false
-			},
-			tailWaggingDelay: {
-				value: 500,
-				shared: false
-			},
-			tailWaggingCount: {
-				value: 3,
-				shared: false
-			},
-			menuButtonFixEnabled: {
-				value: true,
-				shared: false
-			},
+			splitOrgasmArousal: false,
+			arousalbarLocation: "Bottom",
+			arousalProgressMultiplier: 1.0,
+			arousalDecayMultiplier: 1.0,
+			orgasmProgressMultiplier: 1.0,
+			orgasmDecayMultiplier: 1.0,
+			tailWaggingEnable: false,
+			tailWaggingTailOneName: "PuppyTailStrap1",
+			tailWaggingTailOneColor: "#431A12",
+			tailWaggingTailTwoName: "WolfTailStrap3",
+			tailWaggingTailTwoColor: "#310D0C",
+			tailWaggingDelay: 500,
+			tailWaggingCount: 3,
+			menuButtonFixEnabled: true,
 			
 		};
 		
@@ -133,9 +96,14 @@ async function runBCT(){
 			) {
 				settings = bctOnlineSettings;
 			}
+			if(!settings) settings = {};
+
+			// Reorganize old settings into the new structure
+			for (const setting in settings){
+				if(settings[setting].value) settings[setting] = settings[setting].value;
+			}
 
 			//fill up missing settings with the default ones
-			if(!settings) settings = {};
 			for (const setting in BCT_DEFAULT_SETTINGS) {
 				if (!Object.prototype.hasOwnProperty.call(BCT_DEFAULT_SETTINGS, setting)) {
 					continue;
@@ -158,7 +126,7 @@ async function runBCT(){
 
 			//shared settings
 			for(setting in settings){
-				if(settings[setting].shared === true){
+				if(SHARED_SETTINGS.indexOf(setting) >= 0){
 					Player.BCT.bctSharedSettings[setting] = settings[setting];
 				}
 			}
@@ -176,14 +144,10 @@ async function runBCT(){
 			OnlineSettings: Player.OnlineSettings,
 		});
 
+		//shared settings
 		for(setting in Player.BCT.bctSettings){
-			//shared settings
-			if(Player.BCT.bctSettings[setting].shared === true){
+			if(SHARED_SETTINGS.indexOf(setting) >= 0){
 				Player.BCT.bctSharedSettings[setting] = Player.BCT.bctSettings[setting];
-			}
-			//apply settings
-			if(Player.BCT.bctSettings[setting].applySetting){
-				Player.BCT.bctSettings[setting].applySetting();
 			}
 		}
 
@@ -469,7 +433,7 @@ async function runBCT(){
 				xModifier: xModifier,
 				yModifier: yModifier,
 			});
-			ElementCreateInput(identifier, "text", Player.BCT.bctSettings[setting].value, "100");
+			ElementCreateInput(identifier, "text", Player.BCT.bctSettings[setting], "100");
 		}
 		function addMenuBackNext(width, height, text, setting, backNextOptions, hint, xModifier = 0, yModifier = 0){
 			menuElements[PreferenceSubscreen].push({
@@ -483,7 +447,7 @@ async function runBCT(){
 				hint: hint,
 				xModifier: xModifier,
 				yModifier: yModifier,
-				index: (backNextOptions.indexOf(Player.BCT.bctSettings[setting].value) < 0) ? 0 : backNextOptions.indexOf(Player.BCT.bctSettings[setting].value)
+				index: (backNextOptions.indexOf(Player.BCT.bctSettings[setting]) < 0) ? 0 : backNextOptions.indexOf(Player.BCT.bctSettings[setting])
 			});
 		}
 
@@ -514,7 +478,7 @@ async function runBCT(){
 							currentElement.width,
 							currentElement.height,
 							currentElement.elementText,
-							Player.BCT.bctSettings[currentElement.setting].value
+							Player.BCT.bctSettings[currentElement.setting]
 						);
 						break;
 					case "Button":
@@ -566,7 +530,7 @@ async function runBCT(){
 				switch (currentElement.type) {
 					case "Checkbox":
 						if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
-							Player.BCT.bctSettings[currentElement.setting].value = !Player.BCT.bctSettings[currentElement.setting].value;
+							Player.BCT.bctSettings[currentElement.setting] = !Player.BCT.bctSettings[currentElement.setting];
 							foundElement = true;
 						}
 						break;
@@ -580,7 +544,7 @@ async function runBCT(){
 						if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
 							if (mouseX <= MENU_ELEMENT_X_OFFSET + currentElement.width/2) currentElement.index = PreferenceGetPreviousIndex(currentElement.backNextOptions, currentElement.index);
 							else currentElement.index = PreferenceGetNextIndex(currentElement.backNextOptions, currentElement.index);
-							Player.BCT.bctSettings[currentElement.setting].value = currentElement.backNextOptions[currentElement.index];
+							Player.BCT.bctSettings[currentElement.setting] = currentElement.backNextOptions[currentElement.index];
 							foundElement = true;
 						}
 						break;
@@ -704,10 +668,10 @@ async function runBCT(){
 				&& CommonIsNumeric(ElementValue("InputOrgasmProgressMultiplier"))
 				&& CommonIsNumeric(ElementValue("InputArousalDecayMultiplier"))
 				&& CommonIsNumeric(ElementValue("InputOrgasmDecayMultiplier"))){
-				Player.BCT.bctSettings.arousalProgressMultiplier.value = ElementValue("InputArousalProgressMultiplier");
-				Player.BCT.bctSettings.orgasmProgressMultiplier.value = ElementValue("InputOrgasmProgressMultiplier");
-				Player.BCT.bctSettings.arousalDecayMultiplier.value = ElementValue("InputArousalDecayMultiplier");
-				Player.BCT.bctSettings.orgasmDecayMultiplier.value = ElementValue("InputOrgasmDecayMultiplier");
+				Player.BCT.bctSettings.arousalProgressMultiplier = ElementValue("InputArousalProgressMultiplier");
+				Player.BCT.bctSettings.orgasmProgressMultiplier = ElementValue("InputOrgasmProgressMultiplier");
+				Player.BCT.bctSettings.arousalDecayMultiplier = ElementValue("InputArousalDecayMultiplier");
+				Player.BCT.bctSettings.orgasmDecayMultiplier = ElementValue("InputOrgasmDecayMultiplier");
 				ElementRemove("InputArousalProgressMultiplier");
 				ElementRemove("InputOrgasmProgressMultiplier");
 				ElementRemove("InputArousalDecayMultiplier");
@@ -718,7 +682,7 @@ async function runBCT(){
 
 			// Unzoom all arousal bars on changing to setting the arousal bar to "Bottom", to prevent both bars being zoomed
 			// and thus none of the bars being shown
-			if (Player.BCT.bctSettings.arousalbarLocation.value === "Bottom"){
+			if (Player.BCT.bctSettings.arousalbarLocation === "Bottom"){
 				for (char of Character){
 					if(char.BCT?.splitOrgasmArousal?.arousalZoom) char.BCT.splitOrgasmArousal.arousalZoom = false;
 				}
@@ -736,8 +700,8 @@ async function runBCT(){
 				}
 				else{
 					PreferenceMessage = "Main Tail updated";
-					Player.BCT.bctSettings.tailWaggingTailOneName.value = InventoryGet(Player,"TailStraps").Asset.Name;
-					Player.BCT.bctSettings.tailWaggingTailOneColor.value = InventoryGet(Player,"TailStraps").Color;		
+					Player.BCT.bctSettings.tailWaggingTailOneName = InventoryGet(Player,"TailStraps").Asset.Name;
+					Player.BCT.bctSettings.tailWaggingTailOneColor = InventoryGet(Player,"TailStraps").Color;		
 				}
 			}, 
 			"Updates the tail that is gonna stay after wagging to the currently worn one."
@@ -748,8 +712,8 @@ async function runBCT(){
 				}
 				else{
 					PreferenceMessage = "Secondary Tail updated";
-					Player.BCT.bctSettings.tailWaggingTailTwoName.value = InventoryGet(Player,"TailStraps").Asset.Name;
-					Player.BCT.bctSettings.tailWaggingTailTwoColor.value = InventoryGet(Player,"TailStraps").Color;	
+					Player.BCT.bctSettings.tailWaggingTailTwoName = InventoryGet(Player,"TailStraps").Asset.Name;
+					Player.BCT.bctSettings.tailWaggingTailTwoColor = InventoryGet(Player,"TailStraps").Color;	
 				}
 			},
 			"Updates the temporary tail for wagging to the currently worn one."
@@ -773,8 +737,8 @@ async function runBCT(){
 		PreferenceSubscreenBCTTailwagExit = function () {
 			if(CommonIsNumeric(ElementValue("InputTailWaggingCount"))
 				&& CommonIsNumeric(ElementValue("InputTailWaggingDelay"))){
-				Player.BCT.bctSettings.tailWaggingCount.value = parseInt(ElementValue("InputTailWaggingCount"));
-				Player.BCT.bctSettings.tailWaggingDelay.value = parseInt(ElementValue("InputTailWaggingDelay"));
+				Player.BCT.bctSettings.tailWaggingCount = parseInt(ElementValue("InputTailWaggingCount"));
+				Player.BCT.bctSettings.tailWaggingDelay = parseInt(ElementValue("InputTailWaggingDelay"));
 				ElementRemove("InputTailWaggingCount");
 				ElementRemove("InputTailWaggingDelay");
 				defaultExit();
@@ -805,7 +769,7 @@ async function runBCT(){
 
 	//fix wrong settings button hitboxes (changed 500 to 420)
 	modAPI.hookFunction("PreferenceClick", 2, (args, next) => {
-		if(Player.BCT.bctSettings.menuButtonFixEnabled.value === true){
+		if(Player.BCT.bctSettings.menuButtonFixEnabled === true){
 			if (ControllerActive == true) {
 				ClearButtons();
 			}
@@ -906,7 +870,7 @@ async function runBCT(){
 
 		function DrawBCTArousalMeter(C, X, Y, Zoom) {
 			if(C.BCT != null){
-				if (Player.BCT.bctSettings.arousalbarLocation.value == "Right") X = X + 290 * Zoom;
+				if (Player.BCT.bctSettings.arousalbarLocation == "Right") X = X + 290 * Zoom;
 				else Y = Y + 125 * Zoom;
 				if (ActivityAllowed() && PreferenceArousalAtLeast(C, "Manual"))
 					if (C.ID == 0 || (C.ArousalSettings.Visible == "Access" && C.AllowItem) || C.ArousalSettings.Visible == "All")
@@ -956,7 +920,7 @@ async function runBCT(){
 			let C = args[0];
 			try {
 				if(C.BCT != null){
-					if(C.BCT.bctSettings.splitOrgasmArousal.value === true){
+					if(C.BCT.bctSettings.splitOrgasmArousal === true){
 						if (!ActivityOrgasmRuined) {
 							C.BCT.splitOrgasmArousal.arousalProgress = C.BCT.splitOrgasmArousal.arousalProgress * 0.6;
 						}
@@ -977,13 +941,13 @@ async function runBCT(){
 
 			if(C.BCT != null){
 				try {
-					if(C.BCT.bctSettings.splitOrgasmArousal.value === true){
+					if(C.BCT.bctSettings.splitOrgasmArousal === true){
 						let Activity = args[1];
 						let Zone = args[2];
 						let Progress = args[3];
 	
 						//Arousal Progress Multiplier
-						Progress = Progress * C.BCT.bctSettings.arousalProgressMultiplier.value;
+						Progress = Progress * C.BCT.bctSettings.arousalProgressMultiplier;
 						
 						// If there's already a progress timer running, we add it's value but divide it by 2 to lessen the impact, the progress must be between -25 and 25
 						if ((C.BCT.splitOrgasmArousal.ProgressTimer == null) || (typeof C.BCT.splitOrgasmArousal.ProgressTimer !== "number") || isNaN(C.BCT.splitOrgasmArousal.ProgressTimer)) C.BCT.splitOrgasmArousal.ProgressTimer = 0;
@@ -1003,7 +967,7 @@ async function runBCT(){
 							ActivityChatRoomBCTArousalSync(C);
 						}
 					}
-					args[3] = args[3] * C.BCT.bctSettings.orgasmProgressMultiplier.value;		
+					args[3] = args[3] * C.BCT.bctSettings.orgasmProgressMultiplier;		
 				} catch (error) {
 					console.error("Error setting arousal timer for character: " + C.Name + ".");
 					// console.log(error);
@@ -1011,7 +975,7 @@ async function runBCT(){
 			}
 			//only let the orgasm bar progress if its and orgasm zone
 			try {
-				if(!C.BCT || PreferenceGetZoneOrgasm(C, args[2]) || C.BCT.bctSettings.splitOrgasmArousal.value === false){
+				if(!C.BCT || PreferenceGetZoneOrgasm(C, args[2]) || C.BCT.bctSettings.splitOrgasmArousal === false){
 					next(args);
 				}
 			} catch (error) {
@@ -1023,7 +987,7 @@ async function runBCT(){
 		modAPI.hookFunction('ChatRoomClickCharacter', 2, (args, next) => {
 			let C = args[0];
 			try {
-				if(C.BCT != null && C.BCT.bctSettings.splitOrgasmArousal.value === true){
+				if(C.BCT != null && C.BCT.bctSettings.splitOrgasmArousal === true){
 					let CharX = args[1];
 					let CharY = args[2];
 					let Zoom = args[3];
@@ -1031,7 +995,7 @@ async function runBCT(){
 					let ClickY = args[5];
 					let Pos = args[6];
 					// Handle clicks on the BCT arousal bar only if the BC arousal bar is not zoomed or its set to "Right"
-					if(!C.ArousalZoom || Player.BCT.bctSettings.arousalbarLocation.value === "Right"){
+					if(!C.ArousalZoom || Player.BCT.bctSettings.arousalbarLocation === "Right"){
 						// If the arousal meter is shown for that character, we can interact with it
 						if (PreferenceArousalAtLeast(C, "Manual")) {
 							let MeterShow = C.ID === 0;
@@ -1045,7 +1009,7 @@ async function runBCT(){
 							if (MeterShow) {
 								let arousalMeterYMovement = 0;
 								let arousalMeterXMovement = 0;
-								if (Player.BCT.bctSettings.arousalbarLocation.value == "Right") arousalMeterXMovement = 290 * Zoom;
+								if (Player.BCT.bctSettings.arousalbarLocation == "Right") arousalMeterXMovement = 290 * Zoom;
 								else arousalMeterYMovement = 125 * Zoom;
 								// The arousal meter can be maximized or minimized by clicking on it
 								if (MouseIn(CharX + 60 * Zoom + arousalMeterXMovement, CharY + 400 * Zoom + arousalMeterYMovement, 80 * Zoom, 100 * Zoom) && !C.BCT.splitOrgasmArousal.arousalZoom) { C.BCT.splitOrgasmArousal.arousalZoom = true; return; }
@@ -1079,15 +1043,15 @@ async function runBCT(){
 		modAPI.hookFunction('DrawArousalMeter', 2, (args, next) => {
 			try {
 				if(	!args[0].BCT
-					|| args[0].BCT.bctSettings.splitOrgasmArousal.value === false
+					|| args[0].BCT.bctSettings.splitOrgasmArousal === false
 					|| !args[0].BCT.splitOrgasmArousal.arousalZoom
-					|| Player.BCT.bctSettings.arousalbarLocation.value === "Right"){
+					|| Player.BCT.bctSettings.arousalbarLocation === "Right"){
 					next(args[0], args[1], args[2], args[3]);
 				}
 				if((!args[0].ArousalZoom
 					&& args[0].BCT != null
-					&& args[0].BCT.bctSettings.splitOrgasmArousal.value === true)
-					|| Player.BCT?.bctSettings?.arousalbarLocation?.value === "Right"){
+					&& args[0].BCT.bctSettings.splitOrgasmArousal === true)
+					|| Player.BCT?.bctSettings?.arousalbarLocation === "Right"){
 					DrawBCTArousalMeter(args[0], args[1], args[2], args[3]);
 				}
 			} catch (error) {
@@ -1109,7 +1073,7 @@ async function runBCT(){
 					BCTTimerLastArousalProgressCount++;
 					for (let C = 0; C < Character.length; C++) {				
 						try {
-							if(Character[C].BCT != null && Character[C].BCT.bctSettings.splitOrgasmArousal.value === true){
+							if(Character[C].BCT != null && Character[C].BCT.bctSettings.splitOrgasmArousal === true){
 								// Depending on the character settings, we progress the arousal meter
 								if (PreferenceArousalAtLeast(Character[C], "Hybrid")) {
 									// Activity impacts the progress slowly over time, if there's an activity running, vibrations are ignored
@@ -1180,11 +1144,11 @@ async function runBCT(){
 										if (InventoryItemHasEffect(Item, "Egged", true) && (Item.Property != null) && (Item.Property.Intensity != null) && (typeof Item.Property.Intensity === "number") && !isNaN(Item.Property.Intensity) && (Item.Property.Intensity >= 0) && (ZoneFactor >= 0) && (Item.Property.Intensity + ZoneFactor > Factor))
 											Factor = Item.Property.Intensity + ZoneFactor;
 									}
-									if(Character[C].BCT.bctSettings.splitOrgasmArousal.value === true){
+									if(Character[C].BCT.bctSettings.splitOrgasmArousal === true){
 										if ((Character[C].BCT.splitOrgasmArousal.arousalProgress != null) && (typeof Character[C].BCT.splitOrgasmArousal.arousalProgress === "number") && !isNaN(Character[C].BCT.splitOrgasmArousal.arousalProgress) && (Character[C].BCT.splitOrgasmArousal.arousalProgress > 0)) {
 											if ((Character[C].BCT.splitOrgasmArousal.ProgressTimer == null) || (typeof Character[C].BCT.splitOrgasmArousal.ProgressTimer !== "number") || isNaN(Character[C].BCT.splitOrgasmArousal.ProgressTimer) || (Character[C].BCT.splitOrgasmArousal.ProgressTimer == 0)) {
 												// No arousal decay if there's a vibrating item running
-												if (Factor < 0) BCTActivityTimerProgress(Character[C], -1 * Character[C].BCT.bctSettings.arousalDecayMultiplier.value);
+												if (Factor < 0) BCTActivityTimerProgress(Character[C], -1 * Character[C].BCT.bctSettings.arousalDecayMultiplier);
 											}
 										}
 									}
@@ -1193,9 +1157,9 @@ async function runBCT(){
 										if ((Character[C].ArousalSettings.ProgressTimer == null) || (typeof Character[C].ArousalSettings.ProgressTimer !== "number") || isNaN(Character[C].ArousalSettings.ProgressTimer) || (Character[C].ArousalSettings.ProgressTimer == 0)) {
 											// If BCE's alternate arousal is used, we need to update that as well
 											if(Character[C].BCEArousal){
-												Character[C].BCEArousalProgress = Character[C].BCEArousalProgress +  (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier.value)
+												Character[C].BCEArousalProgress = Character[C].BCEArousalProgress +  (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier)
 											}
-											if (Factor < 0) ActivityTimerProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier.value));
+											if (Factor < 0) ActivityTimerProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier));
 										}
 									}
 								}
@@ -1220,7 +1184,7 @@ async function runBCT(){
 		});
 
 		function getEmote(data) {
-			if(Player.BCT.bctSettings.tailWaggingEnable.value === true){
+			if(Player.BCT.bctSettings.tailWaggingEnable === true){
 				if(data.Type === "Emote" && data.Sender === Player.MemberNumber){
 					var message = data.Content;
 					let patterns = [/wags.*tail/mi, /tail.*wagging/mi, /wagging.*tail/mi] ; // matches {<any> wags <any> tail <any>}
@@ -1233,19 +1197,19 @@ async function runBCT(){
 		}
 
 		function tailWag(){
-			for(var i = 0; i<Player.BCT.bctSettings.tailWaggingCount.value; i++){
+			for(var i = 0; i<Player.BCT.bctSettings.tailWaggingCount; i++){
 				setTimeout(function(){InventoryWear(
 					Player,
-					Player.BCT.bctSettings.tailWaggingTailTwoName.value,
+					Player.BCT.bctSettings.tailWaggingTailTwoName,
 					"TailStraps",
-					Player.BCT.bctSettings.tailWaggingTailTwoColor.value
-					);},i * Player.BCT.bctSettings.tailWaggingDelay.value * 2);
+					Player.BCT.bctSettings.tailWaggingTailTwoColor
+					);},i * Player.BCT.bctSettings.tailWaggingDelay * 2);
 				setTimeout(function(){InventoryWear(
 					Player,
-					Player.BCT.bctSettings.tailWaggingTailOneName.value,
+					Player.BCT.bctSettings.tailWaggingTailOneName,
 					"TailStraps",
-					Player.BCT.bctSettings.tailWaggingTailOneColor.value
-					);},i * Player.BCT.bctSettings.tailWaggingDelay.value * 2 + Player.BCT.bctSettings.tailWaggingDelay.value);
+					Player.BCT.bctSettings.tailWaggingTailOneColor
+					);},i * Player.BCT.bctSettings.tailWaggingDelay * 2 + Player.BCT.bctSettings.tailWaggingDelay);
 			  }
 		}
 
