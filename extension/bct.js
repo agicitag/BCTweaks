@@ -322,6 +322,12 @@ async function runBCT(){
 			BCTTailwag: "Tail Wagging",
 			BCTTweaks: "Tweaks",
 		};
+		const MENU_ELEMENT_X_OFFSET = 1050;
+		
+		let menuElements = {};
+		for (category of bctSettingsCategories){
+			menuElements[category] = [];
+		}
 
 		// keep same position in menu
 		PreferenceSubscreenList.splice(13, 0 ,"BCTSettings");
@@ -343,6 +349,170 @@ async function runBCT(){
 				() => List[PreferenceGetNextIndex(List, Index)],
 			);
 		}
+
+		function getNewYPos(){
+			let yPos = 200;
+			if (menuElements[PreferenceSubscreen].length > 0){
+				let lastElement = menuElements[PreferenceSubscreen][menuElements[PreferenceSubscreen].length - 1];
+				yPos = lastElement.yPos + lastElement.yModifier + 75;
+			}
+			return yPos;
+		}
+
+		function addMenuCheckbox(width, height, text, setting, xModifier = 0, yModifier = 0, elementText = ""){
+			menuElements[PreferenceSubscreen].push({
+				type: "Checkbox",
+				yPos: getNewYPos(),
+				width: width,
+				height: height,
+				text: text,
+				setting: setting,
+				xModifier: xModifier,
+				yModifier: yModifier,
+				elementText: elementText,
+			});
+		}
+		function addMenuButton(width, height, text, elementText, clickFunction, xModifier = 0, yModifier = 0){
+			menuElements[PreferenceSubscreen].push({
+				type: "Button",
+				yPos: getNewYPos(),
+				width: width,
+				height: height,
+				text: text,
+				elementText: elementText,
+				clickFunction: clickFunction,
+				xModifier: xModifier,
+				yModifier: yModifier,
+			});
+		}
+		function addMenuInput(width, text, setting, identifier, xModifier = 0, yModifier = 0){
+			menuElements[PreferenceSubscreen].push({
+				type: "Input",
+				yPos: getNewYPos(),
+				width: width,
+				text: text,
+				setting: setting,
+				identifier: identifier,
+				xModifier: xModifier,
+				yModifier: yModifier,
+			});
+			ElementCreateInput(identifier, "text", Player.BCT.bctSettings[setting].value, "100");
+		}
+		function addMenuBackNext(width, height, text, setting, backNextOptions = [], xModifier = 0, yModifier = 0){
+			menuElements[PreferenceSubscreen].push({
+				type: "BackNext",
+				yPos: getNewYPos(),
+				width: width,
+				height: height,
+				text: text,
+				setting: setting,
+				backNextOptions: backNextOptions,
+				xModifier: xModifier,
+				yModifier: yModifier,
+				index: (backNextOptions.indexOf(Player.BCT.bctSettings[setting].value) < 0) ? 0 : backNextOptions.indexOf(Player.BCT.bctSettings[setting].value)
+			});
+		}
+
+		function drawMenuElements(){
+			// Draw the player & controls
+			DrawCharacter(Player, 50, 50, 0.9);
+			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
+
+			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
+			
+			MainCanvas.textAlign = "left";
+			DrawText("- " + bctSettingCategoryLabels[PreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
+
+			let currentElement;
+			for (i = 0; i < menuElements[PreferenceSubscreen].length; i++){
+				currentElement = menuElements[PreferenceSubscreen][i];
+				MainCanvas.textAlign = "left";
+				DrawText(currentElement.text, 500, currentElement.yPos, "Black", "Gray");
+				switch (currentElement.type) {
+					case "Checkbox":
+						DrawCheckbox(
+							MENU_ELEMENT_X_OFFSET + currentElement.xModifier,
+							currentElement.yPos - currentElement.height/2,
+							currentElement.width,
+							currentElement.height,
+							currentElement.elementText,
+							Player.BCT.bctSettings[currentElement.setting].value
+						);
+						break;
+					case "Button":
+						MainCanvas.textAlign = "center";
+						DrawButton(
+							MENU_ELEMENT_X_OFFSET + currentElement.xModifier,
+							currentElement.yPos - currentElement.height/2,
+							currentElement.width,
+							currentElement.height,
+							currentElement.elementText,
+							"White",
+							""
+						);
+					case "Input":
+						ElementPosition(
+							currentElement.identifier,
+							MENU_ELEMENT_X_OFFSET + currentElement.xModifier + currentElement.width/2,
+							currentElement.yPos,
+							currentElement.width
+						);
+						break;
+					case "BackNext":
+						MainCanvas.textAlign = "center";
+						BCTPreferenceDrawBackNextButton(
+							MENU_ELEMENT_X_OFFSET + currentElement.xModifier,
+							currentElement.yPos - currentElement.height/2,
+							currentElement.width,
+							currentElement.height,
+							currentElement.backNextOptions,
+							currentElement.index
+						);
+						break;
+					default:
+						break;
+				}
+			}
+		}
+
+		function handleMenuClicks(mouseX){
+			// Exit button
+			if (MouseIn(1815, 75, 90, 90)){
+				PreferenceExit();
+				return;
+			}
+			let currentElement;
+			let foundElement = false;
+			for (i = 0; i < menuElements[PreferenceSubscreen].length; i++){
+				currentElement = menuElements[PreferenceSubscreen][i];
+				switch (currentElement.type) {
+					case "Checkbox":
+						if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
+							Player.BCT.bctSettings[currentElement.setting].value = !Player.BCT.bctSettings[currentElement.setting].value;
+							foundElement = true;
+						}
+						break;
+					case "Button":
+						if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
+							currentElement.clickFunction();
+							foundElement = true;
+						}
+						break;
+					case "BackNext":
+						if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
+							if (mouseX <= MENU_ELEMENT_X_OFFSET + currentElement.width/2) currentElement.index = PreferenceGetPreviousIndex(currentElement.backNextOptions, currentElement.index);
+							else currentElement.index = PreferenceGetNextIndex(currentElement.backNextOptions, currentElement.index);
+							Player.BCT.bctSettings[currentElement.setting].value = currentElement.backNextOptions[currentElement.index];
+							foundElement = true;
+						}
+						break;
+					default:
+						break;
+				}
+				if (foundElement) i = menuElements[PreferenceSubscreen].length;
+			}
+		}
+
 
 		PreferenceSubscreenBCTSettingsLoad = function () {
 			currentPageNumber = 0;
@@ -399,57 +569,22 @@ async function runBCT(){
 			PreferenceMessage = "";
 		};
 
-		let arousalbarLocationPreferenceList = ["Bottom", "Right"];
-		let arousalbarLocationPreferenceIndex = 0;
-
 		PreferenceSubscreenBCTArousalLoad = function () {
-			ElementCreateInput("InputArousalProgressMultiplier", "text", Player.BCT.bctSettings.arousalProgressMultiplier.value, "100");
-			ElementCreateInput("InputOrgasmProgressMultiplier", "text", Player.BCT.bctSettings.orgasmProgressMultiplier.value, "100");
-			ElementCreateInput("InputArousalDecayMultiplier", "text", Player.BCT.bctSettings.arousalDecayMultiplier.value, "100");
-			ElementCreateInput("InputOrgasmDecayMultiplier", "text", Player.BCT.bctSettings.orgasmDecayMultiplier.value, "100");
-
-			arousalbarLocationPreferenceIndex = (arousalbarLocationPreferenceList.indexOf(Player.BCT.bctSettings.arousalbarLocation.value) < 0) ? 0 : arousalbarLocationPreferenceList.indexOf(Player.BCT.bctSettings.arousalbarLocation.value);
+			PreferenceSubscreen = "BCTArousal";
+			addMenuInput(200, "Arousal Progress Multiplier:", "arousalProgressMultiplier", "InputArousalProgressMultiplier");
+			addMenuInput(200, "Orgasm Progress Multiplier:", "orgasmProgressMultiplier", "InputOrgasmProgressMultiplier");
+			addMenuInput(200, "Arousal Decay Multiplier:", "arousalDecayMultiplier", "InputArousalDecayMultiplier");
+			addMenuInput(200, "Orgasm Decay Multiplier:", "orgasmDecayMultiplier", "InputOrgasmDecayMultiplier");
+			addMenuCheckbox(64, 64, "Split Arousal Bar:", "splitOrgasmArousal");
+			addMenuBackNext(250, 60, "Arousal Bar Location:", "arousalbarLocation", ["Bottom", "Right"]);
 		}
 
 		PreferenceSubscreenBCTArousalRun = function () {
-			// Draw the player & controls
-			DrawCharacter(Player, 50, 50, 0.9);
-			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
-
-			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
-
-			MainCanvas.textAlign = "left";
-			DrawText("- Arousal Bar Settings -", 500, 125, "Black", "Gray");
-			DrawText("Arousal Progress Multiplier:", 500, 225, "Black", "Gray");
-			ElementPosition("InputArousalProgressMultiplier", 1050, 212, 200);
-			DrawText("Orgasm Progress Multiplier:", 500, 300, "Black", "Gray");
-			ElementPosition("InputOrgasmProgressMultiplier", 1050, 287, 200);
-			DrawText("Arousal Decay Multiplier:", 500, 375, "Black", "Gray");
-			ElementPosition("InputArousalDecayMultiplier", 1050, 362, 200);
-			DrawText("Orgasm Decay Multiplier:", 500, 450, "Black", "Gray");
-			ElementPosition("InputOrgasmDecayMultiplier", 1050, 437, 200);
-			DrawCheckbox(500, 500, 64, 64, "Split Arousal Bar", Player.BCT.bctSettings.splitOrgasmArousal.value);
-			DrawText("Arousal Bar Location:", 500, 600, "Black", "Gray");
-
-			MainCanvas.textAlign = "center";
-			BCTPreferenceDrawBackNextButton(1050 - 350/2, 570, 350, 60, arousalbarLocationPreferenceList, arousalbarLocationPreferenceIndex);
-
+			drawMenuElements();
 		}
 
 		PreferenceSubscreenBCTArousalClick = function () {
-			// Exit button
-			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
-
-			// Checkboxes
-			if (MouseIn(500, 500, 64, 64)) Player.BCT.bctSettings.splitOrgasmArousal.value = !Player.BCT.bctSettings.splitOrgasmArousal.value;
-
-			// BackNextButtons
-			if (MouseIn(1050 - 350/2, 570, 350, 60)) {
-				if (MouseX <= 1050 - 350/2 + 350/2) arousalbarLocationPreferenceIndex = PreferenceGetPreviousIndex(arousalbarLocationPreferenceList, arousalbarLocationPreferenceIndex);
-				else arousalbarLocationPreferenceIndex = PreferenceGetNextIndex(arousalbarLocationPreferenceList, arousalbarLocationPreferenceIndex);
-				Player.BCT.bctSettings.arousalbarLocation.value = arousalbarLocationPreferenceList[arousalbarLocationPreferenceIndex];
-			}
-
+			handleMenuClicks(MouseX);
 		}
 
 		PreferenceSubscreenBCTArousalExit = function () {
@@ -465,6 +600,7 @@ async function runBCT(){
 				ElementRemove("InputOrgasmProgressMultiplier");
 				ElementRemove("InputArousalDecayMultiplier");
 				ElementRemove("InputOrgasmDecayMultiplier");
+				menuElements[PreferenceSubscreen] = [];
 				PreferenceSubscreen = "BCTSettings";
 				PreferenceMessage = "";
 			}
@@ -480,41 +616,9 @@ async function runBCT(){
 		};
 
 		PreferenceSubscreenBCTTailwagLoad = function () {
-			ElementCreateInput("InputTailWaggingCount", "text", Player.BCT.bctSettings.tailWaggingCount.value, "100");
-			ElementCreateInput("InputTailWaggingDelay", "text", Player.BCT.bctSettings.tailWaggingDelay.value, "100");
-		}
-
-		PreferenceSubscreenBCTTailwagRun = function () {
-			// Draw the player & controls
-			DrawCharacter(Player, 50, 50, 0.9);
-			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
-
-			if (PreferenceMessage != "") DrawText(PreferenceMessage, 1100, 125, "Red", "Black");
-
-			MainCanvas.textAlign = "left";
-			DrawText("- Tail Wagging Settings -", 500, 125, "Black", "Gray");
-			DrawCheckbox(500, 200, 64, 64, "Enable Tail Wagging", Player.BCT.bctSettings.tailWaggingEnable.value);
-
-			DrawText("Number Tail Wags:", 500, 450, "Black", "Gray");
-			ElementPosition("InputTailWaggingCount", 1100, 437, 200);
-			DrawText("Tail Wagging Delay (in ms):", 500, 525, "Black", "Gray");
-			ElementPosition("InputTailWaggingDelay", 1100, 512, 200);
-
-			MainCanvas.textAlign = "center";
-			DrawButton(500, 275, 250, 64, "Update Main Tail", "White", "");
-			DrawButton(500, 350, 250, 64, "Update Secondary Tail", "White", "");
-
-		}
-
-		PreferenceSubscreenBCTTailwagClick = function () {
-			// Exit button
-			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
-
-			// Checkboxes
-			if (MouseIn(500, 200, 64, 64)) Player.BCT.bctSettings.tailWaggingEnable.value = !Player.BCT.bctSettings.tailWaggingEnable.value;
-
-			// Boxes
-			if (MouseIn(500, 275, 250, 64)){
+			PreferenceSubscreen = "BCTTailwag";
+			addMenuCheckbox(64, 64, "Enable Tail Wagging:", "tailWaggingEnable");
+			addMenuButton(150, 64, "Update Main Tail:", "Update", function(){
 				if(!InventoryGet(Player,"TailStraps")){
 					PreferenceMessage = "No Tail Equipped"
 				}
@@ -522,8 +626,8 @@ async function runBCT(){
 					Player.BCT.bctSettings.tailWaggingTailOneName.value = InventoryGet(Player,"TailStraps").Asset.Name;
 					Player.BCT.bctSettings.tailWaggingTailOneColor.value = InventoryGet(Player,"TailStraps").Color;		
 				}
-			}
-			if (MouseIn(500, 350, 250, 64)){
+			});
+			addMenuButton(150, 64, "Update Secondary Tail:", "Update", function(){
 				if(!InventoryGet(Player,"TailStraps")){
 					PreferenceMessage = "No Tail Equipped"
 				}
@@ -531,7 +635,17 @@ async function runBCT(){
 					Player.BCT.bctSettings.tailWaggingTailTwoName.value = InventoryGet(Player,"TailStraps").Asset.Name;
 					Player.BCT.bctSettings.tailWaggingTailTwoColor.value = InventoryGet(Player,"TailStraps").Color;	
 				}
-			}
+			});
+			addMenuInput(200, "Number Tail Wags:", "tailWaggingCount", "InputTailWaggingCount");
+			addMenuInput(200, "Tail Wagging Delay (in ms):", "tailWaggingDelay", "InputTailWaggingDelay");
+		}
+
+		PreferenceSubscreenBCTTailwagRun = function () {
+			drawMenuElements();
+		}
+
+		PreferenceSubscreenBCTTailwagClick = function () {
+			handleMenuClicks(MouseX);
 		}
 
 		PreferenceSubscreenBCTTailwagExit = function () {
@@ -541,6 +655,7 @@ async function runBCT(){
 				Player.BCT.bctSettings.tailWaggingDelay.value = parseInt(ElementValue("InputTailWaggingDelay"));
 				ElementRemove("InputTailWaggingCount");
 				ElementRemove("InputTailWaggingDelay");
+				menuElements[PreferenceSubscreen] = [];
 				PreferenceSubscreen = "BCTSettings";
 				PreferenceMessage = "";
 			}
@@ -548,33 +663,20 @@ async function runBCT(){
 		};
 
 		PreferenceSubscreenBCTTweaksLoad = function () {
-
+			PreferenceSubscreen = "BCTTweaks";
+			addMenuCheckbox(64, 64, "Enable Menu Button Hitbox Fix: ", "menuButtonFixEnabled");
 		}
 
 		PreferenceSubscreenBCTTweaksRun = function () {
-			// Draw the player & controls
-			DrawCharacter(Player, 50, 50, 0.9);
-			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
-			
-			if (PreferenceMessage != "") DrawText(PreferenceMessage, 1100, 125, "Red", "Black");
-
-			MainCanvas.textAlign = "left";
-			DrawText("- Tweaks Settings -", 500, 125, "Black", "Gray");
-
-			DrawCheckbox(500, 200, 64, 64, "Enable Menu Button Hitbox Fix", Player.BCT.bctSettings.menuButtonFixEnabled.value);
-
-
+			drawMenuElements();
 		}
 
 		PreferenceSubscreenBCTTweaksClick = function () {
-			// Exit button
-			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
-
-			if (MouseIn(500, 200, 64, 64)) Player.BCT.bctSettings.menuButtonFixEnabled.value = !Player.BCT.bctSettings.menuButtonFixEnabled.value;
-
+			handleMenuClicks(MouseX);
 		}
 
 		PreferenceSubscreenBCTTweaksExit = function () {
+			menuElements[PreferenceSubscreen] = [];
 			PreferenceSubscreen = "BCTSettings";
 			PreferenceMessage = "";
 		};
