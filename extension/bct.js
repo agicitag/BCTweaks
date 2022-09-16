@@ -906,7 +906,7 @@ async function runBCT(){
 
 		function DrawBCTArousalMeter(C, X, Y, Zoom) {
 			if(C.BCT != null){
-				if (Player.BCT.bctSettings.arousalbarLocation.value == "Right") X = X + 300 * Zoom;
+				if (Player.BCT.bctSettings.arousalbarLocation.value == "Right") X = X + 290 * Zoom;
 				else Y = Y + 125 * Zoom;
 				if (ActivityAllowed() && PreferenceArousalAtLeast(C, "Manual"))
 					if (C.ID == 0 || (C.ArousalSettings.Visible == "Access" && C.AllowItem) || C.ArousalSettings.Visible == "All")
@@ -1030,7 +1030,7 @@ async function runBCT(){
 					let ClickX = args[4];
 					let ClickY = args[5];
 					let Pos = args[6];
-					// Handle clicks on the BCT arousal bar only if the BC arousal bar is not zoomed
+					// Handle clicks on the BCT arousal bar only if the BC arousal bar is not zoomed or its set to "Right"
 					if(!C.ArousalZoom || Player.BCT.bctSettings.arousalbarLocation.value === "Right"){
 						// If the arousal meter is shown for that character, we can interact with it
 						if (PreferenceArousalAtLeast(C, "Manual")) {
@@ -1045,7 +1045,7 @@ async function runBCT(){
 							if (MeterShow) {
 								let arousalMeterYMovement = 0;
 								let arousalMeterXMovement = 0;
-								if (Player.BCT.bctSettings.arousalbarLocation.value == "Right") arousalMeterXMovement = 300 * Zoom;
+								if (Player.BCT.bctSettings.arousalbarLocation.value == "Right") arousalMeterXMovement = 290 * Zoom;
 								else arousalMeterYMovement = 125 * Zoom;
 								// The arousal meter can be maximized or minimized by clicking on it
 								if (MouseIn(CharX + 60 * Zoom + arousalMeterXMovement, CharY + 400 * Zoom + arousalMeterYMovement, 80 * Zoom, 100 * Zoom) && !C.BCT.splitOrgasmArousal.arousalZoom) { C.BCT.splitOrgasmArousal.arousalZoom = true; return; }
