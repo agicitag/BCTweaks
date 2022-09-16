@@ -13,6 +13,7 @@ async function runBCT(){
 	const modAPI = bcModSdk.registerMod('BCT', BCT_VERSION, false);
 	
 	const BCT_MSG = "bctMsg",
+	BCT_BEEP = "bctBeep",
 	HIDDEN = "Hidden", // Needs to be capital 'H' !
 	BCT_MSG_ACTIVITY_AROUSAL_SYNC = "bctMsgActivityArousalSync",
 	BCT_MSG_INITILIZATION_SYNC = "bctMsgInitilizationSync",
@@ -100,7 +101,10 @@ async function runBCT(){
 				value: true,
 				shared: false
 			},
-			
+			shareRoomName: {
+				shareRoomFriendList: [],
+				shared: false
+			},
 		};
 		
 		Player.BCT = {};
@@ -983,29 +987,93 @@ async function runBCT(){
 
 	async function ShowBestFriendRoom() {
 		await waitFor(() => ServerSocket && ServerIsConnected);
+		var friendFlag = {};
+		const BCT_BEEP_ROOM_NAME_MSG = "RoomName",
+		BCT_BEEP_IS_BEST_FRIEND_MSG = "Friends",
+		BCT_BEEP_Ack_FRIEND_MSG = "AckFriends";
+
+		registerSocketListener("ChatRoomMessage", (data) => SendRoomNameOnChatRoomEntry(data))
+		registerSocketListener("AccountBeep", (data) => parseBeeps(data))
+
+		// This sends a non secret type beep to the target giving their room name
 		function SendRoomName(target) {
-			const beep = { MemberNumber: target, BeepType: "BCT_Beep" };
+			const beep = { MemberNumber: target, 
+				BeepType: BCT_BEEP, 
+				Message: BCT_BEEP_ROOM_NAME_MSG};
 			ServerSend("AccountBeep", beep);
 		}
-		modApi.hookFunction("ServerAccountBeep",3,(args, next) => {
-			try {
-					var data = args[0];
-					if ((data != null) && (typeof data === "object") && !Array.isArray(data) && (data.MemberNumber != null) && 
+		// check if the target has added you to receive room name
+		async function IsBestFriend(target) {
+			const beep = { MemberNumber: target, 
+				BeepType: BCT_BEEP, 
+				Message: BCT_BEEP_IS_BEST_FRIEND_MSG, 
+				IsSecret: true};
+			ServerSend("AccountBeep", beep);
+			//wait somehow?
+			await sleep(2000);
+			return friendFlag[target];
+		}
+		
+		// Ask best friends for room name
+		//Requires LoginResponse
+
+
+		// send players room name when they enter a chatroom
+		async function SendRoomNameOnChatRoomEntry(data) 
+		{
+			if (data.Content === "ServerEnter" && Player.MemberNumber === data.Sender) {
+				for (member in Player.BCT.bctSettings.shareRoomName.shareRoomFriendList) {
+					if (await IsBestFriend(member)) {
+						SendRoomName(member);
+					}
+				}
+				friendFlag = {};
+			}
+		}
+
+		// Send update on leaving a chatroom
+		modAPI.hookFunction("ChatRoomMenuClick",3,(args, next) => {
+			next(args);
+			const Space2 = 870 / (ChatRoomMenuButtons.length - 1);
+			for (let B = 0; B < ChatRoomMenuButtons.length; B++) {
+				if (MouseXIn(1005 + Space2 * B, 120)) {
+					if (ChatRoomMenuButtons[B] === "Exit") {
+						// TODO on exit room
+					}
+				}
+			}
+		});
+		
+		// parse Beep for Room Name 
+		function parseBeeps(data) {
+			if ((data != null) && (typeof data === "object") && !Array.isArray(data) && (data.MemberNumber != null) && 
 					(typeof data.MemberNumber === "number") && (data.MemberName != null) && (typeof data.MemberName === "string"))	{
 						
-						if(data.BeepType === "BCT_Beep"){
+						if(data.BeepType === BCT_BEEP){
 							console.log(data);
-							console.log(data.ChatRoomName);
-					}
-			  	}
-			  }
-			catch {
-					console.error("Error with beep");
-			  }
-		
-		next(args);
-		  
-		} );
+							let beep = data;
+							switch(beep.Message) {
+								case BCT_BEEP_ROOM_NAME_MSG: 
+									//TODO
+									break;
+								case BCT_BEEP_IS_BEST_FRIEND_MSG:
+									if(beep.MemberNumber in Player.BCT.bctSettings.shareRoomName.shareRoomFriendList) {
+										const nextbeep = { MemberNumber: target, 
+											BeepType: BCT_BEEP, 
+											Message: BCT_BEEP_Ack_FRIEND_MSG, 
+											IsSecret: true};
+										ServerSend("AccountBeep", nextbeep);
+									}
+									break;
+								case BCT_BEEP_Ack_FRIEND_MSG:
+									friendFlag[target] = true;
+									break;
+								default:
+									console.log("Invalid Message Type for BCT Beep: ", beep);
+							}
+						}
+				}
+		}
 	}
 
 	// Images
