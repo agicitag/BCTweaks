@@ -329,6 +329,9 @@ async function runBCT(){
 			menuElements[category] = [];
 		}
 
+		let settingsHint = "";
+		let currentHint = 0;
+
 		// keep same position in menu
 		PreferenceSubscreenList.splice(13, 0 ,"BCTSettings");
 
@@ -342,6 +345,73 @@ async function runBCT(){
 			if(args[6] == "Icons/BCTSettings.png") args[6] = IMAGES.LOGO;
 			return next(args);
 		});
+
+				/**
+		 * Draws a word wrapped text in a rectangle
+		 * @param {string} Text - Text to draw
+		 * @param {number} X - Position of the rectangle on the X axis
+		 * @param {number} Y - Position of the rectangle on the Y axis
+		 * @param {number} Width - Width of the rectangle
+		 * @param {number} Height - Height of the rectangle
+		 * @param {string} ForeColor - Foreground color
+		 * @param {string} [BackColor] - Background color
+		 * @param {number} [MaxLine] - Maximum of lines the word can wrap for
+		 * @returns {void} - Nothing
+		 */
+		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor, BackColor = null, MaxLine = null) {
+			if (ControllerActive == true) {
+				setButton(X, Y);
+			}
+			// Draw the rectangle if we need too
+			if (BackColor != null) {
+				MainCanvas.beginPath();
+				MainCanvas.rect(X, Y, Width, Height);
+				MainCanvas.fillStyle = BackColor;
+				MainCanvas.fillRect(X, Y, Width, Height);
+				MainCanvas.fill();
+				MainCanvas.lineWidth = 2;
+				MainCanvas.strokeStyle = ForeColor;
+				MainCanvas.stroke();
+				MainCanvas.closePath();
+			}
+			if (!Text) return;
+
+			// Sets the text size if there's a maximum number of lines
+			let TextSize;
+			if (MaxLine != null) {
+				TextSize = MainCanvas.font;
+				GetWrapTextSize(Text, Width, MaxLine);
+			}
+
+			// Split the text if it wouldn't fit in the rectangle
+			MainCanvas.fillStyle = ForeColor;
+			Y = Y + Math.floor(0.66 * (parseInt(MainCanvas.font.substring(0, 2))));
+			if (MainCanvas.measureText(Text).width > Width) {
+				const words = fragmentText(Text, Width);
+				let line = '';
+
+				// Splits the words and draw the text
+				line = '';
+				for (let n = 0; n < words.length; n++) {
+					const testLine = line + words[n] + ' ';
+					if (MainCanvas.measureText(testLine).width > Width && n > 0) {
+						MainCanvas.fillText(line, X + 5, Y);
+						line = words[n] + ' ';
+						Y += 46;
+					}
+					else {
+						line = testLine;
+					}
+				}
+				MainCanvas.fillText(line, X + 5, Y);
+
+			} else MainCanvas.fillText(Text, X + 5, Y);
+
+			// Resets the font text size
+			if ((MaxLine != null) && (TextSize != null))
+				MainCanvas.font = TextSize;
+
+		}
 
 		function BCTPreferenceDrawBackNextButton(Left, Top, Width, Height, List, Index) {
 			DrawBackNextButton(Left, Top, Width, Height, List[Index], "White", "",
@@ -359,7 +429,7 @@ async function runBCT(){
 			return yPos;
 		}
 
-		function addMenuCheckbox(width, height, text, setting, xModifier = 0, yModifier = 0, elementText = ""){
+		function addMenuCheckbox(width, height, text, setting, hint, xModifier = 0, yModifier = 0, elementText = ""){
 			menuElements[PreferenceSubscreen].push({
 				type: "Checkbox",
 				yPos: getNewYPos(),
@@ -367,12 +437,13 @@ async function runBCT(){
 				height: height,
 				text: text,
 				setting: setting,
+				hint: hint,
 				xModifier: xModifier,
 				yModifier: yModifier,
 				elementText: elementText,
 			});
 		}
-		function addMenuButton(width, height, text, elementText, clickFunction, xModifier = 0, yModifier = 0){
+		function addMenuButton(width, height, text, elementText, clickFunction, hint, xModifier = 0, yModifier = 0){
 			menuElements[PreferenceSubscreen].push({
 				type: "Button",
 				yPos: getNewYPos(),
@@ -381,11 +452,12 @@ async function runBCT(){
 				text: text,
 				elementText: elementText,
 				clickFunction: clickFunction,
+				hint: hint,
 				xModifier: xModifier,
 				yModifier: yModifier,
 			});
 		}
-		function addMenuInput(width, text, setting, identifier, xModifier = 0, yModifier = 0){
+		function addMenuInput(width, text, setting, identifier, hint, xModifier = 0, yModifier = 0){
 			menuElements[PreferenceSubscreen].push({
 				type: "Input",
 				yPos: getNewYPos(),
@@ -393,12 +465,13 @@ async function runBCT(){
 				text: text,
 				setting: setting,
 				identifier: identifier,
+				hint: hint,
 				xModifier: xModifier,
 				yModifier: yModifier,
 			});
 			ElementCreateInput(identifier, "text", Player.BCT.bctSettings[setting].value, "100");
 		}
-		function addMenuBackNext(width, height, text, setting, backNextOptions = [], xModifier = 0, yModifier = 0){
+		function addMenuBackNext(width, height, text, setting, backNextOptions, hint, xModifier = 0, yModifier = 0){
 			menuElements[PreferenceSubscreen].push({
 				type: "BackNext",
 				yPos: getNewYPos(),
@@ -407,6 +480,7 @@ async function runBCT(){
 				text: text,
 				setting: setting,
 				backNextOptions: backNextOptions,
+				hint: hint,
 				xModifier: xModifier,
 				yModifier: yModifier,
 				index: (backNextOptions.indexOf(Player.BCT.bctSettings[setting].value) < 0) ? 0 : backNextOptions.indexOf(Player.BCT.bctSettings[setting].value)
@@ -423,11 +497,15 @@ async function runBCT(){
 			MainCanvas.textAlign = "left";
 			DrawText("- " + bctSettingCategoryLabels[PreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
 
+			if(settingsHint != ""){
+				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, "Black", "Yellow");
+			}
+
 			let currentElement;
 			for (i = 0; i < menuElements[PreferenceSubscreen].length; i++){
 				currentElement = menuElements[PreferenceSubscreen][i];
 				MainCanvas.textAlign = "left";
-				DrawText(currentElement.text, 500, currentElement.yPos, "Black", "Gray");
+				DrawText(currentElement.text, 500, currentElement.yPos, (currentElement.yPos === currentHint) ? "Red" : "Black", "Gray");
 				switch (currentElement.type) {
 					case "Checkbox":
 						DrawCheckbox(
@@ -509,8 +587,21 @@ async function runBCT(){
 					default:
 						break;
 				}
+				// Fontsize = 36
+				if (MouseIn(500, currentElement.yPos - 18, MENU_ELEMENT_X_OFFSET - 525, 36)){
+					settingsHint = currentElement.hint;
+					currentHint = currentElement.yPos;
+				}
 				if (foundElement) i = menuElements[PreferenceSubscreen].length;
 			}
+		}
+
+		function defaultExit(){
+			menuElements[PreferenceSubscreen] = [];
+			PreferenceSubscreen = "BCTSettings";
+			PreferenceMessage = "";
+			settingsHint = "";
+			currentHint = 0;
 		}
 
 
@@ -526,6 +617,8 @@ async function runBCT(){
 			MainCanvas.textAlign = "left";
 			DrawText("- Bondage Club Tools Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
+
+			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 600, 400, 100, "Black");
 
 			DrawText("Your BCT version: " + BCT_VERSION, 1450+400/2, 775, "Black", "Gray");
 			DrawButton(1450, 825, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
@@ -571,12 +664,31 @@ async function runBCT(){
 
 		PreferenceSubscreenBCTArousalLoad = function () {
 			PreferenceSubscreen = "BCTArousal";
-			addMenuInput(200, "Arousal Progress Multiplier:", "arousalProgressMultiplier", "InputArousalProgressMultiplier");
-			addMenuInput(200, "Orgasm Progress Multiplier:", "orgasmProgressMultiplier", "InputOrgasmProgressMultiplier");
-			addMenuInput(200, "Arousal Decay Multiplier:", "arousalDecayMultiplier", "InputArousalDecayMultiplier");
-			addMenuInput(200, "Orgasm Decay Multiplier:", "orgasmDecayMultiplier", "InputOrgasmDecayMultiplier");
-			addMenuCheckbox(64, 64, "Split Arousal Bar:", "splitOrgasmArousal");
-			addMenuBackNext(250, 60, "Arousal Bar Location:", "arousalbarLocation", ["Bottom", "Right"]);
+			addMenuInput(200, "Arousal Progress Multiplier:", "arousalProgressMultiplier", "InputArousalProgressMultiplier",
+			"Sets a multiplier for the arousal progress. E.g. if an activity would normally result in a progress of 10%, " +
+			"with a multiplier of 0.5 it only results in a progress of 5%."
+			);
+			addMenuInput(200, "Orgasm Progress Multiplier:", "orgasmProgressMultiplier", "InputOrgasmProgressMultiplier",
+			"Sets a multiplier for the orgasm progress. E.g. if an activity would normally result in a progress of 10%, " +
+			"with a multiplier of 0.5 it only results in a progress of 5%."
+			);
+			addMenuInput(200, "Arousal Decay Multiplier:", "arousalDecayMultiplier", "InputArousalDecayMultiplier",
+			"Sets a multiplier for the arousal decay. Normally arousal progress decays by 1% every 12 seconds. With a multiplier of " +
+			"0.5 it only decays by 0.5% every 12 seconds."
+			);
+			addMenuInput(200, "Orgasm Decay Multiplier:", "orgasmDecayMultiplier", "InputOrgasmDecayMultiplier",
+			"Sets a multiplier for the orgasm decay. Normally orgasm progress decays by 1% every 12 seconds. With a multiplier of " +
+			"0.5 it only decays by 0.5% every 12 seconds."
+			);
+			addMenuCheckbox(64, 64, "Split Arousal Bar:", "splitOrgasmArousal",
+			"Splits the normal BC arousal bar into two separate bars. The red one is the orgasm bar which only gets filled by actions " +
+			"on areas you have set in BC as \"This zone can give you an orgasm\". This bar can be seen by everyone, also those without " +
+			"the addon and is the one that affects the game (e.g. speech). The pink one is the arousal bar which is basically the same " +
+			"as the normal BC one, but cant make you orgasm."
+			);
+			addMenuBackNext(250, 60, "Arousal Bar Location:", "arousalbarLocation", ["Bottom", "Right"],
+			"Position the arousal bar either bottom of the orgasm bar or to the right of the character."
+			);
 		}
 
 		PreferenceSubscreenBCTArousalRun = function () {
@@ -600,9 +712,7 @@ async function runBCT(){
 				ElementRemove("InputOrgasmProgressMultiplier");
 				ElementRemove("InputArousalDecayMultiplier");
 				ElementRemove("InputOrgasmDecayMultiplier");
-				menuElements[PreferenceSubscreen] = [];
-				PreferenceSubscreen = "BCTSettings";
-				PreferenceMessage = "";
+				defaultExit();
 			}
 			else PreferenceMessage = "Put a valid number"
 
@@ -617,27 +727,39 @@ async function runBCT(){
 
 		PreferenceSubscreenBCTTailwagLoad = function () {
 			PreferenceSubscreen = "BCTTailwag";
-			addMenuCheckbox(64, 64, "Enable Tail Wagging:", "tailWaggingEnable");
+			addMenuCheckbox(64, 64, "Enable Tail Wagging:", "tailWaggingEnable",
+			"Enables tail wagging upon sending emotes like \"*wags her tail\" or \"*'s tail is wagging\"."
+			);
 			addMenuButton(150, 64, "Update Main Tail:", "Update", function(){
 				if(!InventoryGet(Player,"TailStraps")){
-					PreferenceMessage = "No Tail Equipped"
+					PreferenceMessage = "No Tail Equipped";
 				}
 				else{
+					PreferenceMessage = "Main Tail updated";
 					Player.BCT.bctSettings.tailWaggingTailOneName.value = InventoryGet(Player,"TailStraps").Asset.Name;
 					Player.BCT.bctSettings.tailWaggingTailOneColor.value = InventoryGet(Player,"TailStraps").Color;		
 				}
-			});
+			}, 
+			"Updates the tail that is gonna stay after wagging to the currently worn one."
+			);
 			addMenuButton(150, 64, "Update Secondary Tail:", "Update", function(){
 				if(!InventoryGet(Player,"TailStraps")){
-					PreferenceMessage = "No Tail Equipped"
+					PreferenceMessage = "No Tail Equipped";
 				}
 				else{
+					PreferenceMessage = "Secondary Tail updated";
 					Player.BCT.bctSettings.tailWaggingTailTwoName.value = InventoryGet(Player,"TailStraps").Asset.Name;
 					Player.BCT.bctSettings.tailWaggingTailTwoColor.value = InventoryGet(Player,"TailStraps").Color;	
 				}
-			});
-			addMenuInput(200, "Number Tail Wags:", "tailWaggingCount", "InputTailWaggingCount");
-			addMenuInput(200, "Tail Wagging Delay (in ms):", "tailWaggingDelay", "InputTailWaggingDelay");
+			},
+			"Updates the temporary tail for wagging to the currently worn one."
+			);
+			addMenuInput(200, "Number Tail Wags:", "tailWaggingCount", "InputTailWaggingCount",
+			"The number of wags."
+			);
+			addMenuInput(200, "Tail Wagging Delay (in ms):", "tailWaggingDelay", "InputTailWaggingDelay",
+			"The delay in between switches between the two tails in ms."
+			);
 		}
 
 		PreferenceSubscreenBCTTailwagRun = function () {
@@ -655,16 +777,17 @@ async function runBCT(){
 				Player.BCT.bctSettings.tailWaggingDelay.value = parseInt(ElementValue("InputTailWaggingDelay"));
 				ElementRemove("InputTailWaggingCount");
 				ElementRemove("InputTailWaggingDelay");
-				menuElements[PreferenceSubscreen] = [];
-				PreferenceSubscreen = "BCTSettings";
-				PreferenceMessage = "";
+				defaultExit();
 			}
 			else PreferenceMessage = "Put a valid number"
 		};
 
 		PreferenceSubscreenBCTTweaksLoad = function () {
 			PreferenceSubscreen = "BCTTweaks";
-			addMenuCheckbox(64, 64, "Enable Menu Button Hitbox Fix: ", "menuButtonFixEnabled");
+			addMenuCheckbox(64, 64, "Enable Menu Button Hitbox Fix: ", "menuButtonFixEnabled",
+			"The hitboxes for the buttons in the default BC settings menu move to the left of the actual button in the right rows. " +
+			"This tweak fixes that."
+			);
 		}
 
 		PreferenceSubscreenBCTTweaksRun = function () {
@@ -676,9 +799,7 @@ async function runBCT(){
 		}
 
 		PreferenceSubscreenBCTTweaksExit = function () {
-			menuElements[PreferenceSubscreen] = [];
-			PreferenceSubscreen = "BCTSettings";
-			PreferenceMessage = "";
+			defaultExit();
 		};
 	}
 

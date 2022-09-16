@@ -5,6 +5,8 @@
 - Added a button to access the changelog in the settings menu
 - Added a setting to position the arousal bar either below the orgasm bar or on the right of the character
 - Reworked settings menu
+- Show hints for settings by clicking on them
+- Show feedback when updating a tail
 
 ## 0.2.1
 ### Bugfixes:
