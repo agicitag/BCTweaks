@@ -1048,10 +1048,10 @@ async function runBCT(){
 					|| Player.BCT.bctSettings.arousalbarLocation === "Right"){
 					next(args[0], args[1], args[2], args[3]);
 				}
-				if((!args[0].ArousalZoom
-					&& args[0].BCT != null
+				if((args[0].BCT != null
 					&& args[0].BCT.bctSettings.splitOrgasmArousal === true)
-					|| Player.BCT?.bctSettings?.arousalbarLocation === "Right"){
+					&& (!args[0].ArousalZoom
+						|| Player.BCT?.bctSettings?.arousalbarLocation === "Right")){
 					DrawBCTArousalMeter(args[0], args[1], args[2], args[3]);
 				}
 			} catch (error) {
