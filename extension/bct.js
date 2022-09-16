@@ -492,6 +492,7 @@ async function runBCT(){
 							"White",
 							""
 						);
+						break;
 					case "Input":
 						ElementPosition(
 							currentElement.identifier,
