@@ -1,5 +1,5 @@
-const BCT_VERSION = "0.3.1";
-const BCT_Settings_Version = 3;
+const BCT_VERSION = "0.4.0";
+const BCT_Settings_Version = 4;
 
 async function runBCT(){
 	
@@ -39,7 +39,8 @@ async function runBCT(){
 		"arousalProgressMultiplier",
 		"arousalDecayMultiplier",
 		"orgasmProgressMultiplier",
-		"orgasmDecayMultiplier"
+		"orgasmDecayMultiplier",
+		"arousalAffectsOrgasmProgress"
 	];
 
 	await bctSettingsLoad();
@@ -59,6 +60,7 @@ async function runBCT(){
 			arousalDecayMultiplier: 1.0,
 			orgasmProgressMultiplier: 1.0,
 			orgasmDecayMultiplier: 1.0,
+			arousalAffectsOrgasmProgress: false,
 			tailWaggingEnable: false,
 			tailWaggingTailOneName: "PuppyTailStrap1",
 			tailWaggingTailOneColor: "#431A12",
@@ -651,6 +653,10 @@ async function runBCT(){
 			"the addon and is the one that affects the game (e.g. speech). The pink one is the arousal bar which is basically the same " +
 			"as the normal BC one, but cant make you orgasm."
 			);
+			addMenuCheckbox(64, 64, "Arousal Affects Orgasm Progress:", "arousalAffectsOrgasmProgress",
+			"Let your arousal affect the orgasm progress speed. With this option enabled at 0% arousal the orgasm progress gets " + 
+			"a 0.5x multiplier, at 50% a 1x multiplier and at 100% a 2x multiplier."
+			);
 			addMenuBackNext(250, 60, "Arousal Bar Location:", "arousalbarLocation", ["Bottom", "Right"],
 			"Position the arousal bar either bottom of the orgasm bar or to the right of the character."
 			);
@@ -928,6 +934,16 @@ async function runBCT(){
 			C.ArousalSettings.Progress -= value;
 		}
 
+		function getOrgasmProgressMultiplier(C){
+			let arousalInfluence = 1;
+			if(C.BCT.bctSettings.arousalAffectsOrgasmProgress === true){
+				let arousalProgress = C.BCT.splitOrgasmArousal.arousalProgress / 100;
+				// 0.5x at 0%, 1x at 50%, 2x at 100%
+				arousalInfluence = arousalProgress ** 2 + arousalProgress / 2 + 0.5;
+			}
+			return C.BCT.bctSettings.orgasmProgressMultiplier * arousalInfluence;
+		}
+
 		modAPI.hookFunction('ActivityOrgasmStart', 2, (args, next) => {
 			let C = args[0];
 			try {
@@ -979,7 +995,7 @@ async function runBCT(){
 							ActivityChatRoomBCTArousalSync(C);
 						}
 					}
-					args[3] = args[3] * C.BCT.bctSettings.orgasmProgressMultiplier;		
+					args[3] = args[3] * getOrgasmProgressMultiplier(C);		
 				} catch (error) {
 					console.error("Error setting arousal timer for character: " + C.Name + ".");
 					// console.log(error);
@@ -1132,35 +1148,35 @@ async function runBCT(){
 											if (BCTTimerLastArousalProgressCount % 2 == 0) {
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
 												// Subtract arousal to match the set multiplier for orgasm progress
-												subtractOrgasmProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmProgressMultiplier));
+												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 3) {
 											BCTActivityVibratorLevel(Character[C], 3);
 											if (BCTTimerLastArousalProgressCount % 3 == 0) {
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmProgressMultiplier));
+												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 2) {
 											BCTActivityVibratorLevel(Character[C], 2);
 											if (Character[C].BCT.splitOrgasmArousal.arousalProgress <= 95 && BCTTimerLastArousalProgressCount % 4 == 0){
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmProgressMultiplier));
+												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 1) {
 											BCTActivityVibratorLevel(Character[C], 1);
 											if (Character[C].BCT.splitOrgasmArousal.arousalProgress <= 65 && BCTTimerLastArousalProgressCount % 6 == 0){
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmProgressMultiplier));
+												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 0) {
 											BCTActivityVibratorLevel(Character[C], 1);
 											if (Character[C].BCT.splitOrgasmArousal.arousalProgress <= 35 && BCTTimerLastArousalProgressCount % 8 == 0){
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmProgressMultiplier));
+												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == -1) {
