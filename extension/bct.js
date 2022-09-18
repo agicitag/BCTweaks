@@ -655,7 +655,8 @@ async function runBCT(){
 			);
 			addMenuCheckbox(64, 64, "Arousal Affects Orgasm Progress:", "arousalAffectsOrgasmProgress",
 			"Let your arousal affect the orgasm progress speed. With this option enabled at 0% arousal the orgasm progress gets " + 
-			"a 0.5x multiplier, at 50% a 1x multiplier and at 100% a 2x multiplier."
+			"a 0.5x multiplier, at 50% a 1x multiplier and at 100% a 2x multiplier. If \"Split Arousal Bar\" is deactivated, " +
+			"this option has no effect."
 			);
 			addMenuBackNext(250, 60, "Arousal Bar Location:", "arousalbarLocation", ["Bottom", "Right"],
 			"Position the arousal bar either bottom of the orgasm bar or to the right of the character."
@@ -936,7 +937,7 @@ async function runBCT(){
 
 		function getOrgasmProgressMultiplier(C){
 			let arousalInfluence = 1;
-			if(C.BCT.bctSettings.arousalAffectsOrgasmProgress === true){
+			if(C.BCT.bctSettings.splitOrgasmArousal === true && C.BCT.bctSettings.arousalAffectsOrgasmProgress === true){
 				let arousalProgress = C.BCT.splitOrgasmArousal.arousalProgress / 100;
 				// 0.5x at 0%, 1x at 50%, 2x at 100%
 				arousalInfluence = arousalProgress ** 2 + arousalProgress / 2 + 0.5;
