@@ -2,6 +2,7 @@
 ## 0.3.1
 ### Bugfixes:
 - Fixed a bug that could trigger an orgasm while another one was already running, causing a chain of multiple orgasms
+- Fixed a bug that vibrations were not affected by the multiplicators
 
 ## 0.3
 ### Features:
