@@ -1156,11 +1156,14 @@ async function runBCT(){
 									// No orgasm decay if there's a vibrating item running
 									if ((Character[C].ArousalSettings.Progress != null) && (typeof Character[C].ArousalSettings.Progress === "number") && !isNaN(Character[C].ArousalSettings.Progress) && (Character[C].ArousalSettings.Progress > 0)) {
 										if ((Character[C].ArousalSettings.ProgressTimer == null) || (typeof Character[C].ArousalSettings.ProgressTimer !== "number") || isNaN(Character[C].ArousalSettings.ProgressTimer) || (Character[C].ArousalSettings.ProgressTimer == 0)) {
-											// If BCE's alternate arousal is used, we need to update that as well
-											if(Character[C].BCEArousal){
-												Character[C].BCEArousalProgress = Character[C].BCEArousalProgress +  (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier)
+											// Prevent another orgasm from triggering while one is already running
+											if(Character[C].ArousalSettings.Progress <= 98){
+												// If BCE's alternate arousal is used, we need to update that as well
+												if(Character[C].BCEArousal){
+													Character[C].BCEArousalProgress = Character[C].BCEArousalProgress +  (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier)
+												}
+												if (Factor < 0) ActivityTimerProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier));
 											}
-											if (Factor < 0) ActivityTimerProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmDecayMultiplier));
 										}
 									}
 								}

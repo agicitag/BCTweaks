@@ -1,4 +1,8 @@
 # BCT Changelog
+## 0.3.1
+### Bugfixes:
+- Fixed a bug that could trigger an orgasm while another one was already running, causing a chain of multiple orgasms
+
 ## 0.3
 ### Features:
 - Added a textbox showing the currently installed version in the settings menu
