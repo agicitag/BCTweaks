@@ -836,7 +836,7 @@ async function runBCT(){
 		}
 
 		function BCTActivityTimerProgress(C, Progress) {
-			if(C.BCT != null){
+			if(C.BCT != null && C.BCT.bctSettings.splitOrgasmArousal === true){
 				// Changes the current arousal progress value
 				C.BCT.splitOrgasmArousal.arousalProgress = C.BCT.splitOrgasmArousal.arousalProgress + Progress;
 				// Decrease the vibratorlevel to 0 if not being aroused, while also updating the change time to reset the vibrator animation
@@ -860,7 +860,7 @@ async function runBCT(){
 
 		function BCTActivityVibratorLevel(C, Level) {
 			if (C.BCT != null) {
-				if (C.BCT.splitOrgasmArousal != null) {
+				if (C.BCT.splitOrgasmArousal != null && C.BCT.bctSettings.splitOrgasmArousal === true) {
 					if (Level != C.BCT.splitOrgasmArousal.vibrationLevel) {
 						C.BCT.splitOrgasmArousal.vibrationLevel = Level;
 						C.BCT.splitOrgasmArousal.changeTime = CommonTime();
@@ -1085,11 +1085,16 @@ async function runBCT(){
 					BCTTimerLastArousalProgressCount++;
 					for (let C = 0; C < Character.length; C++) {				
 						try {
-							if(Character[C].BCT != null && Character[C].BCT.bctSettings.splitOrgasmArousal === true){
+							if(Character[C].BCT != null){
 								// Depending on the character settings, we progress the arousal meter
 								if (PreferenceArousalAtLeast(Character[C], "Hybrid")) {
 									// Activity impacts the progress slowly over time, if there's an activity running, vibrations are ignored
-									if ((Character[C].BCT.splitOrgasmArousal.ProgressTimer != null) && (typeof Character[C].BCT.splitOrgasmArousal.ProgressTimer === "number") && !isNaN(Character[C].BCT.splitOrgasmArousal.ProgressTimer) && (Character[C].BCT.splitOrgasmArousal.ProgressTimer != 0)) {
+									if (Character[C].BCT.bctSettings.splitOrgasmArousal === true
+										&& (Character[C].BCT.splitOrgasmArousal.ProgressTimer != null)
+										&& (typeof Character[C].BCT.splitOrgasmArousal.ProgressTimer === "number")
+										&& !isNaN(Character[C].BCT.splitOrgasmArousal.ProgressTimer) 
+										&& (Character[C].BCT.splitOrgasmArousal.ProgressTimer != 0)
+									){
 										if (Character[C].BCT.splitOrgasmArousal.ProgressTimer < 0) {
 											Character[C].BCT.splitOrgasmArousal.ProgressTimer = 0;
 											
