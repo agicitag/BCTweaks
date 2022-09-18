@@ -1,4 +1,4 @@
-const BCT_VERSION = "0.3.1";
+const BCT_VERSION = "0.3.2";
 const BCT_Settings_Version = 3;
 
 async function runBCT(){
