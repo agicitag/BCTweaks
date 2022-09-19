@@ -999,6 +999,7 @@ async function runBCT(){
 
 		// change FriendListLoadFriendList() to get private rooms into the friendlist
 		// if (friend.ChatRoomName != null) and (friend.Private) then do stuff
+		
 		modAPI.hookFunction("FriendListLoadFriendList", 3, (args,next) => {
 			let data = args[0];
 			const mode = FriendListMode[FriendListModeIndex];
@@ -1006,14 +1007,49 @@ async function runBCT(){
 				// In Friend List mode, we show the friend list and allow doing beeps
 				for (const friend of data) { 
 					
-					if ((friend.Private) && (DEBUG_FRIENDS.includes(friend.MemberNumber)) && (friend.MemberNumber in DEBUG_FRIENDS_ROOM)) {
+					if ((friend.Private)  && (friend.ChatRoomName === "-")
+					&& (DEBUG_FRIENDS.includes(friend.MemberNumber)) && (friend.MemberNumber in DEBUG_FRIENDS_ROOM)) {
 						friend.ChatRoomName = DEBUG_FRIENDS_ROOM[friend.MemberNumber];
-
 					}
 				}
 			}
-
 			next(data);
+		});
+		modAPI.hookFunction("ElementContent", 2, (args,next) => {
+			const mode = FriendListMode[FriendListModeIndex];
+			let ID = args[0];
+			let Content = args[1];
+			next(ID,Content);
+			if ((mode === "Delete") && (ID === "FriendList")) {
+				let htmlDoc = document.getElementById(ID);
+				for (let i = 0; i < htmlDoc.getElementsByClassName("FriendListTextColumn").length / 3; i++) {
+					let member = parseInt(htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 1].innerHTML);
+					if (DEBUG_FRIENDS.includes(member) 
+					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
+					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))
+					&& !(Player.SubmissivesList.has(member))) {
+						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].innerHTML = "Best Friend";
+						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].style.cursor = "pointer";
+						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].style.textDecoration = "underline";
+						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].style.color = "lime";
+						let  onHoverBF = () => {
+							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].innerHTML = "Delete BF?";
+						}
+						let onOutBF = () => {
+							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].innerHTML = "Best Friend";
+						}
+						let onClickBF = () => {
+							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].innerHTML = "Deleted";
+							DEBUG_FRIENDS = DEBUG_FRIENDS.filter(friend => friend !== member);
+							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].removeEventListener("mouseover",onHoverBF);
+							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].removeEventListener("mouseout",onOutBF);
+						}
+						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].addEventListener("mouseover", onHoverBF);
+						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].addEventListener("mouseout", onOutBF);
+						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].addEventListener("click",onClickBF)
+					}
+				}
+			}
 		});
 
 		function SendBeep(target,type,message,secret=false) {
