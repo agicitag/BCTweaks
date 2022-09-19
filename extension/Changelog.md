@@ -2,9 +2,11 @@
 ## 0.4.0
 ### Features:
 - Added the option to let arousal affect orgasm progress
+
 ## 0.3.2
 ### Bugfixes:
 - Fixed a bug that the orgasm multiplicator only affected vibrators when the split arousal bar was active
+
 ## 0.3.1
 ### Bugfixes:
 - Fixed a bug that could trigger an orgasm while another one was already running, causing a chain of multiple orgasms
