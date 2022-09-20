@@ -9,5 +9,5 @@ It can also be loaded as a bookmark by pasting the following into the address ba
 
 ### Beta
 Theres also a beta version of BCT available, giving you access to new features faster. The catch is that the beta versions may still contain gamebreaking bugs, so be aware of that if you want to use it. Bug reports are greatly appreciated.  
-You can install the beta also with Tampermonkey upon following this [link](https://github.com/agicitag/BondageClubTools/raw/beta/extension/bct.js) or load it with the bookmark:  
+You can install the beta also with Tampermonkey upon following this [link](https://github.com/agicitag/BondageClubTools/raw/beta/extension/bctBetaLoader.user.js) or load it with the bookmark:  
 `javascript:(()=>{fetch('https://agicitag.github.io/BondageClubTools/extension/bctBetaLoader.user.js').then(r=>r.text()).then(r=>eval(r));})();`
