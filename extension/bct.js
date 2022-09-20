@@ -68,7 +68,7 @@ async function runBCT(){
 			tailWaggingDelay: 500,
 			tailWaggingCount: 3,
 			menuButtonFixEnabled: true,
-			
+			bestFriendsList: [],
 		};
 		
 		Player.BCT = {};
@@ -1270,13 +1270,12 @@ async function runBCT(){
 		}
 	}
 		
-	//REMOVE LATER
-	let DEBUG_FRIENDS = [];
-	let DEBUG_FRIENDS_ROOM = {};
 	async function ShowBestFriendRoom() {
 		await waitFor(() => ServerSocket && ServerIsConnected);
 		
 		var friendFlag = {};
+		var currentFrindsRoom = {};
+
 		const BCT_BEEP_ROOM_NAME_MSG = "RoomName",
 		BCT_BEEP_IS_BEST_FRIEND_MSG = "Friends",
 		BCT_BEEP_Ack_FRIEND_MSG = "AckFriends",
@@ -1284,7 +1283,7 @@ async function runBCT(){
 
 		registerSocketListener("ChatRoomMessage", (data) => SendRoomNameOnChatRoomOnEntryUpdate(data));
 		registerSocketListener("AccountBeep", (data) => parseBeeps(data));
-		registerSocketListener("ChatRoomCreateResponse", (data) => SendRoomNameOnCreateChat(data))
+		registerSocketListener("ChatRoomCreateResponse", (data) => SendRoomNameOnCreateChat(data));
 
 		// change FriendListLoadFriendList() to get private rooms into the friendlist
 		// if (friend.ChatRoomName != null) and (friend.Private) then do stuff
@@ -1297,8 +1296,8 @@ async function runBCT(){
 				for (const friend of data) { 
 					
 					if ((friend.Private)  && (friend.ChatRoomName === "-")
-					&& (DEBUG_FRIENDS.includes(friend.MemberNumber)) && (friend.MemberNumber in DEBUG_FRIENDS_ROOM)) {
-						friend.ChatRoomName = DEBUG_FRIENDS_ROOM[friend.MemberNumber];
+					&& (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) && (friend.MemberNumber in currentFrindsRoom)) {
+						friend.ChatRoomName = currentFrindsRoom[friend.MemberNumber];
 					}
 				}
 			}
@@ -1313,7 +1312,7 @@ async function runBCT(){
 				let htmlDoc = document.getElementById(ID);
 				for (let i = 0; i < htmlDoc.getElementsByClassName("FriendListTextColumn").length / 3; i++) {
 					let member = parseInt(htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 1].innerHTML);
-					if (DEBUG_FRIENDS.includes(member) 
+					if (Player.BCT.bctSettings.bestFriendsList.includes(member) 
 					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
 					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))
 					&& !(Player.SubmissivesList.has(member))) {
@@ -1329,7 +1328,7 @@ async function runBCT(){
 						}
 						let onClickBF = () => {
 							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].innerHTML = "Deleted";
-							DEBUG_FRIENDS = DEBUG_FRIENDS.filter(friend => friend !== member);
+							Player.BCT.bctSettings.bestFriendsList = Player.BCT.bctSettings.bestFriendsList.filter(friend => friend !== member);
 							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].removeEventListener("mouseover",onHoverBF);
 							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].removeEventListener("mouseout",onOutBF);
 						}
@@ -1367,8 +1366,8 @@ async function runBCT(){
 		// Requires LoginResponse for the quick relog
 		// For complete load it should work directly 
 		function RequestRoomName() {
-			for (const member in DEBUG_FRIENDS) {//Player.BCT.bctSettings.BestFriendList) {
-				SendBeep(DEBUG_FRIENDS[member],BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true)
+			for (const member in Player.BCT.bctSettings.bestFriendsList) {
+				SendBeep(Player.BCT.bctSettings.bestFriendsList[member],BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true)
 			}
 		}
 		RequestRoomName();
@@ -1384,9 +1383,9 @@ async function runBCT(){
 			if ((data.Content === "ServerUpdateRoom") || 
 				(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender) ) 
 				{
-					for (const member in DEBUG_FRIENDS) {//Player.BCT.bctSettings.BestFriendList) {
-						if (await IsBestFriend(DEBUG_FRIENDS[member])) { // check online?
-							SendRoomName(DEBUG_FRIENDS[member]);
+					for (const member in Player.BCT.bctSettings.bestFriendsList) {
+						if (await IsBestFriend(Player.BCT.bctSettings.bestFriendsList[member])) { 
+							SendRoomName(Player.BCT.bctSettings.bestFriendsList[member]);
 						}
 					}
 					friendFlag = {};
@@ -1398,9 +1397,9 @@ async function runBCT(){
 		{
 			if ( data === "ChatRoomCreated") 
 				{
-					for (const member in DEBUG_FRIENDS) {//Player.BCT.bctSettings.BestFriendList) {
-						if (await IsBestFriend(DEBUG_FRIENDS[member])) { // check online?
-							SendRoomName(DEBUG_FRIENDS[member]);
+					for (const member in Player.BCT.bctSettings.bestFriendsList) {
+						if (await IsBestFriend(Player.BCT.bctSettings.bestFriendsList[member])) { 
+							SendRoomName(Player.BCT.bctSettings.bestFriendsList[member]);
 						}
 					}
 					friendFlag = {};
@@ -1418,10 +1417,10 @@ async function runBCT(){
 							switch(beep.Message) {
 								case BCT_BEEP_ROOM_NAME_MSG: 
 									//TODO
-									DEBUG_FRIENDS_ROOM[beep.MemberNumber] = beep.ChatRoomName;
+									currentFrindsRoom[beep.MemberNumber] = beep.ChatRoomName;
 									break;
 								case BCT_BEEP_IS_BEST_FRIEND_MSG:
-									if(DEBUG_FRIENDS.includes(beep.MemberNumber)) {//Player.BCT.bctSettings.BestFriendList) {
+									if(Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber)) {
 										SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_Ack_FRIEND_MSG,true);
 									}
 									break;
@@ -1429,7 +1428,7 @@ async function runBCT(){
 									friendFlag[beep.MemberNumber] = true;
 									break;
 								case BCT_BEEP_REQUEST_ROOM:
-									if ((CurrentScreen === "ChatRoom") && (DEBUG_FRIENDS.includes(beep.MemberNumber))) {//Player.BCT.bctSettings.BestFriendList)) {
+									if ((CurrentScreen === "ChatRoom") && (Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {//Player.BCT.bctSettings.BestFriendList)) {
 										SendRoomName(beep.MemberNumber);
 									}
 									break;
