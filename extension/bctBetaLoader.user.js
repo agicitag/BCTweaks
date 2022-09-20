@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         BCT Loader
+// @name         BCT Beta Loader
 // @namespace    https://www.bondageprojects.com/
-// @version      0.3.2
+// @version      0.4.0
 // @description  BC extension adding several little useful tweaks to BC.
 // @author       agicitag
 // @match https://bondageprojects.elementfx.com/*
@@ -16,6 +16,6 @@
 (function() {
     'use strict';
     var script = document.createElement("script");
-    script.src = "https://agicitag.github.io/BondageClubTools/extension/bct.js";
+    script.src = "https://agicitag.github.io/BondageClubTools/beta/extension/bct.js";
     document.head.appendChild(script);
 })();

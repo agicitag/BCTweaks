@@ -585,10 +585,11 @@ async function runBCT(){
 			DrawText("- Bondage Club Tools Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 
-			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 600, 400, 100, "Black");
+			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 500, 400, 100, "Black");
 
-			DrawText("Your BCT version: " + BCT_VERSION, 1450+400/2, 775, "Black", "Gray");
-			DrawButton(1450, 825, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
+			DrawText("Your BCT version: " + BCT_VERSION, 1450+400/2, 665, "Black", "Gray");
+			DrawButton(1450, 715, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
+			DrawButton(1450, 825, 400, 90, "Open Beta Changelog", "White", "", "Open Beta Changelog on Github");
 			
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 865, 125, "Red", "Black");
 			
@@ -609,7 +610,8 @@ async function runBCT(){
 			
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
-			if (MouseIn(1450, 825, 400, 90)) window.open("https://github.com/agicitag/BondageClubTools/blob/main/extension/Changelog.md", "_blank");
+			if (MouseIn(1450, 715, 400, 90)) window.open("https://github.com/agicitag/BondageClubTools/blob/main/extension/Changelog.md", "_blank");
+			if (MouseIn(1450, 825, 400, 90)) window.open("https://github.com/agicitag/BondageClubTools/blob/beta/extension/Changelog.md", "_blank");
 			
 			// Open the selected subscreen
 			for (let A = 0; A < bctSettingsCategories.length; A++){
