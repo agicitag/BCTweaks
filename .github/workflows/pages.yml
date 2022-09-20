@@ -36,10 +36,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: beta
-          path: BondageClubTools/beta
+          path: beta
           clean: false
       - name: Delete git
-        run: rm -rf BondageClubTools/beta/.git
+        run: rm -rf beta/.git
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
