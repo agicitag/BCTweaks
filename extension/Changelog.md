@@ -2,6 +2,8 @@
 ## 0.4.0
 ### Features:
 - Added the option to let arousal affect orgasm progress
+### Bugfixed:
+- Fixed a bug where arousal progress was shown as 0% to others after resisting an orgasm
 
 ## 0.3.3
 ### Features:

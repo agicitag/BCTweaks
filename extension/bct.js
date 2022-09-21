@@ -967,6 +967,12 @@ async function runBCT(){
 			next(args);
 		});
 
+		// To sync arousal after a resisted Orgasm
+		modAPI.hookFunction('ActivityOrgasmStop', 2, (args, next) => {
+			next(args);
+			ActivityChatRoomBCTArousalSync(args[0]);
+		});
+
 		modAPI.hookFunction('ActivitySetArousalTimer', 2, (args, next) => {
 			let C = args[0];
 
