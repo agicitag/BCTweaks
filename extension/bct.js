@@ -68,6 +68,8 @@ async function runBCT(){
 			tailWaggingDelay: 500,
 			tailWaggingCount: 3,
 			menuButtonFixEnabled: true,
+			bestFriendsEnabled: true,
+			bestFriendsRoomShare: true,
 			bestFriendsList: [],
 		};
 		
@@ -1272,6 +1274,8 @@ async function runBCT(){
 		
 	async function ShowBestFriendRoom() {
 		await waitFor(() => ServerSocket && ServerIsConnected);
+
+		const w = window;
 		// this is required to make sure the friend has added player too
 		var friendFlag = {};
 		// save currently online friends room
@@ -1285,14 +1289,82 @@ async function runBCT(){
 		BCT_BEEP_IS_BEST_FRIEND_MSG = "Friends",
 		BCT_BEEP_Ack_FRIEND_MSG = "AckFriends",
 		BCT_BEEP_REQUEST_ROOM = "ReqRoom";
-
+		
 		registerSocketListener("ChatRoomMessage", (data) => SendRoomNameOnChatRoomOnEntryUpdate(data));
 		registerSocketListener("AccountBeep", (data) => parseBeeps(data));
 		registerSocketListener("ChatRoomCreateResponse", (data) => SendRoomNameOnCreateChat(data));
 
+		function AddToBFList(charNumber) {
+			Player.BCT.bctSettings.bestFriendsList.push(charNumber);
+			bctSettingsSave();
+			
+		}
+		function RemoveFromBFList(charNumber) {
+			Player.BCT.bctSettings.bestFriendsList = Player.BCT.bctSettings.bestFriendsList.filter(friend => friend !== charNumber);
+			bctSettingsSave();
+		}
+
+		let addBFDialog = {"Function": "ChatRoomListManage(\"Add\", \"BestFriend\")",
+								"Option": "(Add as Best Friend.)",
+								"Prerequisite": "CanAddAsBF()",
+								"Result": "(This member is considered to be a best friend by you.)",
+								"Stage": "10"};
+		let removeBFDialog = {"Function": "ChatRoomListManage(\"Remove\", \"BestFriend\")",
+								"Option": "(Remove from Best Friend.)",
+								"Prerequisite": "CanRemoveAsBF()",
+								"Result": "(This member is no longer considered to be a best friend by you.)",
+								"Stage": "10"};
+
+		w.ChatRoomCanAddAsBF = () => {
+			return (CurrentCharacter && CurrentCharacter.MemberNumber && !Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber))
+		};
+
+		w.ChatRoomCanRemoveAsBF = () => {
+			return (CurrentCharacter && CurrentCharacter.MemberNumber && Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber))
+		};
+
+
+		// Adding the dialog option in Manage your relationshp
+		function AddRelationDialog(data) {
+			if ((data != null) && (typeof data === "object") && (data.Content != null) && (typeof data.Content === "string")
+			 && (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) {
+				
+				if (data.Content === "ServerEnter" && Player.MemberNumber === data.Sender) {
+					ChatRoomCharacter.forEach((ele,index,arr) => {
+						if (ele.ID !== 0) {
+							if (ele.BCT?.bctSettings?.bestFriendsEnabled === true) { 
+								arr[index] = ele.Dialog.push(addBFDialog);
+								arr[index] = ele.Dialog.push(removeBFDialog);
+							}
+						}
+					})
+				} else if (data.Content === "ServerEnter") {
+					let character = ChatRoomCharacter.find((c) => c.MemberNumber === data.Sender);
+					character.Dialog.push(addBFDialog);
+					character.Dialog.push(removeBFDialog);
+				}
+
+			 }
+
+		}
+		modAPI.hookFunction("ChatRoomListManage", 3, (args,next) => {
+			let Operation = args[0];
+			let ListType = args[1];
+			if (CurrentCharacter && CurrentCharacter.MemberNumber && ListType === "BestFriend") {
+				if (Operation === "Add") {
+					AddToBFList(CurrentCharacter.MemberNumber);
+				}
+				else if (Operation === "Remove") {
+					RemoveFromBFList(CurrentCharacter.MemberNumber);
+				}
+
+			}
+			next(Operation,ListType);
+		});
+
 		// change FriendListLoadFriendList() to get private rooms into the friendlist
 		// if (friend.ChatRoomName != null) and (friend.Private) then do stuff
-		
+		// shows the Roomname in the list
 		modAPI.hookFunction("FriendListLoadFriendList", 3, (args,next) => {
 			let data = args[0];
 			if (!bctOnlineCheck) {
@@ -1300,7 +1372,6 @@ async function runBCT(){
 				if (mode === "Friends") {
 					// In Friend List mode, we show the friend list and allow doing beeps
 					for (const friend of data) { 
-						
 						if ((friend.Private)  && (friend.ChatRoomName === "-")
 						&& (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) && (friend.MemberNumber in currentFriendsRoom)) {
 								friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
@@ -1311,7 +1382,7 @@ async function runBCT(){
 			}
 		});
 
-		// shows Best Friends in BC's friend list
+		// shows Best Friends in BC's friend list and have the option to delete them
 		modAPI.hookFunction("ElementContent", 2, (args,next) => {
 			const mode = FriendListMode[FriendListModeIndex];
 			let ID = args[0];
@@ -1337,7 +1408,7 @@ async function runBCT(){
 						}
 						let onClickBF = () => {
 							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].innerHTML = "Deleted";
-							Player.BCT.bctSettings.bestFriendsList = Player.BCT.bctSettings.bestFriendsList.filter(friend => friend !== member);
+							RemoveFromBFList(member);
 							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].removeEventListener("mouseover",onHoverBF);
 							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].removeEventListener("mouseout",onOutBF);
 						}
@@ -1393,9 +1464,9 @@ async function runBCT(){
 			if ((data != null) && (typeof data === "object") && (data.Content != null) && (typeof data.Content === "string")
 			 && (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) 
 			{
+				AddRelationDialog(data);
 				if ((data.Content === "ServerUpdateRoom") || 
-					(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) 
-					{
+					(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) {
 						for (const friend of Player.BCT.bctSettings.bestFriendsList) {
 							if (await IsBestFriend(friend)) { 
 								SendRoomName(friend);
