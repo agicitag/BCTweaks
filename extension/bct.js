@@ -1281,10 +1281,10 @@ async function runBCT(){
 	// Best Friend Feature start
 	
 	let addBFDialog = {Function: "ChatRoomListManage(\"Add\", \"BestFriend\")",
-								Option: "(Add as Best Friend.)",
-								Prerequisite: "CanAddAsBF()",
-								Result: "(This member is considered to be a best friend by you.)",
-							Stage: "10"};
+						Option: "(Add as Best Friend.)",
+						Prerequisite: "CanAddAsBF()",
+						Result: "(This member is considered to be a best friend by you.)",
+						Stage: "10"};
 	let removeBFDialog = {Function: "ChatRoomListManage(\"Remove\", \"BestFriend\")",
 							Option: "(Remove from Best Friend.)",
 							Prerequisite: "CanRemoveAsBF()",
@@ -1308,8 +1308,6 @@ async function runBCT(){
 
 
 	async function bctBestFriend() {
-		await waitFor(() => ServerSocket && ServerIsConnected);
-
 		// this is required to make sure the friend has added player too
 		var friendFlag = {};
 		// save currently online friends room
@@ -1327,7 +1325,7 @@ async function runBCT(){
 		registerSocketListener("ChatRoomMessage", (data) => SendRoomNameOnChatRoomOnEntryUpdate(data));
 		registerSocketListener("AccountBeep", (data) => parseBeeps(data));
 		registerSocketListener("ChatRoomCreateResponse", (data) => SendRoomNameOnCreateChat(data));
-		registerSocketListener("LoginResponse", () => SendRequestOnRelog());
+		registerSocketListener("LoginResponse", () => SendRoomRequestOnRelog());
 
 		function AddToBFList(charNumber) {
 			Player.BCT.bctSettings.bestFriendsList.push(charNumber);
@@ -1358,14 +1356,16 @@ async function runBCT(){
 		modAPI.hookFunction("FriendListLoadFriendList", 3, (args,next) => {
 			let data = args[0];
 			if (!bctOnlineCheck) {
-				const mode = FriendListMode[FriendListModeIndex];
-				if (mode === "Friends") {
-					// In Friend List mode, we show the friend list and allow doing beeps
-					for (const friend of data) { 
-						if (friend.ChatRoomName == null) friend.ChatRoomName = "-";
-						if ((friend.Private)  && (friend.ChatRoomName === "-")
-						&& (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) && (friend.MemberNumber in currentFriendsRoom)) {
-								friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
+				if (Player.BCT.bctSettings.bestFriendsEnabled) {
+					const mode = FriendListMode[FriendListModeIndex];
+					if (mode === "Friends") {
+						// In Friend List mode, the online friends are shown
+						for (const friend of data) { 
+							if (friend.ChatRoomName == null) friend.ChatRoomName = "-";
+							if ((friend.Private)  && (friend.ChatRoomName === "-")
+							&& (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) && (friend.MemberNumber in currentFriendsRoom)) {
+									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
+							}
 						}
 					}
 				}
@@ -1379,7 +1379,7 @@ async function runBCT(){
 			let ID = args[0];
 			let Content = args[1];
 			next(ID,Content);
-			if ((mode === "Delete") && (ID === "FriendList")) {
+			if ((Player.BCT.bctSettings.bestFriendsEnabled) && (mode === "Delete") && (ID === "FriendList")) {
 				let htmlDoc = document.getElementById(ID);
 				for (let i = 0; i < htmlDoc.getElementsByClassName("FriendListTextColumn").length / 3; i++) {
 					let member = parseInt(htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 1].innerHTML);
@@ -1387,25 +1387,26 @@ async function runBCT(){
 					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
 					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))
 					&& !(Player.SubmissivesList.has(member))) {
-						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].innerHTML = "Best Friend";
-						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].style.cursor = "pointer";
-						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].style.textDecoration = "underline";
-						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].style.color = "lime";
-						let  onHoverBF = () => {
-							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].innerHTML = "Delete BF?";
-						}
-						let onOutBF = () => {
-							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].innerHTML = "Best Friend";
-						}
-						let onClickBF = () => {
-							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].innerHTML = "Deleted";
-							RemoveFromBFList(member);
-							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].removeEventListener("mouseover",onHoverBF);
-							htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].removeEventListener("mouseout",onOutBF);
-						}
-						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].addEventListener("mouseover", onHoverBF);
-						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].addEventListener("mouseout", onOutBF);
-						htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2].addEventListener("click",onClickBF)
+							let BFelement = htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2]
+							BFelement.innerHTML = "Best Friend";
+							BFelement.style.cursor = "pointer";
+							BFelement.style.textDecoration = "underline";
+							BFelement.style.color = "lime";
+							let  onHoverBF = () => {
+								BFelement.innerHTML = "Delete BF?";
+							}
+							let onOutBF = () => {
+								BFelement.innerHTML = "Best Friend";
+							}
+							let onClickBF = () => {
+								BFelement.innerHTML = "Deleted";
+								RemoveFromBFList(member);
+								BFelement.removeEventListener("mouseover",onHoverBF);
+								BFelement.removeEventListener("mouseout",onOutBF);
+							}
+							BFelement.addEventListener("mouseover", onHoverBF);
+							BFelement.addEventListener("mouseout", onOutBF);
+							BFelement.addEventListener("click",onClickBF)
 					}
 				}
 			}
@@ -1438,37 +1439,39 @@ async function runBCT(){
 		function RequestRoomName() {
 			currentFriendsRoom = {};
 			for (const friend of Player.BCT.bctSettings.bestFriendsList) {
-				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true)
+				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true);
 			}
 		}
 		RequestRoomName();
-		function SendRequestOnRelog() {
+		function SendRoomRequestOnRelog() {
 			RequestRoomName();
 		}
 
 		// send player room name when they enter a chatroom or update the room
 		async function SendRoomNameOnChatRoomOnEntryUpdate(data) 
 		{
-			if ((data != null) && (typeof data === "object") && (data.Content != null) && (typeof data.Content === "string")
-			 && (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) 
-			{
-				if ((data.Content === "ServerUpdateRoom") || 
-					(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) {
-						for (const friend of Player.BCT.bctSettings.bestFriendsList) {
-							if (await IsBestFriend(friend)) { 
-								SendRoomName(friend);
+			if (Player.BCT.bctSettings.bestFriendsRoomShare) {
+				if ((data != null) && (typeof data === "object") && (data.Content != null) && (typeof data.Content === "string")
+				&& (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) 
+				{
+					if ((data.Content === "ServerUpdateRoom") || 
+						(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) {
+							for (const friend of Player.BCT.bctSettings.bestFriendsList) {
+								if (await IsBestFriend(friend)) { 
+									SendRoomName(friend);
+								}
 							}
+							friendFlag = {};
 						}
-						friendFlag = {};
-					}
+				}
 			}
 		}
 
 		// send player room name when they create room
 		async function SendRoomNameOnCreateChat(data) 
 		{
-			if ( (data != null) && (typeof data === "string") && (data === "ChatRoomCreated")) 
-				{
+			if (Player.BCT.bctSettings.bestFriendsRoomShare) {
+				if ((data != null) && (typeof data === "string") && (data === "ChatRoomCreated")) {
 					for (const friend of Player.BCT.bctSettings.bestFriendsList) {
 						if (await IsBestFriend(friend)) { 
 							SendRoomName(friend);
@@ -1476,6 +1479,7 @@ async function runBCT(){
 					}
 					friendFlag = {};
 				}
+			}
 		}
 		
 		// parse Beep for Room Name 
