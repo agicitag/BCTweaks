@@ -5,6 +5,7 @@
 - Show saved tails preview in settings
 ### Bugfixed:
 - Fixed a bug where arousal progress was shown as 0% to others after resisting an orgasm
+- Fixed a bug that caused the arousal bar to not be shown on mobile
 
 ## 0.3.3
 ### Features:
