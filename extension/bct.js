@@ -457,12 +457,10 @@ async function runBCT(){
 			// Draw the player & controls
 			DrawCharacter(Player, 50, 50, 0.9);
 			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
-
-			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
 			
 			MainCanvas.textAlign = "left";
+			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
 			DrawText("- " + bctSettingCategoryLabels[PreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
-
 			if(settingsHint != ""){
 				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, "Black", "Yellow");
 			}
@@ -699,6 +697,9 @@ async function runBCT(){
 			}
 		};
 
+		let tailPreviewMain;
+		let tailPreviewSecondary;
+
 		PreferenceSubscreenBCTTailwagLoad = function () {
 			PreferenceSubscreen = "BCTTailwag";
 			addMenuCheckbox(64, 64, "Enable Tail Wagging:", "tailWaggingEnable",
@@ -711,7 +712,9 @@ async function runBCT(){
 				else{
 					PreferenceMessage = "Main Tail updated";
 					Player.BCT.bctSettings.tailWaggingTailOneName = InventoryGet(Player,"TailStraps").Asset.Name;
-					Player.BCT.bctSettings.tailWaggingTailOneColor = InventoryGet(Player,"TailStraps").Color;		
+					Player.BCT.bctSettings.tailWaggingTailOneColor = InventoryGet(Player,"TailStraps").Color;
+					InventoryWear(tailPreviewMain, Player.BCT.bctSettings.tailWaggingTailOneName, "TailStraps", Player.BCT.bctSettings.tailWaggingTailOneColor);
+					CharacterRefresh(tailPreviewMain);
 				}
 			}, 
 			"Updates the tail that is gonna stay after wagging to the currently worn one."
@@ -723,7 +726,9 @@ async function runBCT(){
 				else{
 					PreferenceMessage = "Secondary Tail updated";
 					Player.BCT.bctSettings.tailWaggingTailTwoName = InventoryGet(Player,"TailStraps").Asset.Name;
-					Player.BCT.bctSettings.tailWaggingTailTwoColor = InventoryGet(Player,"TailStraps").Color;	
+					Player.BCT.bctSettings.tailWaggingTailTwoColor = InventoryGet(Player,"TailStraps").Color;
+					InventoryWear(tailPreviewSecondary, Player.BCT.bctSettings.tailWaggingTailTwoName, "TailStraps", Player.BCT.bctSettings.tailWaggingTailTwoColor);
+					CharacterRefresh(tailPreviewSecondary);
 				}
 			},
 			"Updates the temporary tail for wagging to the currently worn one."
@@ -734,10 +739,23 @@ async function runBCT(){
 			addMenuInput(200, "Tail Wagging Delay (in ms):", "tailWaggingDelay", "InputTailWaggingDelay",
 			"The delay in between switches between the two tails in ms."
 			);
+
+			// Tail previews
+			tailPreviewMain = CharacterLoadSimple(`TailPreviewMain-${Player.MemberNumber}`);
+			tailPreviewSecondary = CharacterLoadSimple(`TailPreviewSecondary-${Player.MemberNumber}`);
+			InventoryWear(tailPreviewMain, Player.BCT.bctSettings.tailWaggingTailOneName, "TailStraps", Player.BCT.bctSettings.tailWaggingTailOneColor);
+			InventoryWear(tailPreviewSecondary, Player.BCT.bctSettings.tailWaggingTailTwoName, "TailStraps", Player.BCT.bctSettings.tailWaggingTailTwoColor);
+			CharacterRefresh(tailPreviewMain);
+			CharacterRefresh(tailPreviewSecondary);
 		}
 
 		PreferenceSubscreenBCTTailwagRun = function () {
 			drawMenuElements();
+			MainCanvas.textAlign = "center";
+			DrawTextWrapGood("Main Tail:", 550, 750, 100, 80, "Black");
+			DrawCharacter(tailPreviewMain, 600, 600, 0.5, false);
+			DrawTextWrapGood("Secondary Tail:", 1000, 750, 200, 80, "Black");
+			DrawCharacter(tailPreviewSecondary, 1100, 600, 0.5, false);
 		}
 
 		PreferenceSubscreenBCTTailwagClick = function () {

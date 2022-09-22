@@ -2,6 +2,7 @@
 ## 0.4.0
 ### Features:
 - Added the option to let arousal affect orgasm progress
+- Show saved tails preview in settings
 ### Bugfixed:
 - Fixed a bug where arousal progress was shown as 0% to others after resisting an orgasm
 
