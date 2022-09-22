@@ -40,7 +40,8 @@ async function runBCT(){
 		"arousalProgressMultiplier",
 		"arousalDecayMultiplier",
 		"orgasmProgressMultiplier",
-		"orgasmDecayMultiplier"
+		"orgasmDecayMultiplier",
+		"bestFriendsEnabled"
 	];
 
 	await bctSettingsLoad();
@@ -1293,6 +1294,7 @@ async function runBCT(){
 		registerSocketListener("ChatRoomMessage", (data) => SendRoomNameOnChatRoomOnEntryUpdate(data));
 		registerSocketListener("AccountBeep", (data) => parseBeeps(data));
 		registerSocketListener("ChatRoomCreateResponse", (data) => SendRoomNameOnCreateChat(data));
+		registerSocketListener("LoginResponse", () => SendRequestOnRelog());
 
 		function AddToBFList(charNumber) {
 			Player.BCT.bctSettings.bestFriendsList.push(charNumber);
@@ -1304,16 +1306,16 @@ async function runBCT(){
 			bctSettingsSave();
 		}
 
-		let addBFDialog = {"Function": "ChatRoomListManage(\"Add\", \"BestFriend\")",
-								"Option": "(Add as Best Friend.)",
-								"Prerequisite": "CanAddAsBF()",
-								"Result": "(This member is considered to be a best friend by you.)",
-								"Stage": "10"};
-		let removeBFDialog = {"Function": "ChatRoomListManage(\"Remove\", \"BestFriend\")",
-								"Option": "(Remove from Best Friend.)",
-								"Prerequisite": "CanRemoveAsBF()",
-								"Result": "(This member is no longer considered to be a best friend by you.)",
-								"Stage": "10"};
+		let addBFDialog = {Function: "ChatRoomListManage(\"Add\", \"BestFriend\")",
+								Option: "(Add as Best Friend.)",
+								Prerequisite: "CanAddAsBF()",
+								Result: "(This member is considered to be a best friend by you.)",
+								Stage: "10"};
+		let removeBFDialog = {Function: "ChatRoomListManage(\"Remove\", \"BestFriend\")",
+								Option: "(Remove from Best Friend.)",
+								Prerequisite: "CanRemoveAsBF()",
+								Result: "(This member is no longer considered to be a best friend by you.)",
+								Stage: "10"};
 
 		w.ChatRoomCanAddAsBF = () => {
 			return (CurrentCharacter && CurrentCharacter.MemberNumber && !Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber))
@@ -1330,18 +1332,20 @@ async function runBCT(){
 			 && (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) {
 				
 				if (data.Content === "ServerEnter" && Player.MemberNumber === data.Sender) {
-					ChatRoomCharacter.forEach((ele,index,arr) => {
+					ChatRoomCharacter.forEach((ele) => {
 						if (ele.ID !== 0) {
 							if (ele.BCT?.bctSettings?.bestFriendsEnabled === true) { 
-								arr[index] = ele.Dialog.push(addBFDialog);
-								arr[index] = ele.Dialog.push(removeBFDialog);
+								ele.Dialog.push(addBFDialog);
+								ele.Dialog.push(removeBFDialog);
 							}
 						}
 					})
 				} else if (data.Content === "ServerEnter") {
 					let character = ChatRoomCharacter.find((c) => c.MemberNumber === data.Sender);
-					character.Dialog.push(addBFDialog);
-					character.Dialog.push(removeBFDialog);
+					if (character.BCT?.bctSettings?.bestFriendsEnabled === true) {
+						character.Dialog.push(addBFDialog);
+						character.Dialog.push(removeBFDialog);
+					}
 				}
 
 			 }
@@ -1372,6 +1376,7 @@ async function runBCT(){
 				if (mode === "Friends") {
 					// In Friend List mode, we show the friend list and allow doing beeps
 					for (const friend of data) { 
+						if (friend.ChatRoomName == null) friend.ChatRoomName = "-";
 						if ((friend.Private)  && (friend.ChatRoomName === "-")
 						&& (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) && (friend.MemberNumber in currentFriendsRoom)) {
 								friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
@@ -1443,20 +1448,17 @@ async function runBCT(){
 		}
 		
 		// Ask best friends room name on quick relog or first entry
-		// Requires LoginResponse for the quick relog
-		// For complete load it should work directly 
+		// For complete load it should work directly
 		function RequestRoomName() {
-			currentFriendsRoom = [];
+			currentFriendsRoom = {};
 			for (const friend of Player.BCT.bctSettings.bestFriendsList) {
 				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true)
 			}
 		}
 		RequestRoomName();
-		modAPI.hookFunction("LoginResponse", 3, async (args, next) => {
+		function SendRequestOnRelog() {
 			RequestRoomName();
-			next(...args);
-		})
-		
+		}
 
 		// send player room name when they enter a chatroom or update the room
 		async function SendRoomNameOnChatRoomOnEntryUpdate(data) 
@@ -1501,7 +1503,7 @@ async function runBCT(){
 							let beep = data;
 							switch(beep.Message) {
 								case BCT_BEEP_ROOM_NAME_MSG: 
-								currentFriendsRoom[beep.MemberNumber] = beep.ChatRoomName;
+									currentFriendsRoom[beep.MemberNumber] = beep.ChatRoomName;
 									break;
 								case BCT_BEEP_IS_BEST_FRIEND_MSG:
 									if(Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber)) {
