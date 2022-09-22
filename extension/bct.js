@@ -395,7 +395,7 @@ async function runBCT(){
 			return yPos;
 		}
 
-		function addMenuCheckbox(width, height, text, setting, hint, xModifier = 0, yModifier = 0, elementText = ""){
+		function addMenuCheckbox(width, height, text, setting, hint, grayedOutReference = "false", xModifier = 0, yModifier = 0, elementText = ""){
 			menuElements[PreferenceSubscreen].push({
 				type: "Checkbox",
 				yPos: getNewYPos(),
@@ -404,6 +404,7 @@ async function runBCT(){
 				text: text,
 				setting: setting,
 				hint: hint,
+				grayedOutReference: grayedOutReference,
 				xModifier: xModifier,
 				yModifier: yModifier,
 				elementText: elementText,
@@ -469,7 +470,10 @@ async function runBCT(){
 			for (i = 0; i < menuElements[PreferenceSubscreen].length; i++){
 				currentElement = menuElements[PreferenceSubscreen][i];
 				MainCanvas.textAlign = "left";
-				DrawText(currentElement.text, 500, currentElement.yPos, (currentElement.yPos === currentHint) ? "Red" : "Black", "Gray");
+				let textColor = "Black";
+				if(eval(currentElement?.grayedOutReference) === true) textColor = "Gray";
+				if(currentElement.yPos === currentHint) textColor = "Red";
+				DrawText(currentElement.text, 500, currentElement.yPos, textColor, "Gray");
 				switch (currentElement.type) {
 					case "Checkbox":
 						DrawCheckbox(
@@ -478,7 +482,8 @@ async function runBCT(){
 							currentElement.width,
 							currentElement.height,
 							currentElement.elementText,
-							Player.BCT.bctSettings[currentElement.setting]
+							Player.BCT.bctSettings[currentElement.setting],
+							eval(currentElement.grayedOutReference)
 						);
 						break;
 					case "Button":
@@ -530,9 +535,11 @@ async function runBCT(){
 				currentElement = menuElements[PreferenceSubscreen][i];
 				switch (currentElement.type) {
 					case "Checkbox":
-						if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
-							Player.BCT.bctSettings[currentElement.setting] = !Player.BCT.bctSettings[currentElement.setting];
-							foundElement = true;
+						if (eval(currentElement.grayedOutReference) === false){
+							if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
+								Player.BCT.bctSettings[currentElement.setting] = !Player.BCT.bctSettings[currentElement.setting];
+								foundElement = true;
+							}
 						}
 						break;
 					case "Button":
@@ -655,8 +662,8 @@ async function runBCT(){
 			);
 			addMenuCheckbox(64, 64, "Arousal Affects Orgasm Progress:", "arousalAffectsOrgasmProgress",
 			"Let your arousal affect the orgasm progress speed. With this option enabled at 0% arousal the orgasm progress gets " + 
-			"a 0.5x multiplier, at 50% a 1x multiplier and at 100% a 2x multiplier. If \"Split Arousal Bar\" is deactivated, " +
-			"this option has no effect."
+			"a 0.5x multiplier, at 50% a 1x multiplier and at 100% a 2x multiplier.",
+			"!Player.BCT.bctSettings.splitOrgasmArousal"
 			);
 			addMenuBackNext(250, 60, "Arousal Bar Location:", "arousalbarLocation", ["Bottom", "Right"],
 			"Position the arousal bar either bottom of the orgasm bar or to the right of the character."
