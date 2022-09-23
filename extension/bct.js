@@ -482,7 +482,7 @@ async function runBCT(){
 							currentElement.width,
 							currentElement.height,
 							currentElement.elementText,
-							Player.BCT.bctSettings[currentElement.setting],
+							(eval(currentElement.grayedOutReference)) ? false : Player.BCT.bctSettings[currentElement.setting],
 							eval(currentElement.grayedOutReference)
 						);
 						break;
