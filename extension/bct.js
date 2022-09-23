@@ -1,5 +1,5 @@
 const BCT_VERSION = "0.4.0";
-const BCT_Settings_Version = 4;
+const BCT_Settings_Version = 5;
 
 async function runBCT(){
 	
@@ -43,7 +43,8 @@ async function runBCT(){
 		"arousalDecayMultiplier",
 		"orgasmProgressMultiplier",
 		"orgasmDecayMultiplier",
-		"arousalAffectsOrgasmProgress"
+		"arousalAffectsOrgasmProgress",
+		"bestFriendsEnabled",
 	];
 
 	await bctSettingsLoad();
@@ -290,11 +291,13 @@ async function runBCT(){
 			"BCTArousal",
 			"BCTTailwag",
 			"BCTTweaks",
+			"BCTBestFriends"
 		];
 		const bctSettingCategoryLabels = {
 			BCTArousal: "Arousal Bar",
 			BCTTailwag: "Tail Wagging",
 			BCTTweaks: "Tweaks",
+			BCTBestFriends: "Best Friend"
 		};
 		const MENU_ELEMENT_X_OFFSET = 1050;
 		
@@ -808,6 +811,31 @@ async function runBCT(){
 		PreferenceSubscreenBCTTweaksExit = function () {
 			defaultExit();
 		};
+
+		PreferenceSubscreenBCTBestFriendsLoad = function () {
+			PreferenceSubscreen = "BCTBestFriends";
+			addMenuCheckbox(64,64,"Turn on the Best Friends Feature:","bestFriendsEnabled",
+			`This feature allows you to add someone as "Best Friend". They would show up differently in the friend list and if enabled,
+			you can share your private room names with them.`
+			);
+			addMenuCheckbox(64,64,"Turn on Private Room Name share:","bestFriendsRoomShare",
+			`Share your private room names with best friends. This works similar to lovers.`,
+			"!Player.BCT.bctSettings.bestFriendsEnabled"
+			);
+		}
+		PreferenceSubscreenBCTBestFriendsRun = function () {
+			drawMenuElements();
+		}
+		PreferenceSubscreenBCTBestFriendsClick = function () {
+			handleMenuClicks(MouseX);
+		}
+		PreferenceSubscreenBCTBestFriendsExit = function () {
+			if (!Player.BCT.bctSettings.bestFriendsEnabled) {
+				Player.BCT.bctSettings.bestFriendsRoomShare = false;
+			}
+			defaultExit();
+		};
+
 	}
 
 	//fix wrong settings button hitboxes (changed 500 to 420)
@@ -1326,6 +1354,12 @@ async function runBCT(){
 	}
 
 	// Best Friend Feature start
+	// TODO: Online friends check for sending beeps.
+	// TODO: Player must be friends for adding as best friends.
+	// TODO: Check if player is removed from friend to also be removed as Best Freind.
+	// TODO: Possibly remove Owner/Subs or lovers from Best friends.
+	// TODO: best friend list to Set instead of Array?
+
 	
 	let addBFDialog = {Function: "ChatRoomListManage(\"Add\", \"BestFriend\")",
 						Option: "(Add as Best Friend.)",
