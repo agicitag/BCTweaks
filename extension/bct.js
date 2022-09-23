@@ -1439,6 +1439,9 @@ async function runBCT(){
 			if (!bctOnlineCheck) {
 				if (Player.BCT.bctSettings.bestFriendsEnabled) {
 					const mode = FriendListMode[FriendListModeIndex];
+					let sortedOSL = [];
+					let	bfList = [];
+					let normalfriends = [];
 					if (mode === "Friends") {
 						// In Friend List mode, the online friends are shown
 						for (const friend of data) { 
@@ -1446,8 +1449,14 @@ async function runBCT(){
 							if ((friend.Private)  && (friend.ChatRoomName === "-")
 							&& (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) && (friend.MemberNumber in currentFriendsRoom)) {
 									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
+									bfList.push(friend);
+							} else if ((friend.Private)  && !(friend.ChatRoomName === "-")) { // clearly owner / subs / lovers
+								sortedOSL.push(friend);
+							}else {
+								normalfriends.push(friend);
 							}
 						}
+						data = sortedOSL.concat(bfList).concat(normalfriends);
 					}
 				}
 				next(data);
