@@ -121,6 +121,17 @@ async function runBCT(){
 				}
 			}
 
+			// remove owners/slaves/lovers and non friends from Best Friends
+			for(const friend of settings.bestFriendsList) {
+				if((!Player.FriendNames.has(friend))
+				&& (Player.Ownership != null && Player.Ownership.MemberNumber === friend)
+				&& (Player.Lovership.some(lover => lover.MemberNumber == friend))
+				&& (Player.SubmissivesList.has(friend))) {
+					settings.bestFriendsList.delete(friend);
+				}
+			}
+
+
 			//if the version of the current settings is newer then the loaded ones, beep that bct got an update
 			if (
 				typeof settings.version === "undefined" ||
@@ -1364,11 +1375,16 @@ async function runBCT(){
 							Stage: "10"};
 
 	ChatRoomCanAddAsBF = () => {
-		return (CurrentCharacter && CurrentCharacter.MemberNumber && Player.BCT.bctSettings.bestFriendsEnabled && !Player.BCT.bctSettings.bestFriendsList.has(CurrentCharacter.MemberNumber))
+		return (CurrentCharacter && CurrentCharacter.MemberNumber && Player.FriendNames.has(CurrentCharacter.MemberNumber)
+			&& !(Player.Ownership != null && Player.Ownership.MemberNumber === CurrentCharacter.MemberNumber)
+			&& !(Player.Lovership.some(lover => lover.MemberNumber == CurrentCharacter.MemberNumber))
+			&& !(Player.SubmissivesList.has(CurrentCharacter.MemberNumber))
+			&& Player.BCT.bctSettings.bestFriendsEnabled && !Player.BCT.bctSettings.bestFriendsList.has(CurrentCharacter.MemberNumber));
 	};
 
 	ChatRoomCanRemoveAsBF = () => {
-		return (CurrentCharacter && CurrentCharacter.MemberNumber && Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.has(CurrentCharacter.MemberNumber))
+		return (CurrentCharacter && CurrentCharacter.MemberNumber 
+			&& Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.has(CurrentCharacter.MemberNumber));
 	};
 	
 	// Adding the dialog option in Manage your relationshp
@@ -1377,7 +1393,6 @@ async function runBCT(){
 		character.Dialog.splice(pos+1,0,addBFDialog);
 		character.Dialog.splice(pos+2,0,removeBFDialog);
 	}
-
 
 	async function bctBestFriend() {
 		// this is required to make sure the friend has added player too
@@ -1398,6 +1413,16 @@ async function runBCT(){
 		registerSocketListener("AccountBeep", (data) => parseBeeps(data));
 		registerSocketListener("ChatRoomCreateResponse", (data) => SendRoomNameOnCreateChat(data));
 		registerSocketListener("LoginResponse", () => SendRoomRequestOnRelog());
+
+		// remove all owners/slaves/lovers and non friends from Best Friends on load
+		for(const friend of Player.BCT.bctSettings.bestFriendsList) {
+			if((!Player.FriendNames.has(friend))
+			&& (Player.Ownership != null && Player.Ownership.MemberNumber === friend)
+			&& (Player.Lovership.some(lover => lover.MemberNumber == friend))
+			&& (Player.SubmissivesList.has(friend))) {
+				Player.BCT.bctSettings.bestFriendsList.delete(friend);
+			}
+		}
 
 		function AddToBFList(charNumber) {
 			Player.BCT.bctSettings.bestFriendsList.add(charNumber);
