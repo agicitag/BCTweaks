@@ -1,5 +1,5 @@
-const BCT_VERSION = "0.4.0";
-const BCT_Settings_Version = 4;
+const BCT_VERSION = "Beta 0.4.0";
+const BCT_Settings_Version = 5;
 
 async function runBCT(){
 	
