@@ -1,4 +1,4 @@
-const BCT_VERSION = "0.4.0";
+const BCT_VERSION = "Beta 0.4.0";
 const BCT_Settings_Version = 5;
 
 async function runBCT(){
@@ -493,7 +493,7 @@ async function runBCT(){
 							currentElement.width,
 							currentElement.height,
 							currentElement.elementText,
-							Player.BCT.bctSettings[currentElement.setting],
+							(eval(currentElement.grayedOutReference)) ? false : Player.BCT.bctSettings[currentElement.setting],
 							eval(currentElement.grayedOutReference)
 						);
 						break;

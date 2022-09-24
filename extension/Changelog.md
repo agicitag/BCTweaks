@@ -3,7 +3,9 @@
 ### Features:
 - Added the option to let arousal affect orgasm progress
 - Show saved tails preview in settings
-### Bugfixed:
+- Added the Best Friend feature (by Haruhi #78366)
+
+### Bugfixes:
 - Fixed a bug where arousal progress was shown as 0% to others after resisting an orgasm
 - Fixed a bug that caused the arousal bar to not be shown on mobile
 
