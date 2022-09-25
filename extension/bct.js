@@ -17,7 +17,13 @@ async function runBCT(){
 	HIDDEN = "Hidden", // Needs to be capital 'H' !
 	BCT_MSG_ACTIVITY_AROUSAL_SYNC = "bctMsgActivityArousalSync",
 	BCT_MSG_INITILIZATION_SYNC = "bctMsgInitilizationSync",
-	BCT_MSG_SETTINGS_SYNC = "bctMsgSettingsSync"
+	BCT_MSG_SETTINGS_SYNC = "bctMsgSettingsSync";
+
+	const BCT_BEEP_ROOM_NAME_MSG = "RoomName",
+	BCT_BEEP_IS_BEST_FRIEND_MSG = "Friends",
+	BCT_BEEP_ACK_FRIEND_MSG = "AckFriends",
+	BCT_BEEP_REQUEST_ROOM = "ReqRoom",
+	BCT_BEEP_DELETE_SHARED = "DelRoom";
 	
 	const bctSettingsKey = () => `bctSettings.${Player?.AccountName}`;
 
@@ -44,6 +50,17 @@ async function runBCT(){
 		"arousalAffectsOrgasmProgress",
 		"bestFriendsEnabled",
 	];
+
+	let addBFDialog = {Function: "ChatRoomListManage(\"Add\", \"BestFriend\")",
+						Option: "(Add as Best Friend.)",
+						Prerequisite: "CanAddAsBF()",
+						Result: "(This member is considered to be a best friend by you.)",
+						Stage: "10"};
+	let removeBFDialog = {Function: "ChatRoomListManage(\"Remove\", \"BestFriend\")",
+							Option: "(Remove from Best Friend.)",
+							Prerequisite: "CanRemoveAsBF()",
+							Result: "(This member is no longer considered to be a best friend by you.)",
+							Stage: "10"};
 
 	await bctSettingsLoad();
 	splitOrgasmArousal()
@@ -151,7 +168,7 @@ async function runBCT(){
 		}
 	}
 	
-	function bctSettingsSave() {
+	function bctSettingsSave(share = true) {
 		//local settings
 		localStorage.setItem(bctSettingsKey(),JSON.stringify(Player.BCT.bctSettings));
 
@@ -167,25 +184,26 @@ async function runBCT(){
 				Player.BCT.bctSharedSettings[setting] = Player.BCT.bctSettings[setting];
 			}
 		}
-
-		//send new shared Settings
-		const bctSettingsMessage = {
-			Type: HIDDEN,
-			Content: BCT_MSG,
-			Sender: Player.MemberNumber,
-			Dictionary: [
-				{
-					message: {
-						type: BCT_MSG_SETTINGS_SYNC,
-						bctVersion: BCT_VERSION,
-						bctSettings: Player.BCT.bctSharedSettings,
-						target: null,
+		if(share === true) {
+			//send new shared Settings
+			const bctSettingsMessage = {
+				Type: HIDDEN,
+				Content: BCT_MSG,
+				Sender: Player.MemberNumber,
+				Dictionary: [
+					{
+						message: {
+							type: BCT_MSG_SETTINGS_SYNC,
+							bctVersion: BCT_VERSION,
+							bctSettings: Player.BCT.bctSharedSettings,
+							target: null,
+						},
 					},
-				},
-			],
-		};
-		
-		ServerSend("ChatRoomChat", bctSettingsMessage);
+				],
+			};
+			
+			ServerSend("ChatRoomChat", bctSettingsMessage);
+		}
 	}
 
 	async function beepChangelog() {
@@ -261,6 +279,7 @@ async function runBCT(){
 							case BCT_MSG_SETTINGS_SYNC:
 								sender.BCT.version = message.bctVersion;
 								sender.BCT.bctSettings = message.bctSettings;
+								if (sender.BCT?.bctSettings?.bestFriendsEnabled === true) AddRelationDialog(sender);
 								break;
 							default:
 								console.log("Unidentified BCT message:");
@@ -822,11 +841,11 @@ async function runBCT(){
 
 		PreferenceSubscreenBCTBestFriendsLoad = function () {
 			PreferenceSubscreen = "BCTBestFriends";
-			addMenuCheckbox(64,64,"Turn on the Best Friends Feature:","bestFriendsEnabled",
+			addMenuCheckbox(64,64,"Enable Best Friends Feature:","bestFriendsEnabled",
 			`This feature allows you to add someone as "Best Friend". They would show up differently in the friend list and if enabled,
 			you can share your private room names with them.`
 			);
-			addMenuCheckbox(64,64,"Turn on Private Room Name share:","bestFriendsRoomShare",
+			addMenuCheckbox(64,64,"Enable PrivateRoom Name share:","bestFriendsRoomShare",
 			`Share your private room names with best friends. This works similar to lovers.`,
 			"!Player.BCT.bctSettings.bestFriendsEnabled"
 			);
@@ -838,6 +857,12 @@ async function runBCT(){
 			handleMenuClicks(MouseX);
 		}
 		PreferenceSubscreenBCTBestFriendsExit = function () {
+			if (!(Player.BCT.bctSettings.bestFriendsEnabled) || !(Player.BCT.bctSettings.bestFriendsRoomShare)) {
+				for (const friend of Player.BCT.bctSettings.bestFriendsList) {
+					SendBeep(friend,BCT_BEEP,BCT_BEEP_DELETE_SHARED,true);
+				}
+			}
+
 			defaultExit();
 		};
 
@@ -1375,18 +1400,9 @@ async function runBCT(){
 	
 	// Adding the dialog option in Manage your relationshp
 	function AddRelationDialog(character) {
-		let addBFDialog = {Function: "ChatRoomListManage(\"Add\", \"BestFriend\")",
-							Option: "(Add as Best Friend.)",
-							Prerequisite: "CanAddAsBF()",
-							Result: "(This member is considered to be a best friend by you.)",
-							Stage: "10"};
-		let removeBFDialog = {Function: "ChatRoomListManage(\"Remove\", \"BestFriend\")",
-								Option: "(Remove from Best Friend.)",
-								Prerequisite: "CanRemoveAsBF()",
-								Result: "(This member is no longer considered to be a best friend by you.)",
-								Stage: "10"};
 		let pos = character.Dialog.findIndex((ele) => ele.Option === "(Remove from friendlist.)");
-		if (pos > -1) {
+		let alreadyAdded = character.Dialog.findIndex((ele) => ele.Option === "(Add as Best Friend.)");
+		if ((pos > -1) && (alreadyAdded === -1)) {
 			character.Dialog.splice(pos+1,0,addBFDialog);
 			character.Dialog.splice(pos+2,0,removeBFDialog);
 		}
@@ -1399,6 +1415,15 @@ async function runBCT(){
 		}
 	}
 
+	function SendBeep(target,type,message,secret=false) {
+		const beep = { MemberNumber: target,
+						BeepType: type,
+						Message: message,
+						IsSecret: secret,
+					}
+		ServerSend("AccountBeep",beep);
+	}
+
 	async function bctBestFriend() {
 		// this is required to make sure the friend has added player too
 		let friendFlag = {};
@@ -1408,11 +1433,6 @@ async function runBCT(){
 		let onlineFriends = [];
 		// true if bct has made the request for online friends <TODO>
 		let bctOnlineCheck = false;
-
-		const BCT_BEEP_ROOM_NAME_MSG = "RoomName",
-		BCT_BEEP_IS_BEST_FRIEND_MSG = "Friends",
-		BCT_BEEP_ACK_FRIEND_MSG = "AckFriends",
-		BCT_BEEP_REQUEST_ROOM = "ReqRoom";
 		
 		registerSocketListener("ChatRoomMessage", (data) => SendRoomNameOnChatRoomOnEntryUpdate(data));
 		registerSocketListener("AccountBeep", (data) => parseBeeps(data));
@@ -1421,11 +1441,11 @@ async function runBCT(){
 
 		function AddToBFList(charNumber) {
 			Player.BCT.bctSettings.bestFriendsList.push(charNumber);
-			bctSettingsSave();
+			bctSettingsSave(false);
 		}
 		function RemoveFromBFList(charNumber) {
 			Player.BCT.bctSettings.bestFriendsList = Player.BCT.bctSettings.bestFriendsList.filter(member => member !== charNumber);
-			bctSettingsSave();
+			bctSettingsSave(false);
 		}
 
 		modAPI.hookFunction("ChatRoomListManage", 3, (args,next) => {
@@ -1513,15 +1533,6 @@ async function runBCT(){
 			}
 		});
 
-		function SendBeep(target,type,message,secret=false) {
-			const beep = { MemberNumber: target,
-							BeepType: type,
-							Message: message,
-							IsSecret: secret,
-						}
-			ServerSend("AccountBeep",beep);
-		}
-
 		// This sends a non secret type beep to the target giving their room name
 		function SendRoomName(target) {
 			SendBeep(target,BCT_BEEP,BCT_BEEP_ROOM_NAME_MSG);
@@ -1606,6 +1617,11 @@ async function runBCT(){
 								case BCT_BEEP_REQUEST_ROOM:
 									if ((CurrentScreen === "ChatRoom") && (Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
 										SendRoomName(beep.MemberNumber);
+									}
+									break;
+								case BCT_BEEP_DELETE_SHARED:
+									if (beep.MemberNumber in currentFriendsRoom) {
+										delete currentFriendsRoom[beep.MemberNumber];
 									}
 									break;
 								default:
