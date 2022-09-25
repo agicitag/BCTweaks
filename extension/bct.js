@@ -1,5 +1,5 @@
 const BCT_VERSION = "Beta 0.4.0";
-const BCT_Settings_Version = 5;
+const BCT_Settings_Version = 6;
 
 async function runBCT(){
 	
@@ -74,7 +74,7 @@ async function runBCT(){
 			menuButtonFixEnabled: true,
 			bestFriendsEnabled: true,
 			bestFriendsRoomShare: true,
-			bestFriendsList: new Set(),
+			bestFriendsList: [],
 		};
 		
 		Player.BCT = {};
@@ -109,7 +109,6 @@ async function runBCT(){
 			for (const setting in settings){
 				if(settings[setting].value) settings[setting] = settings[setting].value;
 			}
-			if(Array.isArray(settings.bestFriendsList)) settings.bestFriendsList = new Set(settings.bestFriendsList);
 
 			//fill up missing settings with the default ones
 			for (const setting in BCT_DEFAULT_SETTINGS) {
@@ -123,14 +122,13 @@ async function runBCT(){
 
 			// remove owners/slaves/lovers and non friends from Best Friends
 			for(const friend of settings.bestFriendsList) {
-				if((!Player.FriendNames.has(friend))
+				if((!Player.FriendList.includes(friend))
 				&& (Player.Ownership != null && Player.Ownership.MemberNumber === friend)
 				&& (Player.Lovership.some(lover => lover.MemberNumber == friend))
 				&& (Player.SubmissivesList.has(friend))) {
-					settings.bestFriendsList.delete(friend);
+					settings.bestFriendsList = settings.bestFriendsList.filter(member => member !== friend);
 				}
 			}
-
 
 			//if the version of the current settings is newer then the loaded ones, beep that bct got an update
 			if (
@@ -144,7 +142,7 @@ async function runBCT(){
 			Player.BCT.bctSettings = settings;
 
 			//shared settings
-			for(setting in settings){
+			for(const setting in settings){
 				if(SHARED_SETTINGS.indexOf(setting) >= 0){
 					Player.BCT.bctSharedSettings[setting] = settings[setting];
 				}
@@ -263,7 +261,6 @@ async function runBCT(){
 							case BCT_MSG_SETTINGS_SYNC:
 								sender.BCT.version = message.bctVersion;
 								sender.BCT.bctSettings = message.bctSettings;
-								if (sender.BCT?.bctSettings?.bestFriendsEnabled === true) AddRelationDialog(sender);
 								break;
 							default:
 								console.log("Unidentified BCT message:");
@@ -1362,36 +1359,44 @@ async function runBCT(){
 	}
 
 	// Best Friend Feature start
-	
-	let addBFDialog = {Function: "ChatRoomListManage(\"Add\", \"BestFriend\")",
-						Option: "(Add as Best Friend.)",
-						Prerequisite: "CanAddAsBF()",
-						Result: "(This member is considered to be a best friend by you.)",
-						Stage: "10"};
-	let removeBFDialog = {Function: "ChatRoomListManage(\"Remove\", \"BestFriend\")",
-							Option: "(Remove from Best Friend.)",
-							Prerequisite: "CanRemoveAsBF()",
-							Result: "(This member is no longer considered to be a best friend by you.)",
-							Stage: "10"};
 
 	ChatRoomCanAddAsBF = () => {
-		return (CurrentCharacter && CurrentCharacter.MemberNumber && Player.FriendNames.has(CurrentCharacter.MemberNumber)
+		return (CurrentCharacter && CurrentCharacter.MemberNumber && Player.FriendList.includes(CurrentCharacter.MemberNumber)
 			&& !(Player.Ownership != null && Player.Ownership.MemberNumber === CurrentCharacter.MemberNumber)
 			&& !(Player.Lovership.some(lover => lover.MemberNumber == CurrentCharacter.MemberNumber))
 			&& !(Player.SubmissivesList.has(CurrentCharacter.MemberNumber))
-			&& Player.BCT.bctSettings.bestFriendsEnabled && !Player.BCT.bctSettings.bestFriendsList.has(CurrentCharacter.MemberNumber));
+			&& Player.BCT.bctSettings.bestFriendsEnabled && !Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber));
 	};
 
 	ChatRoomCanRemoveAsBF = () => {
 		return (CurrentCharacter && CurrentCharacter.MemberNumber 
-			&& Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.has(CurrentCharacter.MemberNumber));
+			&& Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber));
 	};
 	
 	// Adding the dialog option in Manage your relationshp
 	function AddRelationDialog(character) {
+		let addBFDialog = {Function: "ChatRoomListManage(\"Add\", \"BestFriend\")",
+							Option: "(Add as Best Friend.)",
+							Prerequisite: "CanAddAsBF()",
+							Result: "(This member is considered to be a best friend by you.)",
+							Stage: "10"};
+		let removeBFDialog = {Function: "ChatRoomListManage(\"Remove\", \"BestFriend\")",
+								Option: "(Remove from Best Friend.)",
+								Prerequisite: "CanRemoveAsBF()",
+								Result: "(This member is no longer considered to be a best friend by you.)",
+								Stage: "10"};
 		let pos = character.Dialog.findIndex((ele) => ele.Option === "(Remove from friendlist.)");
-		character.Dialog.splice(pos+1,0,addBFDialog);
-		character.Dialog.splice(pos+2,0,removeBFDialog);
+		if (pos > -1) {
+			character.Dialog.splice(pos+1,0,addBFDialog);
+			character.Dialog.splice(pos+2,0,removeBFDialog);
+		}
+	}
+
+	function RemoveRelationDialog(character) {
+		let pos = character.Dialog.findIndex((ele) => ele.Option === "(Add as Best Friend.)");
+		if(pos > -1) {
+			character.Dialog.splice(pos,2);
+		}
 	}
 
 	async function bctBestFriend() {
@@ -1414,22 +1419,12 @@ async function runBCT(){
 		registerSocketListener("ChatRoomCreateResponse", (data) => SendRoomNameOnCreateChat(data));
 		registerSocketListener("LoginResponse", () => SendRoomRequestOnRelog());
 
-		// remove all owners/slaves/lovers and non friends from Best Friends on load
-		for(const friend of Player.BCT.bctSettings.bestFriendsList) {
-			if((!Player.FriendNames.has(friend))
-			&& (Player.Ownership != null && Player.Ownership.MemberNumber === friend)
-			&& (Player.Lovership.some(lover => lover.MemberNumber == friend))
-			&& (Player.SubmissivesList.has(friend))) {
-				Player.BCT.bctSettings.bestFriendsList.delete(friend);
-			}
-		}
-
 		function AddToBFList(charNumber) {
-			Player.BCT.bctSettings.bestFriendsList.add(charNumber);
+			Player.BCT.bctSettings.bestFriendsList.push(charNumber);
 			bctSettingsSave();
 		}
 		function RemoveFromBFList(charNumber) {
-			Player.BCT.bctSettings.bestFriendsList.delete(charNumber);
+			Player.BCT.bctSettings.bestFriendsList = Player.BCT.bctSettings.bestFriendsList.filter(member => member !== charNumber);
 			bctSettingsSave();
 		}
 
@@ -1463,7 +1458,7 @@ async function runBCT(){
 						for (const friend of data) { 
 							if (friend.ChatRoomName == null) friend.ChatRoomName = "-";
 							if ((friend.Private)  && (friend.ChatRoomName === "-")
-							&& (Player.BCT.bctSettings.bestFriendsList.has(friend.MemberNumber)) && (friend.MemberNumber in currentFriendsRoom)) {
+							&& (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) && (friend.MemberNumber in currentFriendsRoom)) {
 									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
 									bfList.push(friend);
 							} else if ((friend.Private)  && !(friend.ChatRoomName === "-")) { // clearly owner / subs / lovers
@@ -1489,7 +1484,7 @@ async function runBCT(){
 				let htmlDoc = document.getElementById(ID);
 				for (let i = 0; i < htmlDoc.getElementsByClassName("FriendListTextColumn").length / 3; i++) {
 					let member = parseInt(htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 1].innerHTML);
-					if (Player.BCT.bctSettings.bestFriendsList.has(member) 
+					if (Player.BCT.bctSettings.bestFriendsList.includes(member) 
 					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
 					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))
 					&& !(Player.SubmissivesList.has(member))) {
@@ -1601,7 +1596,7 @@ async function runBCT(){
 									currentFriendsRoom[beep.MemberNumber] = beep.ChatRoomName;
 									break;
 								case BCT_BEEP_IS_BEST_FRIEND_MSG:
-									if(Player.BCT.bctSettings.bestFriendsList.has(beep.MemberNumber)) {
+									if(Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber)) {
 										SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_ACK_FRIEND_MSG,true);
 									}
 									break;
@@ -1609,7 +1604,7 @@ async function runBCT(){
 									friendFlag[beep.MemberNumber] = true;
 									break;
 								case BCT_BEEP_REQUEST_ROOM:
-									if ((CurrentScreen === "ChatRoom") && (Player.BCT.bctSettings.bestFriendsList.has(beep.MemberNumber))) {
+									if ((CurrentScreen === "ChatRoom") && (Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
 										SendRoomName(beep.MemberNumber);
 									}
 									break;
