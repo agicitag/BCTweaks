@@ -844,12 +844,12 @@ async function runBCT(){
 			addMenuCheckbox(64,64,"Enable Best Friends Feature:","bestFriendsEnabled",
 			`This feature allows you to add someone as a "Best Friend". 
 There will be a new option in the "Manage your Relationship" section to add someone as a best friend.
-Owner, lovers' or submissives' can't be added and only friends can be added.
+Owners, lovers or submissives can't be added and only friends can be added.
 For example they are sorted between lovers and normal friends in the online friends list.
 They can be deleted in Friend List by hovering over "Best Friend" and clicking on delete.`
 			);
 			addMenuCheckbox(64,64,"Enable Room Name Share:","bestFriendsRoomShare",
-			`Share your private room names with best friends. This works similar to how lovers, owners and submissives rooms show up.`,
+			`Share your private room names with best friends. This works similar to how lovers', owners' and submissives' rooms show up.`,
 			"!Player.BCT.bctSettings.bestFriendsEnabled"
 			);
 		}
