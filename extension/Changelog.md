@@ -1,4 +1,10 @@
 # BCT Changelog
+## 0.4.1
+### Bugfixes (By Haruhi #78366): 
+- Fixed a bug that underlined everything in online friend list "Chat Room" and made them clickable.
+- Fixed the issue of online friend list not getting sorted to show best friends further up.
+- The hints for Best Friends are now more clear.
+
 ## 0.4.0
 ### Features:
 - Added the option to let arousal affect orgasm progress
