@@ -1470,27 +1470,33 @@ async function runBCT(){
 			if (!bctOnlineCheck) {
 				if (Player.BCT.bctSettings.bestFriendsEnabled) {
 					const mode = FriendListMode[FriendListModeIndex];
-					let sortedOSL = [];
-					let	bfList = [];
-					let normalfriends = [];
 					if (mode === "Friends") {
+						let sortedOSL = [];
+						let	bfList = [];
+						let normalfriends = [];
 						// In Friend List mode, the online friends are shown
 						for (const friend of data) { 
-							if (friend.ChatRoomName == null) friend.ChatRoomName = "-";
-							if ((friend.Private)  && (friend.ChatRoomName === "-")
-							&& (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) && (friend.MemberNumber in currentFriendsRoom)) {
+							if (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) {
+								bfList.push(friend);
+								if ((friend.Private) && (friend.ChatRoomName === null)
+								&& (friend.MemberNumber in currentFriendsRoom)) {
 									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
-									bfList.push(friend);
-							} else if ((friend.Private)  && !(friend.ChatRoomName === "-")) { // clearly owner / subs / lovers
+								}
+							}
+							else if ((Player.Ownership != null && Player.Ownership.MemberNumber === friend.MemberNumber)
+									|| (Player.Lovership.some(lover => lover.MemberNumber == friend.MemberNumber))
+									|| (Player.SubmissivesList.has(friend.MemberNumber))) { 
 								sortedOSL.push(friend);
-							}else {
+							}
+							else {
 								normalfriends.push(friend);
 							}
 						}
-						data = sortedOSL.concat(bfList).concat(normalfriends);
+						args[0] = sortedOSL.concat(bfList).concat(normalfriends)
+						return next(args[0]);
 					}
 				}
-				next(data);
+				next(args[0]);
 			}
 		});
 
