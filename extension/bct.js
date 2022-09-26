@@ -1,4 +1,4 @@
-const BCT_VERSION = "Beta 0.4.0";
+const BCT_VERSION = "Beta 0.4.1";
 const BCT_Settings_Version = 6;
 
 async function runBCT(){
@@ -324,7 +324,7 @@ async function runBCT(){
 			BCTArousal: "Arousal Bar",
 			BCTTailwag: "Tail Wagging",
 			BCTTweaks: "Tweaks",
-			BCTBestFriends: "Best Friend"
+			BCTBestFriends: "Best Friends"
 		};
 		const MENU_ELEMENT_X_OFFSET = 1050;
 		
@@ -842,11 +842,14 @@ async function runBCT(){
 		PreferenceSubscreenBCTBestFriendsLoad = function () {
 			PreferenceSubscreen = "BCTBestFriends";
 			addMenuCheckbox(64,64,"Enable Best Friends Feature:","bestFriendsEnabled",
-			`This feature allows you to add someone as "Best Friend". They would show up differently in the friend list and if enabled,
-			you can share your private room names with them.`
+			`This feature allows you to add someone as a "Best Friend". 
+There will be a new option in the "Manage your Relationship" section to add someone as a best friend.
+Owner, lovers' or submissives' can't be added and only friends can be added.
+For example they are sorted between lovers and normal friends in the online friends list.
+They can be deleted in Friend List by hovering over "Best Friend" and clicking on delete.`
 			);
-			addMenuCheckbox(64,64,"Enable PrivateRoom Name share:","bestFriendsRoomShare",
-			`Share your private room names with best friends. This works similar to lovers.`,
+			addMenuCheckbox(64,64,"Enable Room Name Share:","bestFriendsRoomShare",
+			`Share your private room names with best friends. This works similar to how lovers, owners and submissives rooms show up.`,
 			"!Player.BCT.bctSettings.bestFriendsEnabled"
 			);
 		}
@@ -862,7 +865,6 @@ async function runBCT(){
 					SendBeep(friend,BCT_BEEP,BCT_BEEP_DELETE_SHARED,true);
 				}
 			}
-
 			defaultExit();
 		};
 
@@ -1470,27 +1472,33 @@ async function runBCT(){
 			if (!bctOnlineCheck) {
 				if (Player.BCT.bctSettings.bestFriendsEnabled) {
 					const mode = FriendListMode[FriendListModeIndex];
-					let sortedOSL = [];
-					let	bfList = [];
-					let normalfriends = [];
 					if (mode === "Friends") {
+						let sortedOSL = [];
+						let	bfList = [];
+						let normalfriends = [];
 						// In Friend List mode, the online friends are shown
 						for (const friend of data) { 
-							if (friend.ChatRoomName == null) friend.ChatRoomName = "-";
-							if ((friend.Private)  && (friend.ChatRoomName === "-")
-							&& (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) && (friend.MemberNumber in currentFriendsRoom)) {
+							if (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) {
+								bfList.push(friend);
+								if ((friend.Private) && (friend.ChatRoomName === null)
+								&& (friend.MemberNumber in currentFriendsRoom)) {
 									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
-									bfList.push(friend);
-							} else if ((friend.Private)  && !(friend.ChatRoomName === "-")) { // clearly owner / subs / lovers
+								}
+							}
+							else if ((Player.Ownership != null && Player.Ownership.MemberNumber === friend.MemberNumber)
+									|| (Player.Lovership.some(lover => lover.MemberNumber == friend.MemberNumber))
+									|| (Player.SubmissivesList.has(friend.MemberNumber))) { 
 								sortedOSL.push(friend);
-							}else {
+							}
+							else {
 								normalfriends.push(friend);
 							}
 						}
-						data = sortedOSL.concat(bfList).concat(normalfriends);
+						args[0] = sortedOSL.concat(bfList).concat(normalfriends)
+						return next(...args);
 					}
 				}
-				next(data);
+				next(...args);
 			}
 		});
 
