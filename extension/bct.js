@@ -1,5 +1,5 @@
-const BCT_VERSION = "Beta 0.4.1";
-const BCT_Settings_Version = 6;
+const BCT_VERSION = "Beta 0.5.0";
+const BCT_Settings_Version = 7;
 
 async function runBCT(){
 	
@@ -63,6 +63,7 @@ async function runBCT(){
 							Stage: "10"};
 
 	await bctSettingsLoad();
+	showRoomSlots();
 	splitOrgasmArousal()
 	settingsPage();
 	tailWagging();
@@ -92,6 +93,7 @@ async function runBCT(){
 			bestFriendsEnabled: true,
 			bestFriendsRoomShare: true,
 			bestFriendsList: [],
+			friendlistSlotsEnabled: true,
 		};
 		
 		Player.BCT = {};
@@ -825,6 +827,10 @@ async function runBCT(){
 			"The hitboxes for the buttons in the default BC settings menu move to the left of the actual button in the right rows. " +
 			"This tweak fixes that."
 			);
+			addMenuCheckbox(64, 64, "Enable Friendlist Slots: ", "friendlistSlotsEnabled",
+			`Enable showing free/max slots for rooms on your friendlist and makes the space for the roomname bigger`
+			);
+			
 		}
 
 		PreferenceSubscreenBCTTweaksRun = function () {
@@ -1638,6 +1644,148 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 						}
 				}
 		}
+	}
+
+	function showRoomSlots(){
+		let searchResult;
+		let previouslyFoundRooms = [];
+		let timeout = false;
+
+		function getRoomSlots(query = ""){
+			const SearchData = {Query: query.toUpperCase().trim(), Language: "", Space: "", Game: "", FullRooms: true};
+			searchResult = [];
+			timeout = false;
+			ServerSend("ChatRoomSearch", SearchData);
+		}
+
+		// Only interested in the actual list when we ask for it
+		modAPI.hookFunction("ChatSearchResultResponse", 2, async (args,next) => {
+			if(CurrentScreen === "FriendList"){
+				searchResult = Array.isArray(args[0]) ? args[0] : [];
+				await sleep(300);
+				timeout = true;
+			}
+			else next(args);
+		});
+
+		modAPI.hookFunction("FriendListRun", 2, (args,next) => {
+			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
+				const mode = FriendListMode[FriendListModeIndex];
+				var FriendListModeIndexBackup = FriendListModeIndex;
+				if (mode === "Friends") {
+					DrawText(TextGet("ListOnlineFriends"), 200, 35, "White", "Gray");
+					DrawText(TextGet("ChatRoomName"), 1110, 35, "White", "Gray");
+					DrawText("Slots", 1620, 35, "White", "Gray");
+
+					// Dont draw the above again in "FriendListRun" and move "Member number" to the left
+					FriendListModeIndex = -1;
+					MainCanvas.textAlign = "right";
+				}
+			}
+			next(args);
+			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
+				MainCanvas.textAlign = "center";
+				FriendListModeIndex = FriendListModeIndexBackup;
+			}
+		});
+
+		modAPI.hookFunction("FriendListLoadFriendList", 2, async (args,next) => {
+			next(args);
+			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
+				const mode = FriendListMode[FriendListModeIndex];
+				if (mode === "Friends") {
+					// Set up the page layout
+					const rows = document.getElementsByClassName("FriendListRow");
+					for(const row of rows){
+						row.children[0].style.width = "20%";
+						row.children[1].style.width = "14%";
+						row.children[2].style.width = "44%";
+						row.children[3].style.width = "10%";
+						row.children[3].style["text-align"] = "right";
+						
+						const slotDiv = document.createElement("div");
+						slotDiv.classList.add("FriendListTextColumn");
+						slotDiv.style = "width: 8%";
+
+						// Initialize with old results
+						let foundRoom;
+						let roomName = row.children[2].innerText;
+						if(!(roomName === "- Private room -" || roomName === "-")){
+							if(roomName.startsWith("- Private room - ")) roomName = roomName.replace("- Private room - ", "");
+							foundRoom = previouslyFoundRooms.find(function(room){
+								return room.Name === roomName;
+							});
+						}
+						let slotContent;
+						if(foundRoom) slotContent = document.createTextNode(foundRoom.MemberCount + "/" + foundRoom.MemberLimit);	
+						else slotContent = document.createTextNode("-");	
+						slotDiv.appendChild(slotContent);
+						row.insertBefore(slotDiv, row.children[3]);
+					}
+
+					// Get rooms with friends
+					getRoomSlots();
+					await waitFor(() => searchResult.length > 0 || timeout);
+					let roomsWithFriends = [];
+					previouslyFoundRooms = [];
+					for(room of searchResult){
+						if(room.Friends.length > 0) roomsWithFriends.push(room);
+					}
+					previouslyFoundRooms = previouslyFoundRooms.concat(roomsWithFriends);
+					let privateRooms = [];
+
+					// Fill in the correct slots
+					for(const row of rows){
+						let maxSlots = 0;
+						let currentSlots = 0;
+						let roomName = row.children[2].innerText;
+						if(!(roomName === "- Private room -" || roomName === "-")){
+							// Private rooms
+							if(roomName.startsWith("- Private room - ")){
+								roomName = roomName.replace("- Private room - ", "");
+								// Have we already found that room?
+								let foundRoom = privateRooms.find(function(room){
+									return room.Name === roomName;
+								});
+								// If not, search for it
+								if(!foundRoom){
+									// Server blocks too fast searches
+									await sleep(100);
+									getRoomSlots(roomName);
+									await waitFor(() => searchResult.length > 0 || timeout);
+									// Retry one more time
+									if(searchResult.length == 0) {
+										await sleep(100);
+										getRoomSlots(roomName);
+										await waitFor(() => searchResult.length > 0 || timeout);
+									}
+									if(searchResult.length > 0){
+										foundRoom = searchResult[0];	
+										privateRooms.push(foundRoom);
+										previouslyFoundRooms.push(foundRoom);
+									} 
+								}
+								if(foundRoom){
+									maxSlots = foundRoom.MemberLimit;
+									currentSlots = foundRoom.MemberCount;
+								}
+							}
+							// Public rooms
+							else{
+								for(room of roomsWithFriends){
+									if(room.Name === roomName){
+										maxSlots = room.MemberLimit;
+										currentSlots = room.MemberCount;
+									}
+								}
+							}
+						}
+						if(currentSlots > 0) row.children[3].innerText = currentSlots + "/" + maxSlots;
+						else row.children[3].innerText = "-";
+					}
+				}
+			}
+		});
 	}
 
 	// Images
