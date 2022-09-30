@@ -139,12 +139,10 @@ async function runBCT(){
 				}
 			}
 
-			// remove owners/slaves/lovers and non friends from Best Friends
+			// remove lovers and non friends from Best Friends
 			for(const friend of settings.bestFriendsList) {
 				if((!Player.FriendList.includes(friend))
-				&& (Player.Ownership != null && Player.Ownership.MemberNumber === friend)
-				&& (Player.Lovership.some(lover => lover.MemberNumber == friend))
-				&& (Player.SubmissivesList.has(friend))) {
+				&& (Player.Lovership.some(lover => lover.MemberNumber == friend))) {
 					settings.bestFriendsList = settings.bestFriendsList.filter(member => member !== friend);
 				}
 			}
@@ -850,12 +848,12 @@ async function runBCT(){
 			addMenuCheckbox(64,64,"Enable Best Friends Feature:","bestFriendsEnabled",
 			`This feature allows you to add someone as a "Best Friend". 
 There will be a new option in the "Manage your Relationship" section to add someone as a best friend.
-Owners, lovers or submissives can't be added and only friends can be added.
+Lovers can't be added as best friends and only friends can be added.
 For example they are sorted between lovers and normal friends in the online friends list.
 They can be deleted in Friend List by hovering over "Best Friend" and clicking on delete.`
 			);
 			addMenuCheckbox(64,64,"Enable Room Name Share:","bestFriendsRoomShare",
-			`Share your private room names with best friends. This works similar to how lovers', owners' and submissives' rooms show up.`,
+			`Share your private room names with best friends. This works similar to how lovers' and submissives' rooms show up.`,
 			"!Player.BCT.bctSettings.bestFriendsEnabled"
 			);
 		}
@@ -1395,9 +1393,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 
 	ChatRoomCanAddAsBF = () => {
 		return (CurrentCharacter && CurrentCharacter.MemberNumber && Player.FriendList.includes(CurrentCharacter.MemberNumber)
-			&& !(Player.Ownership != null && Player.Ownership.MemberNumber === CurrentCharacter.MemberNumber)
 			&& !(Player.Lovership.some(lover => lover.MemberNumber == CurrentCharacter.MemberNumber))
-			&& !(Player.SubmissivesList.has(CurrentCharacter.MemberNumber))
 			&& Player.BCT.bctSettings.bestFriendsEnabled && !Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber));
 	};
 
@@ -1435,10 +1431,11 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 	async function bctBestFriend() {
 		// this is required to make sure the friend has added player too
 		let friendFlag = {};
+		let timeoutFriend = {};
 		// save currently online friends room
 		let currentFriendsRoom = {};
 		// online friends list <TODO>
-		let onlineFriends = [];
+		let onlineFriends = new Set();
 		// true if bct has made the request for online friends <TODO>
 		let bctOnlineCheck = false;
 		
@@ -1467,13 +1464,13 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 					RemoveFromBFList(CurrentCharacter.MemberNumber);
 				}
 			}
-			next(Operation,ListType);
+			next(args);
 		});
 
 		// change FriendListLoadFriendList() to get private rooms into the friendlist
 		// if (friend.ChatRoomName != null) and (friend.Private) then do stuff
 		// shows the Roomname in the list
-		modAPI.hookFunction("FriendListLoadFriendList", 3, (args,next) => {
+		modAPI.hookFunction("FriendListLoadFriendList", 11, (args,next) => {
 			let data = args[0];
 			if (!bctOnlineCheck) {
 				if (Player.BCT.bctSettings.bestFriendsEnabled) {
@@ -1494,6 +1491,10 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 							else if ((Player.Ownership != null && Player.Ownership.MemberNumber === friend.MemberNumber)
 									|| (Player.Lovership.some(lover => lover.MemberNumber == friend.MemberNumber))
 									|| (Player.SubmissivesList.has(friend.MemberNumber))) { 
+										if ((friend.Private) && (friend.ChatRoomName === null)
+											&& (friend.MemberNumber in currentFriendsRoom)) {
+									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
+								}
 								sortedOSL.push(friend);
 							}
 							else {
@@ -1501,10 +1502,16 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 							}
 						}
 						args[0] = sortedOSL.concat(bfList).concat(normalfriends)
-						return next(...args);
+						return next(args);
 					}
 				}
-				next(...args);
+				next(args);
+			}else {
+				onlineFriends = new Set();
+				for(const friend of data) {
+					onlineFriends.add(friend.MemberNumber);
+				}
+				bctOnlineCheck = false;
 			}
 		});
 
@@ -1513,7 +1520,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			const mode = FriendListMode[FriendListModeIndex];
 			let ID = args[0];
 			let Content = args[1];
-			next(ID,Content);
+			next(args);
 			if ((Player.BCT.bctSettings.bestFriendsEnabled) && (mode === "Delete") && (ID === "FriendList")) {
 				let htmlDoc = document.getElementById(ID);
 				for (let i = 0; i < htmlDoc.getElementsByClassName("FriendListTextColumn").length / 3; i++) {
@@ -1557,20 +1564,44 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			SendBeep(target,BCT_BEEP,BCT_BEEP_IS_BEST_FRIEND_MSG,true);
 			//wait somehow?
 			await sleep(2000);
-			return friendFlag[target];
+			timeoutFriend[target];
+		}
+
+		// Returns intersection of Online Friends and Best Friends
+		async function ReuiredFriendList() {
+			bctOnlineCheck = true;
+			onlineFriends = null;
+			ServerSend("AccountQuery", { Query: "OnlineFriends" });
+			await waitFor(() => !!onlineFriends)
+			let intersect = Player.BCT.bctSettings.bestFriendsList.filter(ele => onlineFriends.has(ele));
+			return intersect;
 		}
 		
 		// Ask best friends room name on quick relog or first entry
 		// For complete load it should work directly
-		function RequestRoomName() {
-			currentFriendsRoom = {};
-			for (const friend of Player.BCT.bctSettings.bestFriendsList) {
+		async function RequestRoomName() {
+			let reqList = await ReuiredFriendList();
+			for (const friend of reqList) {
 				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true);
 			}
 		}
 		RequestRoomName();
 		function SendRoomRequestOnRelog() {
 			RequestRoomName();
+		}
+
+		// checks if the other person has added player and then sends room
+		async function CheckAndSendRoomName() {
+			let reqList = await ReuiredFriendList();
+			for (const friend of reqList) {
+				IsBestFriend(friend);
+				await waitFor(() => friendFlag[friend] || timeoutFriend[friend])
+				if (friendFlag[friend]) { 
+					SendRoomName(friend);
+				}
+			}
+			timeoutFriend = {};
+			friendFlag = {};
 		}
 
 		// send player room name when they enter a chatroom or update the room
@@ -1582,12 +1613,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				{
 					if ((data.Content === "ServerUpdateRoom") || 
 						(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) {
-							for (const friend of Player.BCT.bctSettings.bestFriendsList) {
-								if (await IsBestFriend(friend)) { 
-									SendRoomName(friend);
-								}
-							}
-							friendFlag = {};
+							CheckAndSendRoomName();
 						}
 				}
 			}
@@ -1598,12 +1624,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		{
 			if (Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare) {
 				if ((data != null) && (typeof data === "string") && (data === "ChatRoomCreated")) {
-					for (const friend of Player.BCT.bctSettings.bestFriendsList) {
-						if (await IsBestFriend(friend)) { 
-							SendRoomName(friend);
-						}
-					}
-					friendFlag = {};
+					CheckAndSendRoomName();
 				}
 			}
 		}
