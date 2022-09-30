@@ -1,4 +1,4 @@
-const BCT_VERSION = "Beta 0.4.1";
+const BCT_VERSION = "Beta 0.4.2";
 const BCT_Settings_Version = 6;
 
 async function runBCT(){
@@ -1429,7 +1429,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		// save currently online friends room
 		let currentFriendsRoom = {};
 		// online friends list <TODO>
-		let onlineFriends = [];
+		let onlineFriends = new Set();
 		// true if bct has made the request for online friends <TODO>
 		let bctOnlineCheck = false;
 		
@@ -1464,7 +1464,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		// change FriendListLoadFriendList() to get private rooms into the friendlist
 		// if (friend.ChatRoomName != null) and (friend.Private) then do stuff
 		// shows the Roomname in the list
-		modAPI.hookFunction("FriendListLoadFriendList", 3, (args,next) => {
+		modAPI.hookFunction("FriendListLoadFriendList", 11, (args,next) => {
 			let data = args[0];
 			if (!bctOnlineCheck) {
 				if (Player.BCT.bctSettings.bestFriendsEnabled) {
@@ -1500,6 +1500,12 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 					}
 				}
 				next(args);
+			}else {
+				onlineFriends = new Set();
+				for(const friend of data) {
+					onlineFriends.add(friend.MemberNumber);
+				}
+				bctOnlineCheck = false;
 			}
 		});
 
@@ -1551,21 +1557,45 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		async function IsBestFriend(target) {
 			SendBeep(target,BCT_BEEP,BCT_BEEP_IS_BEST_FRIEND_MSG,true);
 			//wait somehow?
-			await sleep(1000);
+			await sleep(2000);
 			timeoutFriend[target];
+		}
+
+		// Returns intersection of Online Friends and Best Friends
+		async function ReuiredFriendList() {
+			bctOnlineCheck = true;
+			onlineFriends = null;
+			ServerSend("AccountQuery", { Query: "OnlineFriends" });
+			await waitFor(() => !!onlineFriends)
+			let intersect = Player.BCT.bctSettings.bestFriendsList.filter(ele => onlineFriends.has(ele));
+			return intersect;
 		}
 		
 		// Ask best friends room name on quick relog or first entry
 		// For complete load it should work directly
-		function RequestRoomName() {
-			currentFriendsRoom = {};
-			for (const friend of Player.BCT.bctSettings.bestFriendsList) {
+		async function RequestRoomName() {
+			let reqList = await ReuiredFriendList();
+			for (const friend of reqList) {
 				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true);
 			}
 		}
 		RequestRoomName();
 		function SendRoomRequestOnRelog() {
 			RequestRoomName();
+		}
+
+		// checks if the other person has added player and then sends room
+		async function CheckAndSendRoomName() {
+			let reqList = await ReuiredFriendList();
+			for (const friend of reqList) {
+				IsBestFriend(friend);
+				await waitFor(() => friendFlag[friend] || timeoutFriend[friend])
+				if (friendFlag[friend]) { 
+					SendRoomName(friend);
+				}
+			}
+			timeoutFriend = {};
+			friendFlag = {};
 		}
 
 		// send player room name when they enter a chatroom or update the room
@@ -1577,15 +1607,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				{
 					if ((data.Content === "ServerUpdateRoom") || 
 						(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) {
-							for (const friend of Player.BCT.bctSettings.bestFriendsList) {
-								IsBestFriend(friend);
-								await waitFor(() => friendFlag[friend] || timeoutFriend[friend])
-								if (friendFlag[friend]) {
-									SendRoomName(friend);
-								}
-							}
-							timeoutFriend = {};
-							friendFlag = {};
+							CheckAndSendRoomName();
 						}
 				}
 			}
@@ -1596,16 +1618,8 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		{
 			if (Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare) {
 				if ((data != null) && (typeof data === "string") && (data === "ChatRoomCreated")) {
-					for (const friend of Player.BCT.bctSettings.bestFriendsList) {
-						IsBestFriend(friend);
-						await waitFor(() => friendFlag[friend] || timeoutFriend[friend])
-						if (friendFlag[friend]) { 
-							SendRoomName(friend);
-						}
-					}
-					timeoutFriend = {};
-					friendFlag = {};
-		}
+					CheckAndSendRoomName();
+				}
 			}
 		}
 		
