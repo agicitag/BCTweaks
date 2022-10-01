@@ -1,4 +1,8 @@
 # BCT Changelog
+## 0.4.3
+### Bugfixes:
+- Fixed a bug which caused the screen to flicker the pink overlay when edging with "Arousal Affects Orgasm Progress" on.
+
 ## 0.4.2
 ### Bugfixes:
 By Haruhi #78366:

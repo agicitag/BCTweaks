@@ -1030,7 +1030,10 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 
 		function getOrgasmProgressMultiplier(C){
 			let arousalInfluence = 1;
-			if(C.BCT.bctSettings.splitOrgasmArousal === true && C.BCT.bctSettings.arousalAffectsOrgasmProgress === true){
+			// < 95 to prevent the screen flickering near orgasm
+			if(C.BCT.bctSettings.splitOrgasmArousal === true && 
+			C.BCT.bctSettings.arousalAffectsOrgasmProgress === true &&
+			C.ArousalSettings.Progress < 95){
 				let arousalProgress = C.BCT.splitOrgasmArousal.arousalProgress / 100;
 				// 0.5x at 0%, 1x at 50%, 2x at 100%
 				arousalInfluence = arousalProgress ** 2 + arousalProgress / 2 + 0.5;
