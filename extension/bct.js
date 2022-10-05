@@ -1,5 +1,5 @@
-const BCT_VERSION = "0.3.3";
-const BCT_Settings_Version = 3;
+const BCT_VERSION = "0.4.0";
+const BCT_Settings_Version = 6;
 
 async function runBCT(){
 	
@@ -13,10 +13,17 @@ async function runBCT(){
 	const modAPI = bcModSdk.registerMod('BCT', BCT_VERSION, false);
 	
 	const BCT_MSG = "bctMsg",
+	BCT_BEEP = "bctBeep",
 	HIDDEN = "Hidden", // Needs to be capital 'H' !
 	BCT_MSG_ACTIVITY_AROUSAL_SYNC = "bctMsgActivityArousalSync",
 	BCT_MSG_INITILIZATION_SYNC = "bctMsgInitilizationSync",
-	BCT_MSG_SETTINGS_SYNC = "bctMsgSettingsSync"
+	BCT_MSG_SETTINGS_SYNC = "bctMsgSettingsSync";
+
+	const BCT_BEEP_ROOM_NAME_MSG = "RoomName",
+	BCT_BEEP_IS_BEST_FRIEND_MSG = "Friends",
+	BCT_BEEP_ACK_FRIEND_MSG = "AckFriends",
+	BCT_BEEP_REQUEST_ROOM = "ReqRoom",
+	BCT_BEEP_DELETE_SHARED = "DelRoom";
 	
 	const bctSettingsKey = () => `bctSettings.${Player?.AccountName}`;
 
@@ -39,13 +46,27 @@ async function runBCT(){
 		"arousalProgressMultiplier",
 		"arousalDecayMultiplier",
 		"orgasmProgressMultiplier",
-		"orgasmDecayMultiplier"
+		"orgasmDecayMultiplier",
+		"arousalAffectsOrgasmProgress",
+		"bestFriendsEnabled",
 	];
+
+	let addBFDialog = {Function: "ChatRoomListManage(\"Add\", \"BestFriend\")",
+						Option: "(Add as Best Friend.)",
+						Prerequisite: "CanAddAsBF()",
+						Result: "(This member is considered to be a best friend by you.)",
+						Stage: "10"};
+	let removeBFDialog = {Function: "ChatRoomListManage(\"Remove\", \"BestFriend\")",
+							Option: "(Remove from Best Friend.)",
+							Prerequisite: "CanRemoveAsBF()",
+							Result: "(This member is no longer considered to be a best friend by you.)",
+							Stage: "10"};
 
 	await bctSettingsLoad();
 	splitOrgasmArousal()
 	settingsPage();
 	tailWagging();
+	bctBestFriend();
 	//send Initilization when pasted when already in a chatroom
 	sendBctInitilization(true);
 	
@@ -59,6 +80,7 @@ async function runBCT(){
 			arousalDecayMultiplier: 1.0,
 			orgasmProgressMultiplier: 1.0,
 			orgasmDecayMultiplier: 1.0,
+			arousalAffectsOrgasmProgress: false,
 			tailWaggingEnable: false,
 			tailWaggingTailOneName: "PuppyTailStrap1",
 			tailWaggingTailOneColor: "#431A12",
@@ -67,7 +89,9 @@ async function runBCT(){
 			tailWaggingDelay: 500,
 			tailWaggingCount: 3,
 			menuButtonFixEnabled: true,
-			
+			bestFriendsEnabled: true,
+			bestFriendsRoomShare: true,
+			bestFriendsList: [],
 		};
 		
 		Player.BCT = {};
@@ -113,6 +137,14 @@ async function runBCT(){
 				}
 			}
 
+			// remove lovers and non friends from Best Friends
+			for(const friend of settings.bestFriendsList) {
+				if((!Player.FriendList.includes(friend))
+				&& (Player.Lovership.some(lover => lover.MemberNumber == friend))) {
+					settings.bestFriendsList = settings.bestFriendsList.filter(member => member !== friend);
+				}
+			}
+
 			//if the version of the current settings is newer then the loaded ones, beep that bct got an update
 			if (
 				typeof settings.version === "undefined" ||
@@ -125,7 +157,7 @@ async function runBCT(){
 			Player.BCT.bctSettings = settings;
 
 			//shared settings
-			for(setting in settings){
+			for(const setting in settings){
 				if(SHARED_SETTINGS.indexOf(setting) >= 0){
 					Player.BCT.bctSharedSettings[setting] = settings[setting];
 				}
@@ -134,7 +166,7 @@ async function runBCT(){
 		}
 	}
 	
-	function bctSettingsSave() {
+	function bctSettingsSave(share = true) {
 		//local settings
 		localStorage.setItem(bctSettingsKey(),JSON.stringify(Player.BCT.bctSettings));
 
@@ -150,25 +182,26 @@ async function runBCT(){
 				Player.BCT.bctSharedSettings[setting] = Player.BCT.bctSettings[setting];
 			}
 		}
-
-		//send new shared Settings
-		const bctSettingsMessage = {
-			Type: HIDDEN,
-			Content: BCT_MSG,
-			Sender: Player.MemberNumber,
-			Dictionary: [
-				{
-					message: {
-						type: BCT_MSG_SETTINGS_SYNC,
-						bctVersion: BCT_VERSION,
-						bctSettings: Player.BCT.bctSharedSettings,
-						target: null,
+		if(share === true) {
+			//send new shared Settings
+			const bctSettingsMessage = {
+				Type: HIDDEN,
+				Content: BCT_MSG,
+				Sender: Player.MemberNumber,
+				Dictionary: [
+					{
+						message: {
+							type: BCT_MSG_SETTINGS_SYNC,
+							bctVersion: BCT_VERSION,
+							bctSettings: Player.BCT.bctSharedSettings,
+							target: null,
+						},
 					},
-				},
-			],
-		};
-		
-		ServerSend("ChatRoomChat", bctSettingsMessage);
+				],
+			};
+			
+			ServerSend("ChatRoomChat", bctSettingsMessage);
+		}
 	}
 
 	async function beepChangelog() {
@@ -231,7 +264,9 @@ async function runBCT(){
 								sender.BCT.bctSettings = message.bctSettings;
 								sender.BCT.splitOrgasmArousal = {};
 								sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
-								sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;						
+								sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;
+								// Add new Dialog to Best Friend feature users
+								if (sender.BCT?.bctSettings?.bestFriendsEnabled === true) AddRelationDialog(sender);
 								if(message.replyRequested)	sendBctInitilization(false);
 								break;
 							case BCT_MSG_ACTIVITY_AROUSAL_SYNC:
@@ -242,6 +277,7 @@ async function runBCT(){
 							case BCT_MSG_SETTINGS_SYNC:
 								sender.BCT.version = message.bctVersion;
 								sender.BCT.bctSettings = message.bctSettings;
+								if (sender.BCT?.bctSettings?.bestFriendsEnabled === true) AddRelationDialog(sender);
 								break;
 							default:
 								console.log("Unidentified BCT message:");
@@ -280,11 +316,13 @@ async function runBCT(){
 			"BCTArousal",
 			"BCTTailwag",
 			"BCTTweaks",
+			"BCTBestFriends"
 		];
 		const bctSettingCategoryLabels = {
 			BCTArousal: "Arousal Bar",
 			BCTTailwag: "Tail Wagging",
 			BCTTweaks: "Tweaks",
+			BCTBestFriends: "Best Friends"
 		};
 		const MENU_ELEMENT_X_OFFSET = 1050;
 		
@@ -393,7 +431,7 @@ async function runBCT(){
 			return yPos;
 		}
 
-		function addMenuCheckbox(width, height, text, setting, hint, xModifier = 0, yModifier = 0, elementText = ""){
+		function addMenuCheckbox(width, height, text, setting, hint, grayedOutReference = "false", xModifier = 0, yModifier = 0, elementText = ""){
 			menuElements[PreferenceSubscreen].push({
 				type: "Checkbox",
 				yPos: getNewYPos(),
@@ -402,6 +440,7 @@ async function runBCT(){
 				text: text,
 				setting: setting,
 				hint: hint,
+				grayedOutReference: grayedOutReference,
 				xModifier: xModifier,
 				yModifier: yModifier,
 				elementText: elementText,
@@ -455,12 +494,10 @@ async function runBCT(){
 			// Draw the player & controls
 			DrawCharacter(Player, 50, 50, 0.9);
 			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
-
-			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
 			
 			MainCanvas.textAlign = "left";
+			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
 			DrawText("- " + bctSettingCategoryLabels[PreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
-
 			if(settingsHint != ""){
 				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, "Black", "Yellow");
 			}
@@ -469,7 +506,10 @@ async function runBCT(){
 			for (i = 0; i < menuElements[PreferenceSubscreen].length; i++){
 				currentElement = menuElements[PreferenceSubscreen][i];
 				MainCanvas.textAlign = "left";
-				DrawText(currentElement.text, 500, currentElement.yPos, (currentElement.yPos === currentHint) ? "Red" : "Black", "Gray");
+				let textColor = "Black";
+				if(eval(currentElement?.grayedOutReference) === true) textColor = "Gray";
+				if(currentElement.yPos === currentHint) textColor = "Red";
+				DrawText(currentElement.text, 500, currentElement.yPos, textColor, "Gray");
 				switch (currentElement.type) {
 					case "Checkbox":
 						DrawCheckbox(
@@ -478,7 +518,8 @@ async function runBCT(){
 							currentElement.width,
 							currentElement.height,
 							currentElement.elementText,
-							Player.BCT.bctSettings[currentElement.setting]
+							(eval(currentElement.grayedOutReference)) ? false : Player.BCT.bctSettings[currentElement.setting],
+							eval(currentElement.grayedOutReference)
 						);
 						break;
 					case "Button":
@@ -530,9 +571,11 @@ async function runBCT(){
 				currentElement = menuElements[PreferenceSubscreen][i];
 				switch (currentElement.type) {
 					case "Checkbox":
-						if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
-							Player.BCT.bctSettings[currentElement.setting] = !Player.BCT.bctSettings[currentElement.setting];
-							foundElement = true;
+						if (eval(currentElement.grayedOutReference) === false){
+							if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
+								Player.BCT.bctSettings[currentElement.setting] = !Player.BCT.bctSettings[currentElement.setting];
+								foundElement = true;
+							}
 						}
 						break;
 					case "Button":
@@ -653,6 +696,11 @@ async function runBCT(){
 			"the addon and is the one that affects the game (e.g. speech). The pink one is the arousal bar which is basically the same " +
 			"as the normal BC one, but cant make you orgasm."
 			);
+			addMenuCheckbox(64, 64, "Arousal Affects Orgasm Progress:", "arousalAffectsOrgasmProgress",
+			"Let your arousal affect the orgasm progress speed. With this option enabled at 0% arousal the orgasm progress gets " + 
+			"a 0.5x multiplier, at 50% a 1x multiplier and at 100% a 2x multiplier.",
+			"!Player.BCT.bctSettings.splitOrgasmArousal"
+			);
 			addMenuBackNext(250, 60, "Arousal Bar Location:", "arousalbarLocation", ["Bottom", "Right"],
 			"Position the arousal bar either bottom of the orgasm bar or to the right of the character."
 			);
@@ -692,6 +740,9 @@ async function runBCT(){
 			}
 		};
 
+		let tailPreviewMain;
+		let tailPreviewSecondary;
+
 		PreferenceSubscreenBCTTailwagLoad = function () {
 			PreferenceSubscreen = "BCTTailwag";
 			addMenuCheckbox(64, 64, "Enable Tail Wagging:", "tailWaggingEnable",
@@ -704,7 +755,9 @@ async function runBCT(){
 				else{
 					PreferenceMessage = "Main Tail updated";
 					Player.BCT.bctSettings.tailWaggingTailOneName = InventoryGet(Player,"TailStraps").Asset.Name;
-					Player.BCT.bctSettings.tailWaggingTailOneColor = InventoryGet(Player,"TailStraps").Color;		
+					Player.BCT.bctSettings.tailWaggingTailOneColor = InventoryGet(Player,"TailStraps").Color;
+					InventoryWear(tailPreviewMain, Player.BCT.bctSettings.tailWaggingTailOneName, "TailStraps", Player.BCT.bctSettings.tailWaggingTailOneColor);
+					CharacterRefresh(tailPreviewMain);
 				}
 			}, 
 			"Updates the tail that is gonna stay after wagging to the currently worn one."
@@ -716,7 +769,9 @@ async function runBCT(){
 				else{
 					PreferenceMessage = "Secondary Tail updated";
 					Player.BCT.bctSettings.tailWaggingTailTwoName = InventoryGet(Player,"TailStraps").Asset.Name;
-					Player.BCT.bctSettings.tailWaggingTailTwoColor = InventoryGet(Player,"TailStraps").Color;	
+					Player.BCT.bctSettings.tailWaggingTailTwoColor = InventoryGet(Player,"TailStraps").Color;
+					InventoryWear(tailPreviewSecondary, Player.BCT.bctSettings.tailWaggingTailTwoName, "TailStraps", Player.BCT.bctSettings.tailWaggingTailTwoColor);
+					CharacterRefresh(tailPreviewSecondary);
 				}
 			},
 			"Updates the temporary tail for wagging to the currently worn one."
@@ -727,10 +782,23 @@ async function runBCT(){
 			addMenuInput(200, "Tail Wagging Delay (in ms):", "tailWaggingDelay", "InputTailWaggingDelay",
 			"The delay in between switches between the two tails in ms."
 			);
+
+			// Tail previews
+			tailPreviewMain = CharacterLoadSimple(`TailPreviewMain-${Player.MemberNumber}`);
+			tailPreviewSecondary = CharacterLoadSimple(`TailPreviewSecondary-${Player.MemberNumber}`);
+			InventoryWear(tailPreviewMain, Player.BCT.bctSettings.tailWaggingTailOneName, "TailStraps", Player.BCT.bctSettings.tailWaggingTailOneColor);
+			InventoryWear(tailPreviewSecondary, Player.BCT.bctSettings.tailWaggingTailTwoName, "TailStraps", Player.BCT.bctSettings.tailWaggingTailTwoColor);
+			CharacterRefresh(tailPreviewMain);
+			CharacterRefresh(tailPreviewSecondary);
 		}
 
 		PreferenceSubscreenBCTTailwagRun = function () {
 			drawMenuElements();
+			MainCanvas.textAlign = "center";
+			DrawTextWrapGood("Main Tail:", 550, 750, 100, 80, "Black");
+			DrawCharacter(tailPreviewMain, 600, 600, 0.5, false);
+			DrawTextWrapGood("Secondary Tail:", 1000, 750, 200, 80, "Black");
+			DrawCharacter(tailPreviewSecondary, 1100, 600, 0.5, false);
 		}
 
 		PreferenceSubscreenBCTTailwagClick = function () {
@@ -768,6 +836,36 @@ async function runBCT(){
 		PreferenceSubscreenBCTTweaksExit = function () {
 			defaultExit();
 		};
+
+		PreferenceSubscreenBCTBestFriendsLoad = function () {
+			PreferenceSubscreen = "BCTBestFriends";
+			addMenuCheckbox(64,64,"Enable Best Friends Feature:","bestFriendsEnabled",
+			`This feature allows you to add someone as a "Best Friend". 
+There will be a new option in the "Manage your Relationship" section to add someone as a best friend.
+Lovers can't be added as best friends and only friends can be added.
+For example they are sorted between lovers and normal friends in the online friends list.
+They can be deleted in Friend List by hovering over "Best Friend" and clicking on delete.`
+			);
+			addMenuCheckbox(64,64,"Enable Room Name Share:","bestFriendsRoomShare",
+			`Share your private room names with best friends. This works similar to how lovers' and submissives' rooms show up.`,
+			"!Player.BCT.bctSettings.bestFriendsEnabled"
+			);
+		}
+		PreferenceSubscreenBCTBestFriendsRun = function () {
+			drawMenuElements();
+		}
+		PreferenceSubscreenBCTBestFriendsClick = function () {
+			handleMenuClicks(MouseX);
+		}
+		PreferenceSubscreenBCTBestFriendsExit = function () {
+			if (!(Player.BCT.bctSettings.bestFriendsEnabled) || !(Player.BCT.bctSettings.bestFriendsRoomShare)) {
+				for (const friend of Player.BCT.bctSettings.bestFriendsList) {
+					SendBeep(friend,BCT_BEEP,BCT_BEEP_DELETE_SHARED,true);
+				}
+			}
+			defaultExit();
+		};
+
 	}
 
 	//fix wrong settings button hitboxes (changed 500 to 420)
@@ -930,6 +1028,19 @@ async function runBCT(){
 			C.ArousalSettings.Progress -= value;
 		}
 
+		function getOrgasmProgressMultiplier(C){
+			let arousalInfluence = 1;
+			// < 95 to prevent the screen flickering near orgasm
+			if(C.BCT.bctSettings.splitOrgasmArousal === true && 
+			C.BCT.bctSettings.arousalAffectsOrgasmProgress === true &&
+			C.ArousalSettings.Progress < 95){
+				let arousalProgress = C.BCT.splitOrgasmArousal.arousalProgress / 100;
+				// 0.5x at 0%, 1x at 50%, 2x at 100%
+				arousalInfluence = arousalProgress ** 2 + arousalProgress / 2 + 0.5;
+			}
+			return C.BCT.bctSettings.orgasmProgressMultiplier * arousalInfluence;
+		}
+
 		modAPI.hookFunction('ActivityOrgasmStart', 2, (args, next) => {
 			let C = args[0];
 			try {
@@ -948,6 +1059,12 @@ async function runBCT(){
 				// console.log(error);
 			}
 			next(args);
+		});
+
+		// To sync arousal after a resisted Orgasm
+		modAPI.hookFunction('ActivityOrgasmStop', 2, (args, next) => {
+			next(args);
+			ActivityChatRoomBCTArousalSync(args[0]);
 		});
 
 		modAPI.hookFunction('ActivitySetArousalTimer', 2, (args, next) => {
@@ -981,7 +1098,7 @@ async function runBCT(){
 							ActivityChatRoomBCTArousalSync(C);
 						}
 					}
-					args[3] = args[3] * C.BCT.bctSettings.orgasmProgressMultiplier;		
+					args[3] = args[3] * getOrgasmProgressMultiplier(C);		
 				} catch (error) {
 					console.error("Error setting arousal timer for character: " + C.Name + ".");
 					// console.log(error);
@@ -1134,35 +1251,35 @@ async function runBCT(){
 											if (BCTTimerLastArousalProgressCount % 2 == 0) {
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
 												// Subtract arousal to match the set multiplier for orgasm progress
-												subtractOrgasmProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmProgressMultiplier));
+												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 3) {
 											BCTActivityVibratorLevel(Character[C], 3);
 											if (BCTTimerLastArousalProgressCount % 3 == 0) {
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmProgressMultiplier));
+												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 2) {
 											BCTActivityVibratorLevel(Character[C], 2);
 											if (Character[C].BCT.splitOrgasmArousal.arousalProgress <= 95 && BCTTimerLastArousalProgressCount % 4 == 0){
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmProgressMultiplier));
+												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 1) {
 											BCTActivityVibratorLevel(Character[C], 1);
 											if (Character[C].BCT.splitOrgasmArousal.arousalProgress <= 65 && BCTTimerLastArousalProgressCount % 6 == 0){
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmProgressMultiplier));
+												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 0) {
 											BCTActivityVibratorLevel(Character[C], 1);
 											if (Character[C].BCT.splitOrgasmArousal.arousalProgress <= 35 && BCTTimerLastArousalProgressCount % 8 == 0){
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - Character[C].BCT.bctSettings.orgasmProgressMultiplier));
+												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == -1) {
@@ -1267,12 +1384,289 @@ async function runBCT(){
 					);},i * Player.BCT.bctSettings.tailWaggingDelay * 2 + Player.BCT.bctSettings.tailWaggingDelay);
 			  }
 		}
+	}
 
+	// Best Friend Feature start
+
+	ChatRoomCanAddAsBF = () => {
+		return (CurrentCharacter && CurrentCharacter.MemberNumber && Player.FriendList.includes(CurrentCharacter.MemberNumber)
+			&& !(Player.Lovership.some(lover => lover.MemberNumber == CurrentCharacter.MemberNumber))
+			&& Player.BCT.bctSettings.bestFriendsEnabled && !Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber));
+	};
+
+	ChatRoomCanRemoveAsBF = () => {
+		return (CurrentCharacter && CurrentCharacter.MemberNumber 
+			&& Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber));
+	};
+	
+	// Adding the dialog option in Manage your relationshp
+	function AddRelationDialog(character) {
+		let pos = character.Dialog.findIndex((ele) => ele.Option === "(Remove from friendlist.)");
+		let alreadyAdded = character.Dialog.findIndex((ele) => ele.Option === "(Add as Best Friend.)");
+		if ((pos > -1) && (alreadyAdded === -1)) {
+			character.Dialog.splice(pos+1,0,addBFDialog);
+			character.Dialog.splice(pos+2,0,removeBFDialog);
+		}
+	}
+
+	function RemoveRelationDialog(character) {
+		let pos = character.Dialog.findIndex((ele) => ele.Option === "(Add as Best Friend.)");
+		if(pos > -1) {
+			character.Dialog.splice(pos,2);
+		}
+	}
+
+	function SendBeep(target,type,message,secret=false) {
+		const beep = { MemberNumber: target,
+						BeepType: type,
+						Message: message,
+						IsSecret: secret,
+					}
+		ServerSend("AccountBeep",beep);
+	}
+
+	async function bctBestFriend() {
+		// this is required to make sure the friend has added player too
+		let friendFlag = {};
+		let timeoutFriend = {};
+		// save currently online friends room
+		let currentFriendsRoom = {};
+		// online friends list <TODO>
+		let onlineFriends = new Set();
+		// true if bct has made the request for online friends <TODO>
+		let bctOnlineCheck = false;
+		
+		registerSocketListener("ChatRoomMessage", (data) => SendRoomNameOnChatRoomOnEntryUpdate(data));
+		registerSocketListener("AccountBeep", (data) => parseBeeps(data));
+		registerSocketListener("ChatRoomCreateResponse", (data) => SendRoomNameOnCreateChat(data));
+		registerSocketListener("LoginResponse", () => SendRoomRequestOnRelog());
+
+		function AddToBFList(charNumber) {
+			Player.BCT.bctSettings.bestFriendsList.push(charNumber);
+			bctSettingsSave(false);
+		}
+		function RemoveFromBFList(charNumber) {
+			Player.BCT.bctSettings.bestFriendsList = Player.BCT.bctSettings.bestFriendsList.filter(member => member !== charNumber);
+			bctSettingsSave(false);
+		}
+
+		modAPI.hookFunction("ChatRoomListManage", 3, (args,next) => {
+			let Operation = args[0];
+			let ListType = args[1];
+			if (CurrentCharacter && CurrentCharacter.MemberNumber && ListType === "BestFriend") {
+				if (Operation === "Add") {
+					AddToBFList(CurrentCharacter.MemberNumber);
+				}
+				else if (Operation === "Remove") {
+					RemoveFromBFList(CurrentCharacter.MemberNumber);
+				}
+			}
+			next(args);
+		});
+
+		// change FriendListLoadFriendList() to get private rooms into the friendlist
+		// if (friend.ChatRoomName != null) and (friend.Private) then do stuff
+		// shows the Roomname in the list
+		modAPI.hookFunction("FriendListLoadFriendList", 11, (args,next) => {
+			let data = args[0];
+			if (!bctOnlineCheck) {
+				if (Player.BCT.bctSettings.bestFriendsEnabled) {
+					const mode = FriendListMode[FriendListModeIndex];
+					if (mode === "Friends") {
+						let sortedOSL = [];
+						let	bfList = [];
+						let normalfriends = [];
+						// In Friend List mode, the online friends are shown
+						for (const friend of data) { 
+							if (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) {
+								bfList.push(friend);
+								if ((friend.Private) && (friend.ChatRoomName === null)
+								&& (friend.MemberNumber in currentFriendsRoom)) {
+									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
+								}
+							}
+							else if ((Player.Ownership != null && Player.Ownership.MemberNumber === friend.MemberNumber)
+									|| (Player.Lovership.some(lover => lover.MemberNumber == friend.MemberNumber))
+									|| (Player.SubmissivesList.has(friend.MemberNumber))) { 
+										if ((friend.Private) && (friend.ChatRoomName === null)
+											&& (friend.MemberNumber in currentFriendsRoom)) {
+									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
+								}
+								sortedOSL.push(friend);
+							}
+							else {
+								normalfriends.push(friend);
+							}
+						}
+						args[0] = sortedOSL.concat(bfList).concat(normalfriends)
+						return next(args);
+					}
+				}
+				next(args);
+			}else {
+				onlineFriends = new Set();
+				for(const friend of data) {
+					onlineFriends.add(friend.MemberNumber);
+				}
+				bctOnlineCheck = false;
+			}
+		});
+
+		// shows Best Friends in BC's friend list and have the option to delete them
+		modAPI.hookFunction("ElementContent", 2, (args,next) => {
+			const mode = FriendListMode[FriendListModeIndex];
+			let ID = args[0];
+			let Content = args[1];
+			next(args);
+			if ((Player.BCT.bctSettings.bestFriendsEnabled) && (mode === "Delete") && (ID === "FriendList")) {
+				let htmlDoc = document.getElementById(ID);
+				for (let i = 0; i < htmlDoc.getElementsByClassName("FriendListTextColumn").length / 3; i++) {
+					let member = parseInt(htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 1].innerHTML);
+					if (Player.BCT.bctSettings.bestFriendsList.includes(member) 
+					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
+					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))
+					&& !(Player.SubmissivesList.has(member))) {
+							let BFelement = htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2]
+							BFelement.innerHTML = "Best Friend";
+							BFelement.style.cursor = "pointer";
+							BFelement.style.textDecoration = "underline";
+							BFelement.style.color = "lime";
+							let  onHoverBF = () => {
+								BFelement.innerHTML = "Delete BF?";
+							}
+							let onOutBF = () => {
+								BFelement.innerHTML = "Best Friend";
+							}
+							let onClickBF = () => {
+								BFelement.innerHTML = "Deleted";
+								RemoveFromBFList(member);
+								BFelement.removeEventListener("mouseover",onHoverBF);
+								BFelement.removeEventListener("mouseout",onOutBF);
+							}
+							BFelement.addEventListener("mouseover", onHoverBF);
+							BFelement.addEventListener("mouseout", onOutBF);
+							BFelement.addEventListener("click",onClickBF)
+					}
+				}
+			}
+		});
+
+		// This sends a non secret type beep to the target giving their room name
+		function SendRoomName(target) {
+			SendBeep(target,BCT_BEEP,BCT_BEEP_ROOM_NAME_MSG);
+		}
+
+		// check if the target has added you to receive room name
+		async function IsBestFriend(target) {
+			SendBeep(target,BCT_BEEP,BCT_BEEP_IS_BEST_FRIEND_MSG,true);
+			//wait somehow?
+			await sleep(2000);
+			timeoutFriend[target];
+		}
+
+		// Returns intersection of Online Friends and Best Friends
+		async function ReuiredFriendList() {
+			bctOnlineCheck = true;
+			onlineFriends = null;
+			ServerSend("AccountQuery", { Query: "OnlineFriends" });
+			await waitFor(() => !!onlineFriends)
+			let intersect = Player.BCT.bctSettings.bestFriendsList.filter(ele => onlineFriends.has(ele));
+			return intersect;
+		}
+		
+		// Ask best friends room name on quick relog or first entry
+		// For complete load it should work directly
+		async function RequestRoomName() {
+			let reqList = await ReuiredFriendList();
+			for (const friend of reqList) {
+				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true);
+			}
+		}
+		RequestRoomName();
+		function SendRoomRequestOnRelog() {
+			RequestRoomName();
+		}
+
+		// checks if the other person has added player and then sends room
+		async function CheckAndSendRoomName() {
+			let reqList = await ReuiredFriendList();
+			for (const friend of reqList) {
+				IsBestFriend(friend);
+				await waitFor(() => friendFlag[friend] || timeoutFriend[friend])
+				if (friendFlag[friend]) { 
+					SendRoomName(friend);
+				}
+			}
+			timeoutFriend = {};
+			friendFlag = {};
+		}
+
+		// send player room name when they enter a chatroom or update the room
+		async function SendRoomNameOnChatRoomOnEntryUpdate(data) 
+		{
+			if (Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare) {
+				if ((data != null) && (typeof data === "object") && (data.Content != null) && (typeof data.Content === "string")
+				&& (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) 
+				{
+					if ((data.Content === "ServerUpdateRoom") || 
+						(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) {
+							CheckAndSendRoomName();
+						}
+				}
+			}
+		}
+
+		// send player room name when they create room
+		async function SendRoomNameOnCreateChat(data) 
+		{
+			if (Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare) {
+				if ((data != null) && (typeof data === "string") && (data === "ChatRoomCreated")) {
+					CheckAndSendRoomName();
+				}
+			}
+		}
+		
+		// parse Beep for Room Name 
+		function parseBeeps(data) {
+			if ((data != null) && (typeof data === "object") && !Array.isArray(data) && (data.MemberNumber != null) && 
+					(typeof data.MemberNumber === "number") && (data.MemberName != null) && (typeof data.MemberName === "string"))	{
+						
+						if(data.BeepType === BCT_BEEP){
+							//console.log("BEEP Type : ",data);
+							let beep = data;
+							switch(beep.Message) {
+								case BCT_BEEP_ROOM_NAME_MSG: 
+									currentFriendsRoom[beep.MemberNumber] = beep.ChatRoomName;
+									break;
+								case BCT_BEEP_IS_BEST_FRIEND_MSG:
+									if(Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber)) {
+										SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_ACK_FRIEND_MSG,true);
+									}
+									break;
+								case BCT_BEEP_ACK_FRIEND_MSG:
+									friendFlag[beep.MemberNumber] = true;
+									break;
+								case BCT_BEEP_REQUEST_ROOM:
+									if ((CurrentScreen === "ChatRoom") && (Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
+										SendRoomName(beep.MemberNumber);
+									}
+									break;
+								case BCT_BEEP_DELETE_SHARED:
+									if (beep.MemberNumber in currentFriendsRoom) {
+										delete currentFriendsRoom[beep.MemberNumber];
+									}
+									break;
+								default:
+									console.log("Invalid Message Type for BCT Beep: ", beep);
+							}
+						}
+				}
+		}
 	}
 
 	// Images
 	const IMAGES = {
-		AROUSAL_THERMOMETER: "data:image/png;base64,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",
+		AROUSAL_THERMOMETER: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAAH0CAYAAADL84ijAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAALEgAACxIB0t1+/AAAABl0RVh0U29mdHdhcmUAcGFpbnQubmV0IDQuMC4yMfEgaZUAAAxtSURBVHhe7d1piCR3HcbxmZ3ZmdnZXTdrkjXGNZtEERWN8YhiIIp4nyjReMQjKF544xHUF9FE8IWCinhF0KCgL0TFCzURDQYD3hd44W0CieIVc5jb5zfuzE53P91dPTsz+1TN9w8fhE1P17/qa19V1dVTGzxOlEvk9o64Ulo79svX5RpxK9dGN8sX5IC0aszKs8WtVNv9R86VVo3d8n5xK9QFF0urxiniVqQrrpJnSSvGgpwvbkW64ia5UFox7iDfFrciXXK51FNz/KggXxO3El1ymcxL9JiW06VLb3WHuULOlOgxI+eIW4Gu+a9cINGjgpwtbgW65no5T6JHBTlL3Ap0zXXyVokec/JBcSvQNbfKRVJv82PHotwobgW66KdymsSOCvJvcZNfcexRe1vBzb3Pj+X+EjsaB7nhsqujESQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJAxBwhAkDEHCECQMQcIQJExXgkzLv8RNfkWHgvxA7iOR46HyS7lF3ORXdChIretHZZ9sk5hxmvxd3KQHdCjIst/LYyRiPFhuEDdRq4NByh/l8XJExxnyV3ETHKoNQY7Zc5Sd+xi/kUfJERkVo/HT1GodfYQs+5M8XDZ1PFKuFjehoXYu7Lj92lMvbZWFuXm7LmP8TjbtNeWx8gdxE7G2z87alW2LA8cdb9drjN/KI2TDRn3GeJz8RdwErIW5ObuSbTS/fc6uo3Hbwf+tbbVhUeo149fSv/Ch2v7IcGZmZuy6jvBd2SPrOvbKZ8Qt0HriCQfsCnXBWQdOWlrH6enpgfU2bpR3y7pFOVreI9eLW+AAtxJdVOvaMEp5iazLOFP+Jm4hPWpybuJd5rbDEPVp/nQ5rPEAqR1obgGWm3SXuW0wQu0dXvPOyB1ygbg7ttyEt4KZbRO90H9Y1jRqh+GPxN3pADfRrWR++3a7XYza1XSSTDTqM8erxN3hADfBrchtG+NmeZc0HjPyDBl7oKm4iW1VrzvxZLuNjH/Iy6TROF4+K+6OBriJbWWLCwt2OxnfkzkZOx4m7g4GuAmh8VPXP+XFMnIsyOvF3cEANxkc+iQ/Rh3Ue5+MHHeXX4i7gx5uIjjEbTOj9gjXNrdjXs4V94c93AQwyG27PvWO60Kx4xi5Ttwf9nALx6A69OC2X5/ag17nJfSM+txRHwSrmPujFdPT07e5hWPQ0Xv22G3Y5wp5uvSMerr6hLg/6OEWjOHcNjS+LD3jTvJ9cTdejUfHhOaa7VK5XO4mS6Oeruowo7thD7dAjLZrcXHsmZxSn0leIUujToGsPZDuhqvx6Fijbdu2ue25WkX7iOySpSA/E3fDFWfsP4Ega9Tw3dYlcpwsHff4ibgbrXALQjN1Pprbpn2+IXeVqafI2HNz3YLQzMz4p6xSe4DPkaWD7+4GPdyC0FzDkyHeLFPPW/UPQ7mFoLlt44PUyXWvlamLDv7DSG4haK7BI6SC1LlvSydyuRuscAvAZBq89S3Vwv6HHm4BmIxe2JfP9x3H/mMPtwBMhiBhCBKGIGEIEoYgYQgShiBhCBJmXYPsO2qvXQiaa7BzcdnUl/r+wXILQXMNdy7WQaqpFx38h5HcQtBcw93vb5KpFx78h5HcQtCc26Z9KsgbZemLI+4GPdxC0MyO+cbXS3mLLH1Vd+y3pdyC0MzifKMv8fxZnipL3wlp8hWEW93CMF7Dsxe/JSfI0pmLrxR3ox5uYRhvbnZskGvlbbJy3ca6QIC7YQ+3MIx2yvH77bbsc5U8X1bGvaTJtUx42prQ3t273XbsVxc8e4KsjO3yXnE37uEWiuFmm13O6dPSM2al0QlzwqOkoYbXbaxvrZ0nA6Ou51SnM7o/6uEWjkENHx0/l/vJwKhT4T8u7o96VHk3ARxy0nF3ttuuz63yOdkpA6Oetp4p7g8HuEngkJlmJ8bV292lT+fDxj1k7Ffblvdcuong0tvvcuy+gW02RD1d3VOGjnq31fgqQDsXdtziJrTVuW1l1FdA6lqMY0ddy6l+5cDdyQA3oa1s9+JOu52Mulb8yTJ21KOkLori7mTArh3tu1r1RnLbyKjrAbxDatSuq7Gjyn1H3J0NcBPbihp+KafUM9B+aTxqJ9fTpK4y4O5wgJvgVuK2yRB1IGpNF+uvL4PWi467U8tNdCtw22KEgd0kk4xHy5Xi7thyE+4ytw1GqB249dNQhzVeLmN/eW3Znp277MS7qMFxjn51kZm6puVhjboG4xfFLcDaClG2z8zadR/hm7Ju13+vL7TXPhe3IKvecbgV6QK9T7XrPMLFUvsKG73FbTrq4iiNn7qWuRVqM7eODdTJC+saY3mcL7VDzC10KLdibeTWrYGXymG/bowab5drxC18qDZ/onfr00DtWq89HhsaY3nUx/6Jn76KW+Fkbh0aqF0jr5Y6pLFp450yUZTVL4Zu5ZOsnveE6tpXdVrVpjwy+kf9nMXET1/TU//f51M/3ug2xpHU8LDrMLUtXiO1g/aIjXqhnzhKP7dxNpOb04Tqzc4bpNH13Dd6VJS6uLyb6Firnso2/ap1q+exRjfJr6Q+FhzRR0b/qKtqTvSJfhy3AdeDW9Zh+LycKpGjrhn4Iakf6XWTXxduIzvub8saPmk7dWii3tjcV+JH/Yx1nc3tVqQL6muAZ0urRp3BUq8tjQ9ytUD9EnT9xEQd7Vs5U71Now5yPVna/mipo3x15db6sZs7SqtH7VQ7UWqfzqek0Y9UhqgPvvVzEvVBb+T5U20c9f58n9xb6mG/ph/H3yT19bI6fP0QqUdE/VhBp8ei1PXmnyNjL+K8ib4q9dXk+gLTbtlSo14Ua+dbHbipS9V+QD4pbkNtlNrv9BX5mDxJ6ohePRo25NhFm0btiKuntHrkPFDq/6H1eyb16Kkf9XUbcy2ulh9KneX/IKmnz/pp8lp2K981beZYfgTVSXu1W6IucPBcqV8RqN0VboP3q9equnx3Xa3iBVIRatR9Bz4Kpqb+BzinqIdfuy8aAAAAAElFTkSuQmCC",
 		LOGO: "data:image/png;base64,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",
 	}
 }
