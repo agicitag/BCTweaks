@@ -1,22 +1,4 @@
 # BCT Changelog
-## 0.4.3
-### Bugfixes:
-- Fixed a bug which caused the screen to flicker the pink overlay when edging with "Arousal Affects Orgasm Progress" on.
-
-## 0.4.2
-### Bugfixes:
-By Haruhi #78366:
-- Fixed a bug which caused online friend list to crash when "hide online friends" bcx rule is turned on.
-- Owners and submissives are now able to add each other as Best Friends.
-- Optimized sending and receiving room names.
-
-## 0.4.1
-### Bugfixes:
-By Haruhi #78366: 
-- Fixed a bug that underlined everything in online friend list "Chat Room" and made them clickable.
-- Fixed the issue of online friend list not getting sorted to show best friends further up.
-- The hints for Best Friends are now more clear.
-
 ## 0.4.0
 ### Features:
 - Added the option to let arousal affect orgasm progress
