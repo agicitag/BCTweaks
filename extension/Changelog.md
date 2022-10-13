@@ -1,4 +1,8 @@
 # BCT Changelog
+## 0.4.1
+### Bugfixes:
+- Fixed a bug that caused the screen to flicker when edging with an orgasm multiplier > 1
+
 ## 0.4.0
 ### Features:
 - Added the option to let arousal affect orgasm progress

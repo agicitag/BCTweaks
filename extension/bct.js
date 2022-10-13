@@ -1,4 +1,4 @@
-const BCT_VERSION = "0.4.0";
+const BCT_VERSION = "0.4.1";
 const BCT_Settings_Version = 6;
 
 async function runBCT(){
@@ -1031,14 +1031,16 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		function getOrgasmProgressMultiplier(C){
 			let arousalInfluence = 1;
 			// < 95 to prevent the screen flickering near orgasm
-			if(C.BCT.bctSettings.splitOrgasmArousal === true && 
-			C.BCT.bctSettings.arousalAffectsOrgasmProgress === true &&
-			C.ArousalSettings.Progress < 95){
-				let arousalProgress = C.BCT.splitOrgasmArousal.arousalProgress / 100;
-				// 0.5x at 0%, 1x at 50%, 2x at 100%
-				arousalInfluence = arousalProgress ** 2 + arousalProgress / 2 + 0.5;
+			if(C.ArousalSettings.Progress < 95){
+				if(C.BCT.bctSettings.splitOrgasmArousal === true && 
+				C.BCT.bctSettings.arousalAffectsOrgasmProgress === true){
+					let arousalProgress = C.BCT.splitOrgasmArousal.arousalProgress / 100;
+					// 0.5x at 0%, 1x at 50%, 2x at 100%
+					arousalInfluence = arousalProgress ** 2 + arousalProgress / 2 + 0.5;
+				}
+				arousalInfluence = arousalInfluence * C.BCT.bctSettings.orgasmProgressMultiplier
 			}
-			return C.BCT.bctSettings.orgasmProgressMultiplier * arousalInfluence;
+			return arousalInfluence;
 		}
 
 		modAPI.hookFunction('ActivityOrgasmStart', 2, (args, next) => {
