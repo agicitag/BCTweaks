@@ -1,5 +1,5 @@
-const BCT_VERSION = "0.4.1";
-const BCT_Settings_Version = 6;
+const BCT_VERSION = "0.5.0";
+const BCT_Settings_Version = 7;
 
 async function runBCT(){
 	
@@ -508,6 +508,7 @@ async function runBCT(){
 				MainCanvas.textAlign = "left";
 				let textColor = "Black";
 				if(eval(currentElement?.grayedOutReference) === true) textColor = "Gray";
+				if(MouseIn(500, currentElement.yPos - 18, MENU_ELEMENT_X_OFFSET - 525, 36)) textColor = "Yellow";
 				if(currentElement.yPos === currentHint) textColor = "Red";
 				DrawText(currentElement.text, 500, currentElement.yPos, textColor, "Gray");
 				switch (currentElement.type) {

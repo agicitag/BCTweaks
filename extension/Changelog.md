@@ -1,6 +1,8 @@
 # BCT Changelog
 ## 0.5.0
 ### Features
+- Update BCT settings button to show after "Gender"
+- Change color of settings text on hover to better show it being able to be clicked
 
 ## 0.4.1
 ### Bugfixes:
