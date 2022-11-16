@@ -335,7 +335,7 @@ async function runBCT(){
 		let currentHint = 0;
 
 		// keep same position in menu
-		PreferenceSubscreenList.splice(13, 0 ,"BCTSettings");
+		PreferenceSubscreenList.splice(14, 0 ,"BCTSettings");
 
 		modAPI.hookFunction("TextGet", 2, (args, next) => {
 			if(args[0] == "HomepageBCTSettings") return "BCT Settings";
