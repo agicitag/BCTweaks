@@ -1,17 +1,7 @@
 # BCT Changelog
-## 0.4.2
-### Bugfixes:
-By Haruhi #78366:
-- Fixed a bug which caused online friend list to crash when "hide online friends" bcx rule is turned on.
-- Owners and submissives are now able to add each other as Best Friends.
-- Optimized sending and receiving room names.
-
 ## 0.4.1
 ### Bugfixes:
-By Haruhi #78366: 
-- Fixed a bug that underlined everything in online friend list "Chat Room" and made them clickable.
-- Fixed the issue of online friend list not getting sorted to show best friends further up.
-- The hints for Best Friends are now more clear.
+- Fixed a bug that caused the screen to flicker when edging with an orgasm multiplier > 1
 
 ## 0.4.0
 ### Features:

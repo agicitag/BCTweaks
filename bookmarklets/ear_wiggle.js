@@ -12,8 +12,8 @@ javascript: (() => {
   if(showActivity){
     var focusGroup = Player.FocusGroup;
     Player.FocusGroup = {Name:"ItemEars"};
-    ActivityRun(Player, ActivityAllowedForGroup(Player, "ItemEars").find(function(activity){
-      return activity.Name == "Wiggle";
+    ActivityRun(Player, ActivityAllowedForGroup(Player, "ItemEars").find(function(obj){
+      return obj.Activity.Name == "Wiggle";
     }));
     Player.FocusGroup = focusGroup;
   }
