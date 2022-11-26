@@ -1,4 +1,4 @@
-const BCT_VERSION = "0.4.1";
+const BCT_VERSION = "0.4.2";
 const BCT_Settings_Version = 6;
 
 async function runBCT(){
@@ -1484,16 +1484,13 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 								bfList.push(friend);
 								if ((friend.Private) && (friend.ChatRoomName === null)
 								&& (friend.MemberNumber in currentFriendsRoom)) {
-									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
+									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber].ChatRoomName;
+									friend.ChatRoomSpace = currentFriendsRoom[friend.MemberNumber].ChatRoomSpace;
 								}
 							}
 							else if ((Player.Ownership != null && Player.Ownership.MemberNumber === friend.MemberNumber)
 									|| (Player.Lovership.some(lover => lover.MemberNumber == friend.MemberNumber))
-									|| (Player.SubmissivesList.has(friend.MemberNumber))) { 
-										if ((friend.Private) && (friend.ChatRoomName === null)
-											&& (friend.MemberNumber in currentFriendsRoom)) {
-									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber];
-								}
+									|| (Player.SubmissivesList.has(friend.MemberNumber))) {
 								sortedOSL.push(friend);
 							}
 							else {
@@ -1637,8 +1634,10 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 							//console.log("BEEP Type : ",data);
 							let beep = data;
 							switch(beep.Message) {
-								case BCT_BEEP_ROOM_NAME_MSG: 
-									currentFriendsRoom[beep.MemberNumber] = beep.ChatRoomName;
+								case BCT_BEEP_ROOM_NAME_MSG:
+									currentFriendsRoom[beep.MemberNumber] = {};
+									currentFriendsRoom[beep.MemberNumber].ChatRoomName = beep.ChatRoomName;
+									currentFriendsRoom[beep.MemberNumber].ChatRoomSpace = beep.ChatRoomSpace;
 									break;
 								case BCT_BEEP_IS_BEST_FRIEND_MSG:
 									if(Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber)) {
