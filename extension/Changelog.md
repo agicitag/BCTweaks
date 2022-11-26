@@ -1,5 +1,4 @@
 # BCT Changelog
-## 0.4.2
 ### Bugfixes:
 - Private Rooms not working properly in R86 for Mixed and Male sections
 
