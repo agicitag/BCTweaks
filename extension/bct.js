@@ -67,20 +67,20 @@ async function runBCT(){
 	settingsPage();
 	tailWagging();
 	bctBestFriend();
-	//send Initilization when pasted when already in a chatroom
+	//send Initilization when started when already in a chatroom
 	sendBctInitilization(true);
 	
 	async function bctSettingsLoad() {
 		await waitFor(() => !!Player?.AccountName);
 
 		const BCT_DEFAULT_SETTINGS = {
-			splitOrgasmArousal: false,
+			splitOrgasmArousal: true,
 			arousalbarLocation: "Bottom",
 			arousalProgressMultiplier: 1.0,
 			arousalDecayMultiplier: 1.0,
 			orgasmProgressMultiplier: 1.0,
 			orgasmDecayMultiplier: 1.0,
-			arousalAffectsOrgasmProgress: false,
+			arousalAffectsOrgasmProgress: true,
 			tailWaggingEnable: false,
 			tailWaggingTailOneName: "PuppyTailStrap1",
 			tailWaggingTailOneColor: "#431A12",
@@ -270,12 +270,10 @@ async function runBCT(){
 								if(message.replyRequested)	sendBctInitilization(false);
 								break;
 							case BCT_MSG_ACTIVITY_AROUSAL_SYNC:
-								sender.BCT.version = message.bctVersion;
 								sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
 								sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;
 								break;
 							case BCT_MSG_SETTINGS_SYNC:
-								sender.BCT.version = message.bctVersion;
 								sender.BCT.bctSettings = message.bctSettings;
 								if (sender.BCT?.bctSettings?.bestFriendsEnabled === true) AddRelationDialog(sender);
 								break;
