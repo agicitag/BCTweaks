@@ -4,6 +4,14 @@
 - Update BCT settings button to show after "Gender"
 - Change color of settings text on hover to better show it being able to be clicked
 
+## 0.4.3
+### Bugfixes:
+- Updated to new mod sdk version 1.1.0
+
+## 0.4.2
+### Bugfixes:
+- Private Rooms not working properly in R86 for Mixed and Male sections
+
 ## 0.4.1
 ### Bugfixes:
 - Fixed a bug that caused the screen to flicker when edging with an orgasm multiplier > 1
