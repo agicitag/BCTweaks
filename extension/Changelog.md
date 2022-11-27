@@ -1,4 +1,8 @@
 # BCT Changelog
+## 0.4.3
+### Bugfixes:
+- Updated to new mod sdk version 1.1.0
+
 ## 0.4.2
 ### Bugfixes:
 - Private Rooms not working properly in R86 for Mixed and Male sections
