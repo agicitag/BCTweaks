@@ -1,6 +1,8 @@
 const BCT_VERSION = "0.5.0";
 const BCT_Settings_Version = 7;
 
+const BCT_API = {};
+
 async function runBCT(){
 	
 	await waitFor(() => ServerSocket && ServerIsConnected);
@@ -926,6 +928,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				ServerSend("ChatRoomChat", message);
 			}
 		}
+		BCT_API.ActivityChatRoomBCTArousalSync = ActivityChatRoomBCTArousalSync;
 
 		function ActivitySetBCTArousal(C, Progress) {
 			if(C.BCT != null){
@@ -939,6 +942,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				}
 			}
 		}
+		BCT_API.ActivitySetBCTArousal = ActivitySetBCTArousal;
 
 		function BCTActivityTimerProgress(C, Progress) {
 			if(C.BCT != null && C.BCT.bctSettings.splitOrgasmArousal === true){
@@ -1047,6 +1051,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			}
 			return arousalInfluence;
 		}
+		BCT_API.getOrgasmProgressMultiplier = getOrgasmProgressMultiplier;
 
 		modAPI.hookFunction('ActivityOrgasmStart', 2, (args, next) => {
 			let C = args[0];
@@ -1391,6 +1396,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 					);},i * Player.BCT.bctSettings.tailWaggingDelay * 2 + Player.BCT.bctSettings.tailWaggingDelay);
 			  }
 		}
+		BCT_API.tailWag = tailWag;
 	}
 
 	// Best Friend Feature start
