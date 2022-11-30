@@ -566,7 +566,7 @@ async function runBCT(){
 			}
 		}
 
-		function handleMenuClicks(mouseX){
+		function handleMenuClicks(){
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)){
 				PreferenceExit();
@@ -593,7 +593,7 @@ async function runBCT(){
 						break;
 					case "BackNext":
 						if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
-							if (mouseX <= MENU_ELEMENT_X_OFFSET + currentElement.width/2) currentElement.index = PreferenceGetPreviousIndex(currentElement.backNextOptions, currentElement.index);
+							if (MouseX <= MENU_ELEMENT_X_OFFSET + currentElement.width/2) currentElement.index = PreferenceGetPreviousIndex(currentElement.backNextOptions, currentElement.index);
 							else currentElement.index = PreferenceGetNextIndex(currentElement.backNextOptions, currentElement.index);
 							Player.BCT.bctSettings[currentElement.setting] = currentElement.backNextOptions[currentElement.index];
 							foundElement = true;
@@ -718,7 +718,7 @@ async function runBCT(){
 		}
 
 		PreferenceSubscreenBCTArousalClick = function () {
-			handleMenuClicks(MouseX);
+			handleMenuClicks();
 		}
 
 		PreferenceSubscreenBCTArousalExit = function () {
@@ -809,7 +809,7 @@ async function runBCT(){
 		}
 
 		PreferenceSubscreenBCTTailwagClick = function () {
-			handleMenuClicks(MouseX);
+			handleMenuClicks();
 		}
 
 		PreferenceSubscreenBCTTailwagExit = function () {
@@ -837,7 +837,7 @@ async function runBCT(){
 		}
 
 		PreferenceSubscreenBCTTweaksClick = function () {
-			handleMenuClicks(MouseX);
+			handleMenuClicks();
 		}
 
 		PreferenceSubscreenBCTTweaksExit = function () {
@@ -862,7 +862,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			drawMenuElements();
 		}
 		PreferenceSubscreenBCTBestFriendsClick = function () {
-			handleMenuClicks(MouseX);
+			handleMenuClicks();
 		}
 		PreferenceSubscreenBCTBestFriendsExit = function () {
 			if (!(Player.BCT.bctSettings.bestFriendsEnabled) || !(Player.BCT.bctSettings.bestFriendsRoomShare)) {
