@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BCT Beta Loader
 // @namespace    https://www.bondageprojects.com/
-// @version      0.4.1
+// @version      0.5.0
 // @description  BC extension adding several little useful tweaks to BC.
 // @author       agicitag
 // @match https://bondageprojects.elementfx.com/*
