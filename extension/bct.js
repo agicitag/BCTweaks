@@ -1,4 +1,4 @@
-const BCT_VERSION = "0.5.0";
+const BCT_VERSION = "B.0.5.0";
 const BCT_Settings_Version = 7;
 
 const BCT_API = {};
