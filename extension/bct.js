@@ -1208,12 +1208,15 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		var BCTTimerLastArousalProgressCount = 0;
 		var BCTTimerLastArousalDecay = 0;
 
-		modAPI.hookFunction('TimerProcess', 2, (args, next) => {
+		// low priority to not affect other mods, since the number of next() calls are severely reduced
+		modAPI.hookFunction('TimerProcess', 1, (args, next) => {
+			let runNext = false;
 			if (ActivityAllowed()) {
 				// Arousal can change every second, based on ProgressTimer
 				if ((BCTTimerLastArousalProgress + 1000 < CurrentTime) || (BCTTimerLastArousalProgress - 1000 > CurrentTime)) {
 					BCTTimerLastArousalProgress = CurrentTime;
 					BCTTimerLastArousalProgressCount++;
+					runNext = true;
 					for (let C = 0; C < Character.length; C++) {				
 						try {
 							if(Character[C].BCT != null){
@@ -1262,36 +1265,30 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 											BCTActivityVibratorLevel(Character[C], 4);
 											if (BCTTimerLastArousalProgressCount % 2 == 0) {
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												// Subtract arousal to match the set multiplier for orgasm progress
-												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 3) {
 											BCTActivityVibratorLevel(Character[C], 3);
 											if (BCTTimerLastArousalProgressCount % 3 == 0) {
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 2) {
 											BCTActivityVibratorLevel(Character[C], 2);
 											if (Character[C].BCT.splitOrgasmArousal.arousalProgress <= 95 && BCTTimerLastArousalProgressCount % 4 == 0){
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 1) {
 											BCTActivityVibratorLevel(Character[C], 1);
 											if (Character[C].BCT.splitOrgasmArousal.arousalProgress <= 65 && BCTTimerLastArousalProgressCount % 6 == 0){
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == 0) {
 											BCTActivityVibratorLevel(Character[C], 1);
 											if (Character[C].BCT.splitOrgasmArousal.arousalProgress <= 35 && BCTTimerLastArousalProgressCount % 8 == 0){
 												BCTActivityTimerProgress(Character[C], 1 * Character[C].BCT.bctSettings.arousalProgressMultiplier);
-												subtractOrgasmProgress(Character[C], (1 - getOrgasmProgressMultiplier(Character[C])));
 											}
 										}
 										if (Factor == -1) {
@@ -1355,7 +1352,98 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 					}
 				}
 			}
-			next(args);
+			if(runNext){
+				let restoreValues = {};
+				for (let C = 0; C < ChatRoomCharacter.length; C++) {
+					try {
+						if((ChatRoomCharacter[C].BCT != null && ChatRoomCharacter[C]?.BCT?.bctSettings?.splitOrgasmArousal === true)
+							// conditions to count vibrations in BC timerProcess
+							&& !((ChatRoomCharacter[C].ArousalSettings.ProgressTimer != null) && (typeof ChatRoomCharacter[C].ArousalSettings.ProgressTimer === "number") && !isNaN(ChatRoomCharacter[C].ArousalSettings.ProgressTimer) && (ChatRoomCharacter[C].ArousalSettings.ProgressTimer != 0))
+							&& ChatRoomCharacter[C].IsEgged()){
+							let Factor = -1;
+							for (let A = 0; A < ChatRoomCharacter[C].Appearance.length; A++) {
+								// disable zones that cant give orgasms for vibrating items check
+								let Item = ChatRoomCharacter[C].Appearance[A];
+								if(!PreferenceGetZoneOrgasm(ChatRoomCharacter[C], Item.Asset.ArousalZone) &&
+									//only slots where vibes can be placed
+									(Item.Asset.ArousalZone == "ItemNipples" ||
+										Item.Asset.ArousalZone == "ItemNipplesPiercings" ||
+										Item.Asset.ArousalZone == "ItemVulva" ||
+										Item.Asset.ArousalZone == "ItemVulvaPiercings" ||
+										Item.Asset.ArousalZone == "ItemButt"
+									)
+								){
+									if(restoreValues[ChatRoomCharacter[C].ID] == null) restoreValues[ChatRoomCharacter[C].ID] = {};
+									restoreValues[ChatRoomCharacter[C].ID][Item.Asset.ArousalZone] = PreferenceGetZoneFactor(ChatRoomCharacter[C], Item.Asset.ArousalZone);
+									// here it gets disabled
+									PreferenceSetZoneFactor(ChatRoomCharacter[C], Item.Asset.ArousalZone, 1)
+								}
+
+								// calculate Factor BC would calculate to apply orgasm progress multiplicators
+								// If the character is egged, we find the highest intensity factor and affect the progress, low and medium vibrations have a cap
+								let ZoneFactor = PreferenceGetZoneFactor(ChatRoomCharacter[C], Item.Asset.ArousalZone) - 2;
+								if (InventoryItemHasEffect(Item, "Egged", true) && (Item.Property != null) && (Item.Property.Intensity != null) && (typeof Item.Property.Intensity === "number") && !isNaN(Item.Property.Intensity) && (Item.Property.Intensity >= 0) && (ZoneFactor >= 0) && (Item.Property.Intensity + ZoneFactor > Factor)){
+									if ((ChatRoomCharacter[C].ArousalSettings.Progress < 95) || PreferenceGetZoneOrgasm(ChatRoomCharacter[C], Item.Asset.ArousalZone))
+										Factor = Item.Property.Intensity + ZoneFactor;
+								}
+
+							}
+							// Adds the fetish value to the factor
+							if (Factor >= 0) {
+								var Fetish = ActivityFetishFactor(ChatRoomCharacter[C]);
+								if (Fetish > 0) Factor = Factor + Math.ceil(Fetish / 3);
+								if (Fetish < 0) Factor = Factor + Math.floor(Fetish / 3);
+							}
+							
+							// Subtract arousal to match the set multiplier for orgasm progress
+							if ((Factor >= 4) && TimerLastArousalProgressCount % 2 == 0) {
+								subtractOrgasmProgress(ChatRoomCharacter[C], (1 - getOrgasmProgressMultiplier(ChatRoomCharacter[C])));
+							}
+							else if ((Factor == 3) && TimerLastArousalProgressCount % 3 == 0) {
+								subtractOrgasmProgress(CharaChatRoomCharactercter[C], (1 - getOrgasmProgressMultiplier(ChatRoomCharacter[C])));
+							}
+							else if ((Factor == 2) && TimerLastArousalProgressCount % 4 == 0 && ChatRoomCharacter[C].ArousalSettings.Progress <= 95) {
+								subtractOrgasmProgress(ChatRoomCharacter[C], (1 - getOrgasmProgressMultiplier(ChatRoomCharacter[C])));
+							}
+							else if ((Factor == 1) && TimerLastArousalProgressCount % 6 == 0 && ChatRoomCharacter[C].ArousalSettings.Progress <= 65) {
+								subtractOrgasmProgress(ChatRoomCharacter[C], (1 - getOrgasmProgressMultiplier(ChatRoomCharacter[C])));
+							}
+							else if ((Factor >= 0) && TimerLastArousalProgressCount % 8 == 0 && ChatRoomCharacter[C].ArousalSettings.Progress <= 35) {
+								subtractOrgasmProgress(ChatRoomCharacter[C], (1 - getOrgasmProgressMultiplier(ChatRoomCharacter[C])));
+							}
+						}
+					} catch (error) {
+						console.error("Error setting zone factor for character: " + ChatRoomCharacter[C].Name + ".");
+					}
+				}
+				next(args);
+				// restore Values
+				for (value in restoreValues){
+					let char = ChatRoomCharacter.find(function(char){
+						return char.ID == value;
+					});
+					for (zone in restoreValues[value]){
+						PreferenceSetZoneFactor(char, zone, restoreValues[value][zone]);
+					}
+				}
+			}
+			// Do the work TimerProcess wouldve normally done
+			else{
+				// Increments the time from the last frame
+				TimerRunInterval = args[0] - TimerLastTime;
+				TimerLastTime = args[0];
+				CurrentTime = CurrentTime + TimerRunInterval;
+
+				if (ControllerActive == true) {
+					if (ControllerCurrentButton >= ControllerButtonsX.length) {
+						ControllerCurrentButton = 0;
+					}
+					DrawRect(MouseX - 5, MouseY - 5, 10, 10, "Cyan");
+				}
+			
+				// Launches the main again for the next frame
+				requestAnimationFrame(MainRun);
+			}
 		});
 
 	}

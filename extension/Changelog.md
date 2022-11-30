@@ -5,6 +5,9 @@
 - Change color of settings text on hover to better show it being able to be clicked
 - Added API (feel free to request access to additional functions)
 
+### Bugfixes:
+- Vibrators on zones that cant make you orgasm, still gave orgasm progress
+
 ## 0.4.3
 ### Bugfixes:
 - Updated to new mod sdk version 1.1.0
