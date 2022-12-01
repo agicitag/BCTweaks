@@ -1080,6 +1080,34 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		}
 		BCT_API.getOrgasmProgressMultiplier = getOrgasmProgressMultiplier;
 
+		function BCTActivitySetArousalTimer(C, Activity, Zone, Progress, Asset){
+			try {
+				if(C?.BCT?.bctSettings?.splitOrgasmArousal === true){
+					//Arousal Progress Multiplier
+					Progress = Progress * C.BCT.bctSettings.arousalProgressMultiplier;
+					
+					// If there's already a progress timer running, we add it's value but divide it by 2 to lessen the impact, the progress must be between -25 and 25
+					if ((C.BCT.splitOrgasmArousal.ProgressTimer == null) || (typeof C.BCT.splitOrgasmArousal.ProgressTimer !== "number") || isNaN(C.BCT.splitOrgasmArousal.ProgressTimer)) C.BCT.splitOrgasmArousal.ProgressTimer = 0;
+					Progress = Math.round((C.BCT.splitOrgasmArousal.ProgressTimer / 2) + Progress);
+					if (Progress < -25) Progress = -25;
+					if (Progress > 25) Progress = 25;
+
+					// Limit max arousal values
+					var Max = ((Activity == null || Activity.MaxProgress == null) || (Activity.MaxProgress > 100)) ? 100 : Activity.MaxProgress;
+
+					if ((Progress > 0) && (C.BCT.splitOrgasmArousal.arousalProgress + Progress > Max)) Progress = (Max - C.BCT.splitOrgasmArousal.arousalProgress >= 0) ? Max - C.BCT.splitOrgasmArousal.arousalProgress : 0;
+
+					// If we must apply a progress timer change, we publish it
+					if (C.BCT.splitOrgasmArousal.ProgressTimer !== Progress) {
+						C.BCT.splitOrgasmArousal.ProgressTimer = Progress;
+						ActivityChatRoomBCTArousalSync(C);
+					}
+				}	
+			} catch (error) {
+				console.error("Error setting arousal timer for character: " + C.Name + ".");
+			}
+		}
+
 		modAPI.hookFunction('ActivityOrgasmStart', 2, (args, next) => {
 			let C = args[0];
 			try {
@@ -1106,6 +1134,33 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			ActivityChatRoomBCTArousalSync(args[0]);
 		});
 
+		// Handle random effects
+		modAPI.hookFunction('ActivityEffectFlat', 2, (args, next) => {
+			let C = args[1];
+			let Amount = args[2];
+			let Zone = args[3];
+			let Count = args[4];
+			let Asset = args[5];
+
+			// next also already calls BCTActivitySetArousalTimer
+			if (PreferenceGetZoneOrgasm(C, Zone)){
+				next(args)
+			}
+			else{
+				// Converts from activity name to the activity object
+				if ((Amount == null) || (typeof Amount != "number")) return;
+				if ((Count == null) || (Count == undefined) || (Count == 0)) Count = 1;
+	
+				// Calculates the next progress factor
+				var Factor = Amount; // Check how much the character likes the activity, from -10 to +10
+				Factor = Factor + (PreferenceGetZoneFactor(C, Zone) * 5) - 10; // The zone used also adds from -10 to +10
+				Factor = Factor + ActivityFetishFactor(C) * 2; // Adds a fetish factor based on the character preferences
+				Factor = Factor + Math.round(Factor * (Count - 1) / 3); // if the action is done repeatedly, we apply a multiplication factor based on the count
+
+				BCTActivitySetArousalTimer(C, null, Zone, Factor, Asset);
+			}
+		});
+
 		modAPI.hookFunction('ActivitySetArousalTimer', 2, (args, next) => {
 			let C = args[0];
 			let Activity = args[1];
@@ -1113,37 +1168,10 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			let Progress = args[3];
 			let Asset = args[4];
 
-			if(C.BCT != null){
-				try {
-					if(C.BCT.bctSettings.splitOrgasmArousal === true){
-	
-						//Arousal Progress Multiplier
-						Progress = Progress * C.BCT.bctSettings.arousalProgressMultiplier;
-						
-						// If there's already a progress timer running, we add it's value but divide it by 2 to lessen the impact, the progress must be between -25 and 25
-						if ((C.BCT.splitOrgasmArousal.ProgressTimer == null) || (typeof C.BCT.splitOrgasmArousal.ProgressTimer !== "number") || isNaN(C.BCT.splitOrgasmArousal.ProgressTimer)) C.BCT.splitOrgasmArousal.ProgressTimer = 0;
-						Progress = Math.round((C.BCT.splitOrgasmArousal.ProgressTimer / 2) + Progress);
-						if (Progress < -25) Progress = -25;
-						if (Progress > 25) Progress = 25;
-	
-						// Limit max arousal values
-						var Max = ((Activity == null || Activity.MaxProgress == null) || (Activity.MaxProgress > 100)) ? 100 : Activity.MaxProgress;
-						//if ((Max > 95) && !PreferenceGetZoneOrgasm(C, Zone)) Max = 95;
-						//if ((Max > 67) && (Zone == "ActivityOnOther")) Max = 67;
-						if ((Progress > 0) && (C.BCT.splitOrgasmArousal.arousalProgress + Progress > Max)) Progress = (Max - C.BCT.splitOrgasmArousal.arousalProgress >= 0) ? Max - C.BCT.splitOrgasmArousal.arousalProgress : 0;
-	
-						// If we must apply a progress timer change, we publish it
-						if (C.BCT.splitOrgasmArousal.ProgressTimer !== Progress) {
-							C.BCT.splitOrgasmArousal.ProgressTimer = Progress;
-							ActivityChatRoomBCTArousalSync(C);
-						}
-					}
-					args[3] = args[3] * getOrgasmProgressMultiplier(C);		
-				} catch (error) {
-					console.error("Error setting arousal timer for character: " + C.Name + ".");
-					// console.log(error);
-				}
-			}
+			BCTActivitySetArousalTimer(C, Activity, Zone, Progress, Asset);
+
+			if(C.BCT != null) args[3] = args[3] * getOrgasmProgressMultiplier(C);
+
 			//only let the orgasm bar progress if its and orgasm zone
 			try {
 				if(!C.BCT || PreferenceGetZoneOrgasm(C, Zone) || C.BCT.bctSettings.splitOrgasmArousal === false

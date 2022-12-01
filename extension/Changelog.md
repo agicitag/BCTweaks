@@ -9,6 +9,7 @@
 
 ### Bugfixes:
 - Vibrators on zones that cant make you orgasm, still gave orgasm progress
+- Random effects affected orgasm progress, regardless of zone
 
 ## 0.4.3
 ### Bugfixes:
