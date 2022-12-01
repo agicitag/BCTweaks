@@ -89,6 +89,8 @@ async function runBCT(){
 			orgasmProgressMultiplier: 1.0,
 			orgasmDecayMultiplier: 1.0,
 			arousalAffectsOrgasmProgress: true,
+			arousalAffectsErection: true,
+			automaticErectionThreshold: 25,
 			tailWaggingEnable: false,
 			tailWaggingTailOneName: "PuppyTailStrap1",
 			tailWaggingTailOneColor: "#431A12",
@@ -325,7 +327,7 @@ async function runBCT(){
 			"BCTBestFriends"
 		];
 		const bctSettingCategoryLabels = {
-			BCTArousal: "Arousal Bar",
+			BCTArousal: "Arousal",
 			BCTTailwag: "Tail Wagging",
 			BCTTweaks: "Tweaks",
 			BCTBestFriends: "Best Friends"
@@ -711,6 +713,13 @@ async function runBCT(){
 			addMenuBackNext(250, 60, "Arousal Bar Location:", "arousalbarLocation", ["Bottom", "Right"],
 			"Position the arousal bar either bottom of the orgasm bar or to the right of the character."
 			);
+			addMenuCheckbox(64, 64, "Arousal Affects Erection:", "arousalAffectsErection",
+			"Let your arousal affect the state of your erection.",
+			"!Player.HasPenis()"
+			);
+			addMenuInput(200, "Erection Threshold:", "automaticErectionThreshold", "InputAutomaticErectionThreshold",
+			"Set the threshold when your penis should get erect (in %)."
+			);
 		}
 
 		PreferenceSubscreenBCTArousalRun = function () {
@@ -725,14 +734,17 @@ async function runBCT(){
 			if(CommonIsNumeric(ElementValue("InputArousalProgressMultiplier"))
 				&& CommonIsNumeric(ElementValue("InputOrgasmProgressMultiplier"))
 				&& CommonIsNumeric(ElementValue("InputArousalDecayMultiplier"))
+				&& CommonIsNumeric(ElementValue("InputAutomaticErectionThreshold"))
 				&& CommonIsNumeric(ElementValue("InputOrgasmDecayMultiplier"))){
 				Player.BCT.bctSettings.arousalProgressMultiplier = ElementValue("InputArousalProgressMultiplier");
 				Player.BCT.bctSettings.orgasmProgressMultiplier = ElementValue("InputOrgasmProgressMultiplier");
 				Player.BCT.bctSettings.arousalDecayMultiplier = ElementValue("InputArousalDecayMultiplier");
+				Player.BCT.bctSettings.automaticErectionThreshold = ElementValue("InputAutomaticErectionThreshold");
 				Player.BCT.bctSettings.orgasmDecayMultiplier = ElementValue("InputOrgasmDecayMultiplier");
 				ElementRemove("InputArousalProgressMultiplier");
 				ElementRemove("InputOrgasmProgressMultiplier");
 				ElementRemove("InputArousalDecayMultiplier");
+				ElementRemove("InputAutomaticErectionThreshold");
 				ElementRemove("InputOrgasmDecayMultiplier");
 				defaultExit();
 			}
@@ -940,6 +952,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 					C.BCT.splitOrgasmArousal.arousalProgressTimer = 0;
 					ActivityChatRoomBCTArousalSync(C);
 				}
+				BCTAutoErect(C);
 			}
 		}
 		BCT_API.ActivitySetBCTArousal = ActivitySetBCTArousal;
@@ -963,8 +976,22 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				if (C.BCT.splitOrgasmArousal.arousalProgress == 0) {
 					C.BCT.splitOrgasmArousal.changeTime = CommonTime();
 				}
-			}
 
+				BCTAutoErect(C);
+			}
+		}
+
+		function BCTAutoErect(C){
+			if(C.BCT != null && C.BCT.bctSettings.splitOrgasmArousal === true){
+				if(C.ID === 0 && C.BCT.bctSettings.arousalAffectsErection && C.HasPenis()){
+					if(C.BCT.splitOrgasmArousal.arousalProgress >= C.BCT.bctSettings.automaticErectionThreshold){
+						CharacterSetFacialExpression(C, "Pussy", "Hard");
+					}
+					else if (C.BCT.splitOrgasmArousal.arousalProgress < C.BCT.bctSettings.automaticErectionThreshold){
+						CharacterSetFacialExpression(C, "Pussy", null);
+					}
+				}
+			}
 		}
 
 		function BCTActivityVibratorLevel(C, Level) {
