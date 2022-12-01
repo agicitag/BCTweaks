@@ -4,6 +4,7 @@
 // @version      0.4.1
 // @description  BC extension adding several little useful tweaks to BC.
 // @author       agicitag
+// @downloadURL  https://github.com/agicitag/BondageClubTools/raw/main/extension/bctBetaLoader.user.js
 // @match https://bondageprojects.elementfx.com/*
 // @match https://www.bondageprojects.elementfx.com/*
 // @match https://bondage-europe.com/*
