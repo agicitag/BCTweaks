@@ -1121,10 +1121,11 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			try {
 				if(!C.BCT || PreferenceGetZoneOrgasm(C, Zone) || C.BCT.bctSettings.splitOrgasmArousal === false
 				// Male genital support
-					|| (Asset.Name == "Penis" && PreferenceGetZoneOrgasm(C, "ItemVulva"))){
+					|| (Asset?.Name == "Penis" && Zone == "ActivityOnOther" && PreferenceGetZoneOrgasm(C, "ItemVulva"))){
 					next(args);
 				}
 			} catch (error) {
+				console.error("Error handling activity for character: " + C.Name + ".")
 				next(args);
 			}
 
