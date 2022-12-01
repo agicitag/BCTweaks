@@ -1081,13 +1081,14 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 
 		modAPI.hookFunction('ActivitySetArousalTimer', 2, (args, next) => {
 			let C = args[0];
+			let Activity = args[1];
+			let Zone = args[2];
+			let Progress = args[3];
+			let Asset = args[4];
 
 			if(C.BCT != null){
 				try {
 					if(C.BCT.bctSettings.splitOrgasmArousal === true){
-						let Activity = args[1];
-						let Zone = args[2];
-						let Progress = args[3];
 	
 						//Arousal Progress Multiplier
 						Progress = Progress * C.BCT.bctSettings.arousalProgressMultiplier;
@@ -1118,7 +1119,9 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			}
 			//only let the orgasm bar progress if its and orgasm zone
 			try {
-				if(!C.BCT || PreferenceGetZoneOrgasm(C, args[2]) || C.BCT.bctSettings.splitOrgasmArousal === false){
+				if(!C.BCT || PreferenceGetZoneOrgasm(C, Zone) || C.BCT.bctSettings.splitOrgasmArousal === false
+				// Male genital support
+					|| (Asset.Name == "Penis" && PreferenceGetZoneOrgasm(C, "ItemVulva"))){
 					next(args);
 				}
 			} catch (error) {
