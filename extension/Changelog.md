@@ -1,4 +1,14 @@
 # BCT Changelog
+## 0.5.0
+### Features
+- Update BCT settings button to show after "Gender"
+- Change color of settings text on hover to better show it being able to be clicked
+- Added API (feel free to request access to additional functions)
+- Support male genitals
+
+### Bugfixes:
+- Vibrators on zones that cant make you orgasm, still gave orgasm progress
+
 ## 0.4.3
 ### Bugfixes:
 - Updated to new mod sdk version 1.1.0
@@ -20,25 +30,3 @@
 ### Bugfixes:
 - Fixed a bug where arousal progress was shown as 0% to others after resisting an orgasm
 - Fixed a bug that caused the arousal bar to not be shown on mobile
-
-## 0.3.3
-### Features:
-- Added beta version
-
-## 0.3.2
-### Bugfixes:
-- Fixed a bug that the orgasm multiplicator only affected vibrators when the split arousal bar was active
-
-## 0.3.1
-### Bugfixes:
-- Fixed a bug that could trigger an orgasm while another one was already running, causing a chain of multiple orgasms
-- Fixed a bug that vibrations were not affected by the multiplicators
-
-## 0.3
-### Features:
-- Added a textbox showing the currently installed version in the settings menu
-- Added a button to access the changelog in the settings menu
-- Added a setting to position the arousal bar either below the orgasm bar or on the right of the character
-- Reworked settings menu
-- Show hints for settings by clicking on them
-- Show feedback when updating a tail

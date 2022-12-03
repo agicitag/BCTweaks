@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BCT Beta Loader
 // @namespace    https://www.bondageprojects.com/
-// @version      0.4.1
+// @version      0.5.0
 // @description  BC extension adding several little useful tweaks to BC.
 // @author       agicitag
 // @downloadURL  https://github.com/agicitag/BondageClubTools/raw/main/extension/bctBetaLoader.user.js
