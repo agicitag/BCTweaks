@@ -1,4 +1,4 @@
-const BCT_VERSION = "B.0.5.0";
+const BCT_VERSION = "B.0.5.1";
 const BCT_Settings_Version = 7;
 
 const BCT_API = {};
@@ -1766,6 +1766,82 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				}
 		}
 	}
+
+	// Best Friend Lock 
+	const bfLockName = "Best-Friend Padlock";
+
+	function createBFlock() {
+		let bflock = {
+			AllowType : ["LockPickSeed"],
+			Effect : [],
+			ExclusiveUnlock: true,
+			Extended: true,
+			IsLock: true,
+			Name: bfLockName,
+			PickDifficulty: 20,
+			Time: 10,
+			Value: 70,
+			Wear: false
+		}
+		
+		AssetFemale3DCG.forEach(ele => {
+			if(ele.Group == "ItemMisc") {
+				// console.log(ele);
+				ele.Asset.push(bflock);
+			}
+		})
+
+		const G = AssetGroupGet("Female3DCG","ItemMisc");
+		AssetAdd(G,bflock, AssetFemale3DCGExtended);
+		InventoryAdd(Player,bfLockName,"ItemMisc");
+	}
+	createBFlock();
+
+	function convertHStoBF(C,item,group) {
+		item.Property.Name = bfLockName;
+		item.Property.LockPickSeed = "0,1,2,3,4,5,6,7,8,9,10,11";
+		if(CurrentScreen === "ChatRoom") {
+			ChatRoomCharacterItemUpdate(C,group);
+		}
+	}
+
+	modAPI.hookFunction("DialogItemClick",2, (args,next) => {
+		let ClickedCharBF = CharacterGetCurrent();
+		let CurrentItemBF = undefined;
+		if(args[0].Asset.Name == bfLockName && !DialogItemPermissionMode && !InventoryIsPermissionBlocked(ClickedCharBF, args[0].Asset.Name, "ItemMisc")) {
+			// console.log("yes");
+			CurrentItemBF = InventoryGet(ClickedCharBF, ClickedCharBF.FocusGroup.Name);
+			args[0].Asset = AssetGet(Player.AssetFamily,"ItemMisc","HighSecurityPadlock");
+		}
+		next(args);
+		if(!!CurrentItemBF) {
+			convertHStoBF(ClickedCharBF,CurrentItemBF,ClickedCharBF.FocusGroup.Name);
+		}
+	})
+
+	modAPI.hookFunction("DrawPreviewBox",2, (args,next) => {
+		//args[2] is the path
+		if(args[2] === "Assets/Female3DCG/ItemMisc/Preview/"+bfLockName+".png") {
+			args[2] = "Assets/Female3DCG/ItemMisc/Preview/LoversPadlock.png";
+		}
+		next(args);
+	})
+
+	//DialogInventoryAdd to stop the item from being shown in the list
+	//args[0] = C, args[1] = item
+	modAPI.hookFunction("DialogInventoryAdd",2,(args,next) => {
+		if(!DialogItemPermissionMode) {
+			let asset = args[1].Asset;
+			//not self and asset = bflock and not a bct user
+			if((args[0].ID != 0) && (asset.Name === bfLockName) && (!args[0].BCT)) {
+				return;
+			}
+		}
+		next(args);
+	})
+
+	//InventoryTogglePermission < save if item is blocked/limited as server removes it
+	//Add it again and ServerPlayerBlockItemsSync()
 
 	// Images
 	const IMAGES = {
