@@ -31,7 +31,9 @@ async function runBCT(){
 	BCT_BEEP_IS_BEST_FRIEND_MSG = "Friends",
 	BCT_BEEP_ACK_FRIEND_MSG = "AckFriends",
 	BCT_BEEP_REQUEST_ROOM = "ReqRoom",
-	BCT_BEEP_DELETE_SHARED = "DelRoom";
+	BCT_BEEP_DELETE_SHARED = "DelRoom",
+	BCT_BEEP_BFLOCK_ACCESS = "BFLockAcc",
+	BCT_BEEP_REMOVE_LOCK_ACCESS= "BFRemoveLockAcc";
 	
 	const bctSettingsKey = () => `bctSettings.${Player?.AccountName}`;
 
@@ -69,6 +71,9 @@ async function runBCT(){
 							Prerequisite: "CanRemoveAsBF()",
 							Result: "(This member is no longer considered to be a best friend by you.)",
 							Stage: "10"};
+	
+	let BFLockAccessOn = new Set();	// BFs currently online. (Needed for BF lock)
+								// Add when you add someone as BF and vice versa
 
 	await bctSettingsLoad();
 	splitOrgasmArousal()
@@ -1535,9 +1540,9 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		let timeoutFriend = {};
 		// save currently online friends room
 		let currentFriendsRoom = {};
-		// online friends list <TODO>
+		// online friends list
 		let onlineFriends = new Set();
-		// true if bct has made the request for online friends <TODO>
+		// true if bct has made the request for online friends
 		let bctOnlineCheck = false;
 		
 		registerSocketListener("ChatRoomMessage", (data) => SendRoomNameOnChatRoomOnEntryUpdate(data));
@@ -1547,10 +1552,13 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 
 		function AddToBFList(charNumber) {
 			Player.BCT.bctSettings.bestFriendsList.push(charNumber);
+			SendBeep(charNumber,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true); // Add their room name and lock access
 			bctSettingsSave(false);
 		}
 		function RemoveFromBFList(charNumber) {
 			Player.BCT.bctSettings.bestFriendsList = Player.BCT.bctSettings.bestFriendsList.filter(member => member !== charNumber);
+			BFLockAccessOn.delete(charNumber);
+			SendBeep(charNumber,BCT_BEEP,BCT_BEEP_REMOVE_LOCK_ACCESS,true);
 			bctSettingsSave(false);
 		}
 
@@ -1750,14 +1758,24 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 									friendFlag[beep.MemberNumber] = true;
 									break;
 								case BCT_BEEP_REQUEST_ROOM:
-									if ((CurrentScreen === "ChatRoom") && (Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
-										SendRoomName(beep.MemberNumber);
+									if(Player.BCT.bctSettings.bestFriendsEnabled && (Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
+										if ((CurrentScreen === "ChatRoom" && Player.BCT.bctSettings.bestFriendsRoomShare)) {
+											SendRoomName(beep.MemberNumber);
+										}
+										SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_BFLOCK_ACCESS,true);
+										BFLockAccessOn.add(beep.MemberNumber); // Room request happens on each login and best friend add
 									}
 									break;
 								case BCT_BEEP_DELETE_SHARED:
 									if (beep.MemberNumber in currentFriendsRoom) {
 										delete currentFriendsRoom[beep.MemberNumber];
 									}
+									break;
+								case BCT_BEEP_BFLOCK_ACCESS:
+									BFLockAccessOn.add(beep.MemberNumber);
+									break;
+								case BCT_BEEP_REMOVE_LOCK_ACCESS:
+									BFLockAccessOn.delete(beep.MemberNumber);
 									break;
 								default:
 									console.log("Invalid Message Type for BCT Beep: ", beep);
@@ -1767,55 +1785,170 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		}
 	}
 
-	// Best Friend Lock 
-	const bfLockName = "Best-Friend Padlock";
+	// --------Lock Features----------
 
-	function createBFlock() {
-		let bflock = {
-			AllowType : ["LockPickSeed"],
-			Effect : [],
-			ExclusiveUnlock: true,
-			Extended: true,
-			IsLock: true,
-			Name: bfLockName,
-			PickDifficulty: 20,
-			Time: 10,
-			Value: 70,
-			Wear: false
+	// Best Friend Lock 
+	const bfLockName = "Best Friend Padlock";
+	// Best Friend Timer Lock
+	const bfTimerLockName = "Best Friend Timer Padlock";
+
+	const bfLockQuote = `"Good friends help; best ones make you helpless"`;
+
+	const bflock = {
+		AllowType : ["LockPickSeed"],
+		Effect : [],
+		ExclusiveUnlock: true,
+		Extended: true,
+		IsLock: true,
+		Name: bfLockName,
+		PickDifficulty: 20,
+		Time: 10,
+		Value: 70,
+		Wear: false
+	}
+	const bftimerlock = {
+		AllowType : ["LockPickSeed"],
+		Effect : [],
+		ExclusiveUnlock: true,
+		Extended: true,
+		IsLock: true,
+		Name: bfTimerLockName,
+		PickDifficulty: 20,
+		Time: 10,
+		Value: 80,
+		Wear: false,
+		MaxTimer: 604800,
+		//Changed RemoveTimer -> RemovalTime because server go nope, but literally adding a new property is fine
+		RemovalTime: 300
+	}
+
+	function removeTimerLock(A) {
+		const LockName = A.Property.Name;
+		const ShouldRemoveItem = A.Property.RemoveItem;
+
+		// Remove any lock or timer
+		ValidationDeleteLock(A.Property, false);
+
+		// If we're removing a lock and we're in a chatroom, send a chatroom message
+		if (LockName && ServerPlayerIsInChatRoom()) {
+			// var Dictionary = [
+			// 	{Tag: "DestinationCharacterName", Text: CharacterNickname(Player), MemberNumber: Player.MemberNumber},
+			// 	{Tag: "FocusAssetGroup", AssetGroupName: A.Asset.Group.Name},
+			// 	{Tag: "LockName", AssetName: LockName}
+			// ];
+			let msg = "The " + LockName.toLowerCase() + " on " + CharacterNickname(Player) + "'s " + A.Asset.Group.Description + " opens up with a click"
+			// ServerSend("ChatRoomChat", {Content: "TimerRelease", Type: "Action", Dictionary});
+			ServerSend("ChatRoomChat", { Content: "Beep", Type: "Action", Dictionary: [{Tag: "Beep", Text: msg }]});
 		}
-		
+
+		// If we must remove the linked item from the character or the facial expression
+		if (ShouldRemoveItem && A.Asset.Group.Category === "Item")
+			InventoryRemove(Player, A.Asset.Group.Name);
+		else if (A.Asset.Group.AllowExpression != null)
+			CharacterSetFacialExpression(Player, A.Asset.Group.Name, null);
+		else
+			CharacterRefresh(Player);
+
+		// Sync with the server and exit
+		if (Player.ID == 0) ChatRoomCharacterUpdate(Player);
+		else ServerPrivateCharacterSync();
+		return;
+	}
+
+
+	function bctTimerLocksRemove() {
+		for(let A of Player.Appearance) {
+			if(TimerLastCycleCall + 1700 <= CommonTime()) {
+				if(Array.isArray(A?.Property?.Effect) && (A.Property.Effect[0] === "Lock") && (A.Property.Name === bfTimerLockName)) {
+					if((A.Property.RemovalTime) && (A.Property.RemovalTime <= CurrentTime) ) {
+						removeTimerLock(A);
+					}
+				}
+			}
+		}
+	}
+
+	modAPI.hookFunction('TimerProcess', 2, (args, next) => { 
+		bctTimerLocksRemove();
+		next(args);
+	})
+
+	function createBFlocks() {
 		AssetFemale3DCG.forEach(ele => {
 			if(ele.Group == "ItemMisc") {
 				// console.log(ele);
+				ele.Asset.push(bftimerlock);
 				ele.Asset.push(bflock);
 			}
 		})
 
 		const G = AssetGroupGet("Female3DCG","ItemMisc");
 		AssetAdd(G,bflock, AssetFemale3DCGExtended);
+		AssetAdd(G,bftimerlock, AssetFemale3DCGExtended);
 		InventoryAdd(Player,bfLockName,"ItemMisc");
+		InventoryAdd(Player,bfTimerLockName,"ItemMisc");
 	}
-	createBFlock();
+	createBFlocks();
 
 	function convertHStoBF(C,item,group) {
 		item.Property.Name = bfLockName;
-		item.Property.LockPickSeed = "0,1,2,3,4,5,6,7,8,9,10,11";
-		if(CurrentScreen === "ChatRoom") {
-			ChatRoomCharacterItemUpdate(C,group);
+		item.Property.LockPickSeed = "8,3,5,10,4,2,6,7,1,9,0,11";
+		let listOwnerLovers = new Set();
+		if (C.Ownership && C.Ownership.MemberNumber != null) {
+			listOwnerLovers.add(C.Ownership.MemberNumber);
 		}
+		if(C.Lovership) {
+			for (let L = 0; L < C.Lovership.length; L++) {
+				const lover = C.Lovership[L];
+				if (lover.MemberNumber != null)
+				listOwnerLovers.add(C.Lovership[L].MemberNumber);
+			}
+		}
+		item.Property.MemberNumberListKeys = "-1" + Array.from(listOwnerLovers).join(",");
+		//+ (item.Property.LockMemberNumber) ? item.Property.LockMemberNumber : "";
+		ChatRoomCharacterItemUpdate(C,group);
 	}
+
+	function convertHStoBFTimer(C,item,group) {
+		item.Property.Name = bfTimerLockName;
+		item.Property.LockPickSeed = "8,3,5,10,4,2,6,7,1,9,0,11";
+		let listOwnerLovers = new Set();
+		if (C.Ownership && C.Ownership.MemberNumber != null) {
+			listOwnerLovers.add(C.Ownership.MemberNumber);
+		}
+		if(C.Lovership) {
+			for (let L = 0; L < C.Lovership.length; L++) {
+				const lover = C.Lovership[L];
+				if (lover.MemberNumber != null)
+				listOwnerLovers.add(C.Lovership[L].MemberNumber);
+			}
+		}
+		item.Property.MemberNumberListKeys = "-1" + Array.from(listOwnerLovers).join(",");
+		// item.Property.MaxTimer = bftimerlock.MaxTimer;
+		// TimerInventoryRemoveSet(C, group, bftimerlock.RemoveTimer);
+		item.Property.RemovalTime = Math.round(CurrentTime + bftimerlock.RemovalTime * 1000);
+		CharacterRefresh(C);
+		ChatRoomCharacterItemUpdate(C, group);
+	}
+	//ValidationAllLockProperties decides the lock properties to be removed when unlocked
+	ValidationAllLockProperties.push("Name","RemovalTime");
 
 	modAPI.hookFunction("DialogItemClick",2, (args,next) => {
 		let ClickedCharBF = CharacterGetCurrent();
+		let CharFocusGroup = undefined;
 		let CurrentItemBF = undefined;
-		if(args[0].Asset.Name == bfLockName && !DialogItemPermissionMode && !InventoryIsPermissionBlocked(ClickedCharBF, args[0].Asset.Name, "ItemMisc")) {
+		let LockType = undefined;
+		if((args[0].Asset.Name === bfLockName || args[0].Asset.Name === bfTimerLockName) && !DialogItemPermissionMode && !InventoryBlockedOrLimited(ClickedCharBF, args[0])) {
 			// console.log("yes");
-			CurrentItemBF = InventoryGet(ClickedCharBF, ClickedCharBF.FocusGroup.Name);
+			LockType = args[0].Asset.Name;
+			CharFocusGroup = ClickedCharBF.FocusGroup.Name
+			CurrentItemBF = InventoryGet(ClickedCharBF, CharFocusGroup);
 			args[0].Asset = AssetGet(Player.AssetFamily,"ItemMisc","HighSecurityPadlock");
 		}
 		next(args);
 		if(!!CurrentItemBF) {
-			convertHStoBF(ClickedCharBF,CurrentItemBF,ClickedCharBF.FocusGroup.Name);
+			if(LockType === bfLockName) convertHStoBF(ClickedCharBF,CurrentItemBF,CharFocusGroup);
+			else if(LockType === bfTimerLockName) convertHStoBFTimer(ClickedCharBF,CurrentItemBF,CharFocusGroup);
 		}
 	})
 
@@ -1823,21 +1956,222 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		//args[2] is the path
 		if(args[2] === "Assets/Female3DCG/ItemMisc/Preview/"+bfLockName+".png") {
 			args[2] = "Assets/Female3DCG/ItemMisc/Preview/LoversPadlock.png";
+		}else if(args[2] === "Assets/Female3DCG/ItemMisc/Preview/"+bfTimerLockName+".png") {
+			args[2] = "Assets/Female3DCG/ItemMisc/Preview/LoversTimerPadlock.png";
 		}
 		next(args);
 	})
 
+	modAPI.hookFunction("DialogCanUnlock",2,(args,next) => {
+		let C = args[0];
+		let Item = args[1];
+		if ((C.ID != 0) && !Player.CanInteract()) return false;
+		if ((Item != null) && (Item.Property != null) && 
+		(Item.Property.Name === bfLockName || Item.Property.Name === bfTimerLockName) && BFLockAccessOn.has(C.MemberNumber)) return true;
+		
+		return next(args);
+	})
+
+	// returns true if lover / owner / best friend 
+	function checkBForAbove(C) {
+		return (C.IsLoverOfPlayer() || C.IsOwnedByPlayer() || BFLockAccessOn.has(C.MemberNumber));
+	}
+
 	//DialogInventoryAdd to stop the item from being shown in the list
 	//args[0] = C, args[1] = item
-	modAPI.hookFunction("DialogInventoryAdd",2,(args,next) => {
+	modAPI.hookFunction("DialogInventoryAdd",11,(args,next) => {
 		if(!DialogItemPermissionMode) {
 			let asset = args[1].Asset;
-			//not self and asset = bflock and not a bct user
-			if((args[0].ID != 0) && (asset.Name === bfLockName) && (!args[0].BCT)) {
+			//dont add bf locks if (not self and asset = bflock and not a bct user and not a bf)
+			if((args[0].ID != 0) && (asset.Name === bfLockName || asset.Name === bfTimerLockName) && !(checkBForAbove(args[0]))) {
 				return;
 			}
 		}
 		next(args);
+	})
+
+	// Handle inspect best friend timer lock: BEGIN
+
+	function InventoryItemMiscBestFriendTimerPadlockLoad() {
+		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property == null)) DialogFocusSourceItem.Property = {};
+		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.RemoveItem == null)) DialogFocusSourceItem.Property.RemoveItem = false;
+		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.ShowTimer == null)) DialogFocusSourceItem.Property.ShowTimer = true;
+		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.EnableRandomInput == null)) DialogFocusSourceItem.Property.EnableRandomInput = false;
+		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.MemberNumberList == null)) DialogFocusSourceItem.Property.MemberNumberList = [];	
+	}
+
+	function InventoryItemMiscBestFriendTimerPadlockDraw() {
+		var C = CharacterGetCurrent();
+		if ((DialogFocusItem == null) || (DialogFocusSourceItem.Property.RemovalTime < CurrentTime)) { InventoryItemMiscBestFriendTimerPadlockExit(); return; }
+		if (DialogFocusSourceItem.Property.ShowTimer) {
+			DrawText(DialogFindPlayer("TimerLeft") + " " + TimerToString(DialogFocusSourceItem.Property.RemovalTime - CurrentTime), 1500, 150, "white", "gray");
+		} else { DrawText(DialogFindPlayer("TimerUnknown"), 1500, 150, "white", "gray"); }
+		//changed Asset to draw
+		DrawAssetPreview(1387, 225, AssetGet("Female3DCG","ItemMisc",bfTimerLockName));//AssetGet("Female3DCG","ItemMisc","LoversTimerPadlock"));
+		DrawText(bfLockQuote, 1500, 600, "white", "gray");
+	
+		// Draw the settings
+		if (Player.CanInteract() && checkBForAbove(C)) {
+			MainCanvas.textAlign = "left";
+			DrawButton(1100, 666, 64, 64, "", "White", (DialogFocusSourceItem.Property.RemoveItem) ? "Icons/Checked.png" : "");
+			DrawText(DialogFindPlayer("RemoveItemWithTimer"), 1200, 698, "white", "gray");
+			DrawButton(1100, 746, 64, 64, "", "White", (DialogFocusSourceItem.Property.ShowTimer) ? "Icons/Checked.png" : "");
+			DrawText(DialogFindPlayer("ShowItemWithTimerRemaining"), 1200, 778, "white", "gray");
+			DrawButton(1100, 826, 64, 64, "", "White", (DialogFocusSourceItem.Property.EnableRandomInput) ? "Icons/Checked.png" : "");
+			DrawText(DialogFindPlayer("EnableRandomInput"), 1200, 858, "white", "gray");
+			MainCanvas.textAlign = "center";
+		} else {
+			if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.LockMemberNumber != null))
+				DrawText(DialogFindPlayer("LockMemberNumber") + " " + DialogFocusSourceItem.Property.LockMemberNumber.toString(), 1500, 700, "white", "gray");
+	
+			let msg = "Can only be unlocked or extended by Best Friends and above";//DialogFindPlayer(DialogFocusItem.Asset.Group.Name + DialogFocusItem.Asset.Name + "Detail");
+			// const subst = ChatRoomPronounSubstitutions(CurrentCharacter, "TargetPronoun", false);
+			// msg = CommonStringSubstitute(msg, subst);
+			DrawText(msg, 1500, 800, "white", "gray");
+	
+			DrawText(DialogFindPlayer((DialogFocusSourceItem.Property.RemoveItem) ? "WillRemoveItemWithTimer" : "WontRemoveItemWithTimer"), 1500, 868, "white", "gray");
+		}
+	
+		// Draw buttons to add/remove time if available
+		if (Player.CanInteract() && checkBForAbove(C)) {
+			DrawButton(1100, 910, 250, 70, DialogFindPlayer("AddTimerTime"), "White");
+			DrawBackNextButton(1400, 910, 250, 70, LoverTimerChooseList[LoverTimerChooseIndex] + " " + DialogFindPlayer("Hours"), "White", "",
+				() => LoverTimerChooseList[(LoverTimerChooseList.length + LoverTimerChooseIndex - 1) % LoverTimerChooseList.length] + " " + DialogFindPlayer("Hours"),
+				() => LoverTimerChooseList[(LoverTimerChooseIndex + 1) % LoverTimerChooseList.length] + " " + DialogFindPlayer("Hours"));
+		}
+		else if (Player.CanInteract() && DialogFocusSourceItem.Property.EnableRandomInput) {
+			for (let I = 0; I < DialogFocusSourceItem.Property.MemberNumberList.length; I++) {
+				if (DialogFocusSourceItem.Property.MemberNumberList[I] == Player.MemberNumber) return;
+			}
+			DrawButton(1100, 910, 250, 70, "- 2 " + DialogFindPlayer("Hours"), "White");
+			DrawButton(1400, 910, 250, 70, DialogFindPlayer("Random"), "White");
+			DrawButton(1700, 910, 250, 70, "+ 2 " + DialogFindPlayer("Hours"), "White");
+		}
+	}
+
+	function InventoryItemMiscBestFriendTimerPadlockClick() {
+		if ((MouseX >= 1885) && (MouseX <= 1975) && (MouseY >= 25) && (MouseY <= 110)) InventoryItemMiscBestFriendTimerPadlockExit();
+		if (!Player.CanInteract()) return;
+		var C = CharacterGetCurrent();
+	
+		if (!!C.BCT && checkBForAbove(C)) {
+			if ((MouseX >= 1100) && (MouseX <= 1164)) {
+				if ((MouseY >= 666) && (MouseY <= 730)) { DialogFocusSourceItem.Property.RemoveItem = !(DialogFocusSourceItem.Property.RemoveItem); }
+				if ((MouseY >= 746) && (MouseY <= 810)) { DialogFocusSourceItem.Property.ShowTimer = !(DialogFocusSourceItem.Property.ShowTimer); }
+				if ((MouseY >= 826) && (MouseY <= 890)) { DialogFocusSourceItem.Property.EnableRandomInput = !(DialogFocusSourceItem.Property.EnableRandomInput); }
+				if (CurrentScreen == "ChatRoom") ChatRoomCharacterItemUpdate(CharacterGetCurrent());
+			}
+		}
+	
+		if ((MouseY >= 910) && (MouseY <= 975)) {
+			if (!!C.BCT && checkBForAbove(C)) {
+				if ((MouseX >= 1100) && (MouseX < 1350)) InventoryItemMiscBestFriendTimerPadlockAdd(LoverTimerChooseList[LoverTimerChooseIndex] * 3600);
+				if ((MouseX >= 1400) && (MouseX < 1650)) {
+					if (MouseX <= 1525) LoverTimerChooseIndex = (LoverTimerChooseList.length + LoverTimerChooseIndex - 1) % LoverTimerChooseList.length;
+					else LoverTimerChooseIndex = (LoverTimerChooseIndex + 1) % LoverTimerChooseList.length;
+				}
+			}
+			else if (DialogFocusSourceItem.Property.EnableRandomInput) {
+				for (let I = 0; I < DialogFocusSourceItem.Property.MemberNumberList.length; I++) {
+					if (DialogFocusSourceItem.Property.MemberNumberList[I] == Player.MemberNumber) return;
+				}
+				if ((MouseX >= 1100) && (MouseX < 1350)) { InventoryItemMiscBestFriendTimerPadlockAdd(-2 * 3600, true); }
+				if ((MouseX >= 1400) && (MouseX < 1650)) { InventoryItemMiscBestFriendTimerPadlockAdd(4 * 3600 * ((Math.random() >= 0.5) ? 1 : -1), true); }
+				if ((MouseX >= 1700) && (MouseX < 1950)) { InventoryItemMiscBestFriendTimerPadlockAdd(2 * 3600, true); }
+			}
+		}
+	}
+
+	function InventoryItemMiscBestFriendTimerPadlockAdd(TimeToAdd, PlayerMemberNumberToList) {
+		if (PlayerMemberNumberToList) DialogFocusSourceItem.Property.MemberNumberList.push(Player.MemberNumber);
+		var TimerBefore = DialogFocusSourceItem.Property.RemovalTime;
+		if (DialogFocusItem.Asset.RemovalTime > 0) DialogFocusSourceItem.Property.RemovalTime = Math.round(Math.min(DialogFocusSourceItem.Property.RemovalTime + (TimeToAdd * 1000), CurrentTime + (DialogFocusItem.Asset.MaxTimer * 1000)));
+		var C = CharacterGetCurrent();
+		if (CurrentScreen == "ChatRoom") {
+			var timeAdded = (DialogFocusSourceItem.Property.RemovalTime - TimerBefore) / (1000 * 3600);
+			var msg = ((timeAdded < 0) && DialogFocusSourceItem.Property.ShowTimer ? "TimerRemoveTime" : "TimerAddTime");
+			/** @type {ChatMessageDictionary} */
+			var Dictionary = [];
+			Dictionary.push({ Tag: "SourceCharacter", Text: CharacterNickname(Player), MemberNumber: Player.MemberNumber });
+			Dictionary.push({ Tag: "DestinationCharacter", Text: CharacterNickname(C), MemberNumber: C.MemberNumber });
+			if (DialogFocusSourceItem.Property.ShowTimer) {
+				Dictionary.push({ Tag: "TimerTime", Text: Math.round(Math.abs(timeAdded)).toString() });
+				Dictionary.push({ Tag: "TimerUnit", TextToLookUp: "Hours" });
+			} else {
+				Dictionary.push({ Tag: "TimerTime", TextToLookUp: "TimerAddRemoveUnknownTime" });
+				Dictionary.push({ Tag: "TimerUnit", Text: "" });
+			}
+			Dictionary.push({ Tag: "FocusAssetGroup", AssetGroupName: C.FocusGroup.Name });
+	
+			for (let A = 0; A < C.Appearance.length; A++) {
+				if (C.Appearance[A].Asset.Group.Name == C.FocusGroup.Name)
+					C.Appearance[A] = DialogFocusSourceItem;
+			}
+			ChatRoomPublishCustomAction(msg, true, Dictionary);
+		} else { CharacterRefresh(C); }
+		InventoryItemMiscBestFriendTimerPadlockExit();
+	}
+	
+	function InventoryItemMiscBestFriendTimerPadlockExit() {
+		DialogFocusItem = null;
+		if (DialogInventory != null) DialogMenuButtonBuild(CharacterGetCurrent());
+	}
+	// Handle inspect best friend timer lock: END
+
+	// Handle inspect best friend lock: BEGIN
+
+	function InventoryItemMiscBestFriendPadlockLoad() {}
+
+	function InventoryItemMiscBestFriendPadlockDraw() {
+		DrawAssetPreview(1387, 225, AssetGet("Female3DCG","ItemMisc",bfLockName));
+		DrawText(bfLockQuote, 1500, 600, "white", "gray");
+		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.LockMemberNumber != null))
+			DrawText(DialogFindPlayer("LockMemberNumber") + " " + DialogFocusSourceItem.Property.LockMemberNumber.toString(), 1500, 700, "white", "gray");
+	
+		let msg = "Can only be unlocked by Best Friends and above";//DialogFindPlayer(DialogFocusItem.Asset.Group.Name + DialogFocusItem.Asset.Name + "Detail");
+		// const subst = ChatRoomPronounSubstitutions(CurrentCharacter, "TargetPronoun", false);
+		// msg = CommonStringSubstitute(msg, subst);
+		DrawText(msg, 1500, 800, "white", "gray");
+	}
+
+	function InventoryItemMiscBestFriendPadlockClick() {
+		if ((MouseX >= 1885) && (MouseX <= 1975) && (MouseY >= 25) && (MouseY <= 110)) DialogFocusItem = null;
+	}
+	// Handle inspect best friend lock: END
+
+	modAPI.hookFunction("InventoryItemMiscHighSecurityPadlockLoad",11,(args,next) => {
+		if(DialogFocusSourceItem.Property.Name === bfTimerLockName) {
+			InventoryItemMiscBestFriendTimerPadlockLoad();
+		}else if(DialogFocusSourceItem.Property.Name === bfLockName) {
+			// next(args);
+			InventoryItemMiscBestFriendPadlockLoad();
+		}
+		else {
+			next(args);
+		}
+	})
+	modAPI.hookFunction("InventoryItemMiscHighSecurityPadlockDraw",11,(args,next) => {
+		if(DialogFocusSourceItem.Property.Name === bfTimerLockName) {
+			InventoryItemMiscBestFriendTimerPadlockDraw();
+		}else if(DialogFocusSourceItem.Property.Name === bfLockName) {
+			// DialogFocusItem = {Asset : AssetGet("Female3DCG","ItemMisc","LoversPadlock")};
+			// next(args);
+			InventoryItemMiscBestFriendPadlockDraw();
+		}
+		else {
+			next(args);
+		}
+	})
+	modAPI.hookFunction("InventoryItemMiscHighSecurityPadlockClick",11,(args,next) => {
+		if(DialogFocusSourceItem.Property.Name === bfTimerLockName) {
+			InventoryItemMiscBestFriendTimerPadlockClick();
+		}else if(DialogFocusSourceItem.Property.Name === bfLockName) {
+			// next(args);
+			InventoryItemMiscBestFriendPadlockClick();
+		}
+		else {
+			next(args);
+		}
 	})
 
 	//InventoryTogglePermission < save if item is blocked/limited as server removes it
