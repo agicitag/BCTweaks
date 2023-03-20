@@ -1459,7 +1459,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 								subtractOrgasmProgress(ChatRoomCharacter[C], (1 - getOrgasmProgressMultiplier(ChatRoomCharacter[C])));
 							}
 							else if ((Factor == 3) && TimerLastArousalProgressCount % 3 == 0) {
-								subtractOrgasmProgress(CharaChatRoomCharactercter[C], (1 - getOrgasmProgressMultiplier(ChatRoomCharacter[C])));
+								subtractOrgasmProgress(ChatRoomCharacter[C], (1 - getOrgasmProgressMultiplier(ChatRoomCharacter[C])));
 							}
 							else if ((Factor == 2) && TimerLastArousalProgressCount % 4 == 0 && ChatRoomCharacter[C].ArousalSettings.Progress <= 95) {
 								subtractOrgasmProgress(ChatRoomCharacter[C], (1 - getOrgasmProgressMultiplier(ChatRoomCharacter[C])));
