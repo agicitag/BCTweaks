@@ -6,6 +6,7 @@
 - Added API (feel free to request access to additional functions)
 - Support male genitals
 - Possibility for automatic erections based on arousal
+- Added Best Friend Lock and Best Friend Timer Lock
 
 ### Bugfixes:
 - Vibrators on zones that cant make you orgasm, still gave orgasm progress
