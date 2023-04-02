@@ -1,4 +1,4 @@
-const BCT_VERSION = "B.0.5.2";
+const BCT_VERSION = "B.0.5.3";
 const BCT_Settings_Version = 8;
 
 const BCT_API = {};
@@ -1913,7 +1913,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 	function bctTimerLocksRemove() {
 		for(let A of Player.Appearance) {
 			if(TimerLastCycleCall + 1700 <= CommonTime()) {
-				if(Array.isArray(A?.Property?.Effect) && (A.Property.Effect[0] === "Lock") && (A.Property.Name === BF_TIMER_LOCK_NAME)) {
+				if(Array.isArray(A?.Property?.Effect) && (A.Property.Name === BF_TIMER_LOCK_NAME)) {
 					if((A.Property.RemovalTime) && (A.Property.RemovalTime <= CurrentTime) ) {
 						removeTimerLock(A);
 					}
@@ -1958,7 +1958,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				listOwnerLovers.add(C.Lovership[L].MemberNumber);
 			}
 		}
-		item.Property.MemberNumberListKeys = "-1" + Array.from(listOwnerLovers).join(",");
+		item.Property.MemberNumberListKeys = "-1," + Array.from(listOwnerLovers).join(",");
 		//+ (item.Property.LockMemberNumber) ? item.Property.LockMemberNumber : "";
 		ChatRoomCharacterItemUpdate(C,group);
 	}
@@ -1977,7 +1977,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				listOwnerLovers.add(C.Lovership[L].MemberNumber);
 			}
 		}
-		item.Property.MemberNumberListKeys = "-1" + Array.from(listOwnerLovers).join(",");
+		item.Property.MemberNumberListKeys = "-1," + Array.from(listOwnerLovers).join(",");
 		item.Property.MaxTime = bftimerlock.MaxTime;
 		// TimerInventoryRemoveSet(C, group, bftimerlock.RemoveTimer);
 		item.Property.RemovalTime = Math.round(CurrentTime + bftimerlock.RemovalTime * 1000);
