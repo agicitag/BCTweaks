@@ -8,6 +8,8 @@
 - Added Best Friend Lock and Best Friend Timer Lock
 
 ### Bugfixes:
+- Lovers and Owners access on BF locks wasn't correctly added 
+- Timer Locks on items with extra effects didn't unlock on correct time
 - Vibrators on zones that cant make you orgasm, still gave orgasm progress
 
 ## 0.4.3
