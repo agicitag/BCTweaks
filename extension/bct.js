@@ -1,4 +1,4 @@
-const BCT_VERSION = "B.0.5.2";
+const BCT_VERSION = "B.0.5.3";
 const BCT_Settings_Version = 8;
 
 const BCT_API = {};
@@ -1857,7 +1857,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 	function bctTimerLocksRemove() {
 		for(let A of Player.Appearance) {
 			if(TimerLastCycleCall + 1700 <= CommonTime()) {
-				if((A.Property.Name === BF_TIMER_LOCK_NAME)) {
+				if(Array.isArray(A?.Property?.Effect) && (A.Property.Name === BF_TIMER_LOCK_NAME)) {
 					if((A.Property.RemovalTime) && (A.Property.RemovalTime <= CurrentTime) ) {
 						removeTimerLock(A);
 					}
