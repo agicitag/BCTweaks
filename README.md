@@ -17,13 +17,15 @@ To use BCT on mobile, simply create a bookmark and paste the same address for ei
 #
 
 ## Features
-#
+
 Check out the BCTweaks settings in Preferences/Settings menu of Bondage Club.
 
 - ### Split Arousal Bar
 
-  Hate being horny from only cuddles or friendly kisses, and want these affectionate actions apply differently than sexual ones? OR the fact that you stutter just because someone touched you... Once. Then Split Arousal Bar will help you with that. 
-  ![barsplit](./images/Barsplit.png)
+  Hate being horny from only cuddles or friendly kisses, and want these affectionate actions apply differently than sexual ones? OR the fact that you stutter just because someone touched you... Once. Then Split Arousal Bar will help you with that.
+  
+  <img src="./images/Barsplit.png"  width="25%" height="20%">
+  
   This feature splits the normal BC arousal bar into two separate bars. The red one is the orgasm bar which only gets filled by actions on areas you have set in BC as "This zone can give you an orgasm". This bar can be seen by everyone, also those without the addon and is the one that affects the game (e.g. speech). The pink one is the arousal bar which is basically the same as the normal BC one, but cant make you orgasm.
  
 - ### Tail Wagging 
@@ -32,10 +34,10 @@ Check out the BCTweaks settings in Preferences/Settings menu of Bondage Club.
 - ### Best Friends
   Get the benefits of being lovers without the restrictions of only being able to have 5 of them! This feature allows you to add someone as best friend.
 
-  ![bfadding](./images/bfadding.png)
+  <img src="./images/bfadding.png"  width="35%" height="25%">
 
   The benefits include knowing your best friends private rooms, just like you would for lovers. Pretty useful, like if your lovers list is full, or you want your submissives to know which private room you're in; like you would with them.
 
-  ![bflocks](./images/bflockspreview.png)
+  <img src="./images/bflockspreview.png"  width="35%" height="25%">
   
   Make your partners helpless by using best friend locks and best friend timer locks! A lock limited only to best friends and above in hierarchy. Non BCTweaks users would only be able to see it as a high-security padlock but would be impossible to pick.
