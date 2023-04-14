@@ -17,7 +17,7 @@ async function runBCT(){
 		name: 'BCT',
 		fullName: 'Bondage Club Tools',
 		version: BCT_VERSION,
-		repository: 'https://github.com/agicitag/BondageClubTools'
+		repository: 'https://github.com/agicitag/BCTweaks'
 	});
 	
 	const BCT_MSG = "bctMsg",
@@ -673,8 +673,8 @@ async function runBCT(){
 			
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
-			if (MouseIn(1450, 715, 400, 90)) window.open("https://github.com/agicitag/BondageClubTools/blob/main/extension/Changelog.md", "_blank");
-			if (MouseIn(1450, 825, 400, 90)) window.open("https://github.com/agicitag/BondageClubTools/blob/beta/extension/Changelog.md", "_blank");
+			if (MouseIn(1450, 715, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/main/extension/Changelog.md", "_blank");
+			if (MouseIn(1450, 825, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/beta/extension/Changelog.md", "_blank");
 			
 			// Open the selected subscreen
 			for (let A = 0; A < bctSettingsCategories.length; A++){
