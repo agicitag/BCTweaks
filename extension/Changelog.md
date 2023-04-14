@@ -1,7 +1,8 @@
 # BCT Changelog
 ## 0.6.0
 ### Features:
-
+- Change when you can add Best Friends. Now you can add any friend as Best Friend from Friendlist
+- Add an option to convert High-Security Padlock to Best Friend Padlock
 
 ### Bugfixes:
 

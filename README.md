@@ -18,7 +18,8 @@ To use BCT on mobile, simply create a bookmark and paste the same address for ei
 
 ## Features
 
-Check out the BCTweaks settings in Preferences/Settings menu of Bondage Club.
+Check out the BCTweaks settings in Preferences/Settings menu of Bondage Club. 
+<img src="images\BCTsettinglocation.png" width="70%">
 
 - ### Split Arousal Bar
 
@@ -34,7 +35,7 @@ Check out the BCTweaks settings in Preferences/Settings menu of Bondage Club.
 - ### Best Friends
   Get the benefits of being lovers without the restrictions of only being able to have 5 of them! This feature allows you to add someone as best friend.
 
-  <img src="./images/bfadding.png"  width="35%" height="25%">
+  <img src="./images/bfadding.png"  width="30%" height="25%"> or <img src="images\addBFfriendlist.png" width="60%" height="45%">
 
   The benefits include knowing your best friends private rooms, just like you would for lovers. Pretty useful, like if your lovers list is full, or you want your submissives to know which private room you're in; like you would with them.
 
