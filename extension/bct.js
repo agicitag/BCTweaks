@@ -1,5 +1,5 @@
 const BCT_VERSION = "B.0.6.0";
-const BCT_Settings_Version = 8;
+const BCT_Settings_Version = 9;
 
 const BCT_API = {};
 
@@ -111,6 +111,7 @@ async function runBCT(){
 			bestFriendsEnabled: true,
 			bestFriendsRoomShare: true,
 			bestFriendsList: [],
+			hsToBFLockconvert: false,
 			ItemPerm : {
 				[BF_LOCK_NAME] : "Normal",
 				[BF_TIMER_LOCK_NAME] : "Normal",
@@ -880,6 +881,10 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			);
 			addMenuCheckbox(64,64,"Enable Room Name Share:","bestFriendsRoomShare",
 			`Share your private room names with best friends. This works similar to how lovers' and submissives' rooms show up.`,
+			"!Player.BCT.bctSettings.bestFriendsEnabled"
+			);
+			addMenuCheckbox(64,64,"Convert HS to BF Lock:","hsToBFLockconvert",
+			`Converts any High-Security Padlock added by a best friend to Best Friend Padlock.`,
 			"!Player.BCT.bctSettings.bestFriendsEnabled"
 			);
 		}
@@ -2298,9 +2303,10 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 	}
 
 	// Convert HighSec Lock to BF lock if the setting is true and your best friend is adding the lock
-	let updateset = true; // change this into setting later
+	
 	async function ConvertToBFLockOnUpdateSet(data) {
-		if(updateset && data.Content === "ActionAddLock" && data.Dictionary.some((asset) => (asset.Tag === "TargetCharacter" && asset.MemberNumber === Player.MemberNumber))
+		if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.hsToBFLockconvert && data.Content === "ActionAddLock" 
+		&& data.Dictionary.some((asset) => (asset.Tag === "TargetCharacter" && asset.MemberNumber === Player.MemberNumber))
 		&& data.Dictionary.some((asset) => asset.AssetName === "HighSecurityPadlock")
 		&& Player.BCT.bctSettings.bestFriendsList.includes(data.Sender)) {
 			let reqAsset = data.Dictionary.find((asset) => asset.Tag === "PrevAsset");
