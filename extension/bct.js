@@ -328,7 +328,16 @@ async function runBCT(){
 	function sleep(ms) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
-	
+
+	function controllerIsActive() {
+		if (typeof ControllerIsActive === "function") { // R92
+			return ControllerIsActive();
+		} else if (typeof ControllerActive === "boolean") { // R91
+			return ControllerActive;
+		} else {
+			return false;
+		}
+	}
 	
 	//Settings Page
 	async function settingsPage() {
@@ -383,7 +392,7 @@ async function runBCT(){
 		 * @returns {void} - Nothing
 		 */
 		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor, BackColor = null, MaxLine = null) {
-			if (ControllerActive == true) {
+			if (controllerIsActive()) {
 				setButton(X, Y);
 			}
 			// Draw the rectangle if we need too
@@ -664,7 +673,7 @@ async function runBCT(){
 				DrawButton(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90, "", "White", "Icons/Arcade.png");
 				ControllerIgnoreButton = false;
 				DrawTextFit(bctSettingCategoryLabels[bctSettingsCategories[A]], 745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7), 310, "Black");
-				if (ControllerActive == true) {
+				if (controllerIsActive()) {
 					setButton(745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7));
 				}
 			}
@@ -908,7 +917,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 	//fix wrong settings button hitboxes (changed 500 to 420)
 	modAPI.hookFunction("PreferenceClick", 2, (args, next) => {
 		if(Player.BCT.bctSettings.menuButtonFixEnabled === true){
-			if (ControllerActive == true) {
+			if (controllerIsActive()) {
 				ClearButtons();
 			}
 			// Pass the click into the opened subscreen
@@ -1511,7 +1520,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				TimerLastTime = args[0];
 				CurrentTime = CurrentTime + TimerRunInterval;
 
-				if (ControllerActive == true) {
+				if (controllerIsActive()) {
 					if (ControllerCurrentButton >= ControllerButtonsX.length) {
 						ControllerCurrentButton = 0;
 					}
