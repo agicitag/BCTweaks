@@ -14,8 +14,8 @@ async function runBCT(){
 
 
 	const modAPI = bcModSdk.registerMod({
-		name: 'BCT',
-		fullName: 'Bondage Club Tools',
+		name: 'BCTweaks',
+		fullName: 'Bondage Club Tweaks',
 		version: BCT_VERSION,
 		repository: 'https://github.com/agicitag/BCTweaks'
 	});
@@ -231,7 +231,7 @@ async function runBCT(){
 	async function beepChangelog() {
 		await waitFor(() => !!Player?.AccountName);
 		await sleep(5000);
-		bctBeepNotify("BCT updated", "BCT got updated. You can find the changelog in the settings.");
+		bctBeepNotify("BCTweaks updated", "BCTweaks got updated. You can find the changelog in the settings.");
 	}
 
 	function bctBeepNotify (title, text){
@@ -655,12 +655,12 @@ async function runBCT(){
 			DrawCharacter(Player, 50, 50, 0.9);
 			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
 			MainCanvas.textAlign = "left";
-			DrawText("- Bondage Club Tools Settings -",	500, 125, "Black", "Gray");
+			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 
 			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 500, 400, 100, "Black");
 
-			DrawText("Your BCT version: " + BCT_VERSION, 1450+400/2, 665, "Black", "Gray");
+			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 665, "Black", "Gray");
 			DrawButton(1450, 715, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
 			DrawButton(1450, 825, 400, 90, "Open Beta Changelog", "White", "", "Open Beta Changelog on Github");
 			
