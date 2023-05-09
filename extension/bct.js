@@ -1,5 +1,5 @@
-const BCT_VERSION = "0.5.0";
-const BCT_Settings_Version = 8;
+const BCT_VERSION = "0.5.1";
+const BCT_Settings_Version = 9;
 
 const BCT_API = {};
 
@@ -14,8 +14,8 @@ async function runBCT(){
 
 
 	const modAPI = bcModSdk.registerMod({
-		name: 'BCT',
-		fullName: 'Bondage Club Tools',
+		name: 'BCTweaks',
+		fullName: 'Bondage Club Tweaks',
 		version: BCT_VERSION,
 		repository: 'https://github.com/agicitag/BCTweaks'
 	});
@@ -111,6 +111,7 @@ async function runBCT(){
 			bestFriendsEnabled: true,
 			bestFriendsRoomShare: true,
 			bestFriendsList: [],
+			hsToBFLockconvert: false,
 			ItemPerm : {
 				[BF_LOCK_NAME] : "Normal",
 				[BF_TIMER_LOCK_NAME] : "Normal",
@@ -230,7 +231,7 @@ async function runBCT(){
 	async function beepChangelog() {
 		await waitFor(() => !!Player?.AccountName);
 		await sleep(5000);
-		bctBeepNotify("BCT updated", "BCT got updated. You can find the changelog in the settings.");
+		bctBeepNotify("BCTweaks updated", "BCTweaks got updated. You can find the changelog in the settings.");
 	}
 
 	function bctBeepNotify (title, text){
@@ -289,7 +290,7 @@ async function runBCT(){
 								sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
 								sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;
 								// Add new Dialog to Best Friend feature users
-								if (sender.BCT?.bctSettings?.bestFriendsEnabled === true) AddRelationDialog(sender);
+								AddRelationDialog(sender);
 								if(message.replyRequested)	sendBctInitilization(false);
 								break;
 							case BCT_MSG_ACTIVITY_AROUSAL_SYNC:
@@ -298,7 +299,7 @@ async function runBCT(){
 								break;
 							case BCT_MSG_SETTINGS_SYNC:
 								sender.BCT.bctSettings = message.bctSettings;
-								if (sender.BCT?.bctSettings?.bestFriendsEnabled === true) AddRelationDialog(sender);
+								AddRelationDialog(sender);
 								break;
 							default:
 								console.log("Unidentified BCT message:");
@@ -327,7 +328,16 @@ async function runBCT(){
 	function sleep(ms) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
-	
+
+	function controllerIsActive() {
+		if (typeof ControllerIsActive === "function") { // R92
+			return ControllerIsActive();
+		} else if (typeof ControllerActive === "boolean") { // R91
+			return ControllerActive;
+		} else {
+			return false;
+		}
+	}
 	
 	//Settings Page
 	async function settingsPage() {
@@ -382,7 +392,7 @@ async function runBCT(){
 		 * @returns {void} - Nothing
 		 */
 		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor, BackColor = null, MaxLine = null) {
-			if (ControllerActive == true) {
+			if (controllerIsActive()) {
 				setButton(X, Y);
 			}
 			// Draw the rectangle if we need too
@@ -645,12 +655,12 @@ async function runBCT(){
 			DrawCharacter(Player, 50, 50, 0.9);
 			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
 			MainCanvas.textAlign = "left";
-			DrawText("- Bondage Club Tools Settings -",	500, 125, "Black", "Gray");
+			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 
 			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 500, 400, 100, "Black");
 
-			DrawText("Your BCT version: " + BCT_VERSION, 1450+400/2, 665, "Black", "Gray");
+			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 665, "Black", "Gray");
 			DrawButton(1450, 715, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
 			DrawButton(1450, 825, 400, 90, "Open Beta Changelog", "White", "", "Open Beta Changelog on Github");
 			
@@ -663,7 +673,7 @@ async function runBCT(){
 				DrawButton(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90, "", "White", "Icons/Arcade.png");
 				ControllerIgnoreButton = false;
 				DrawTextFit(bctSettingCategoryLabels[bctSettingsCategories[A]], 745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7), 310, "Black");
-				if (ControllerActive == true) {
+				if (controllerIsActive()) {
 					setButton(745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7));
 				}
 			}
@@ -882,6 +892,10 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			`Share your private room names with best friends. This works similar to how lovers' and submissives' rooms show up.`,
 			"!Player.BCT.bctSettings.bestFriendsEnabled"
 			);
+			addMenuCheckbox(64,64,"Convert HS to BF Lock:","hsToBFLockconvert",
+			`Converts any High-Security Padlock added by a best friend to Best Friend Padlock.`,
+			"!Player.BCT.bctSettings.bestFriendsEnabled"
+			);
 		}
 		PreferenceSubscreenBCTBestFriendsRun = function () {
 			drawMenuElements();
@@ -903,7 +917,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 	//fix wrong settings button hitboxes (changed 500 to 420)
 	modAPI.hookFunction("PreferenceClick", 2, (args, next) => {
 		if(Player.BCT.bctSettings.menuButtonFixEnabled === true){
-			if (ControllerActive == true) {
+			if (controllerIsActive()) {
 				ClearButtons();
 			}
 			// Pass the click into the opened subscreen
@@ -1506,7 +1520,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				TimerLastTime = args[0];
 				CurrentTime = CurrentTime + TimerRunInterval;
 
-				if (ControllerActive == true) {
+				if (controllerIsActive()) {
 					if (ControllerCurrentButton >= ControllerButtonsX.length) {
 						ControllerCurrentButton = 0;
 					}
@@ -1615,9 +1629,11 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		registerSocketListener("LoginResponse", () => SendRoomRequestOnRelog());
 
 		function AddToBFList(charNumber) {
-			Player.BCT.bctSettings.bestFriendsList.push(charNumber);
-			SendBeep(charNumber,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true); // Add their room name and lock access
-			bctSettingsSave(false);
+			if (!Player.BCT.bctSettings.bestFriendsList.includes(charNumber)) {
+				Player.BCT.bctSettings.bestFriendsList.push(charNumber);
+				SendBeep(charNumber,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true); // Add their room name and lock access
+				bctSettingsSave(false);
+			}
 		}
 		function RemoveFromBFList(charNumber) {
 			Player.BCT.bctSettings.bestFriendsList = Player.BCT.bctSettings.bestFriendsList.filter(member => member !== charNumber);
@@ -1697,9 +1713,8 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 					let member = parseInt(htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 1].innerHTML);
 					if (Player.BCT.bctSettings.bestFriendsList.includes(member) 
 					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
-					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))
-					&& !(Player.SubmissivesList.has(member))) {
-							let BFelement = htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2]
+					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))) {
+							let BFelement = htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2];
 							BFelement.innerHTML = "Best Friend";
 							BFelement.style.cursor = "pointer";
 							BFelement.style.textDecoration = "underline";
@@ -1718,7 +1733,31 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 							}
 							BFelement.addEventListener("mouseover", onHoverBF);
 							BFelement.addEventListener("mouseout", onOutBF);
-							BFelement.addEventListener("click",onClickBF)
+							BFelement.addEventListener("click",onClickBF);
+					}
+					else if (!(Player.Ownership != null && Player.Ownership.MemberNumber === member)
+					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))){
+							let NonBFelement = htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2];
+							NonBFelement.style.cursor = "pointer";
+							let forUndo = "";
+							let  onHoverBF = () => {
+								forUndo = NonBFelement.innerHTML;
+								NonBFelement.innerHTML = "Add as BF?";
+								NonBFelement.style.textDecoration = "underline";
+							}
+							let onOutBF = () => {
+								NonBFelement.innerHTML = forUndo;
+								NonBFelement.style.textDecoration = "";
+							}
+							let onClickBF = () => {
+								NonBFelement.innerHTML = "Added";
+								AddToBFList(member);
+								NonBFelement.removeEventListener("mouseover",onHoverBF);
+								NonBFelement.removeEventListener("mouseout",onOutBF);
+							}
+							NonBFelement.addEventListener("mouseover", onHoverBF);
+							NonBFelement.addEventListener("mouseout", onOutBF);
+							NonBFelement.addEventListener("click",onClickBF);
 					}
 				}
 			}
@@ -2272,6 +2311,24 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		ServerPlayerBlockItemsSync()
 	}
 
+	// Convert HighSec Lock to BF lock if the setting is true and your best friend is adding the lock
+	
+	async function ConvertToBFLockOnUpdateSet(data) {
+		if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.hsToBFLockconvert && data.Content === "ActionAddLock" 
+		&& data.Dictionary.some((asset) => (asset.Tag === "TargetCharacter" && asset.MemberNumber === Player.MemberNumber))
+		&& data.Dictionary.some((asset) => asset.AssetName === "HighSecurityPadlock")
+		&& Player.BCT.bctSettings.bestFriendsList.includes(data.Sender)) {
+			let reqAsset = data.Dictionary.find((asset) => asset.Tag === "PrevAsset");
+			await waitFor(() => InventoryGet(Player,reqAsset.GroupName).Property.LockedBy === "HighSecurityPadlock");
+			convertHStoBF(Player,InventoryGet(Player,reqAsset.GroupName),reqAsset.GroupName);
+			InventoryGet(Player,reqAsset.GroupName).Property.MemberNumberListKeys = 
+			InventoryGet(Player,reqAsset.GroupName).Property.MemberNumberListKeys 
+			+ Player.BCT.bctSettings.bestFriendsList.join(",");
+			ChatRoomCharacterItemUpdate(Player,reqAsset.GroupName);
+		}
+	}
+
+	registerSocketListener("ChatRoomMessage",ConvertToBFLockOnUpdateSet);
 	// Images
 	const IMAGES = {
 		AROUSAL_THERMOMETER: "data:image/png;base64,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",

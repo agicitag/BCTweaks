@@ -1,4 +1,12 @@
 # BCT Changelog
+## 0.5.1
+### Features:
+- Change when you can add Best Friends. Now you can add any friend as Best Friend from Friendlist
+- Add an option to convert High-Security Padlock to Best Friend Padlock
+
+### Bugfixes:
+- `ControllerIsActive()` instead of `ControllerActive` for R92
+
 ## 0.5.0
 ### Features
 - Update BCT settings button to show after "Gender"
