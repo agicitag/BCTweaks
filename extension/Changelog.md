@@ -8,7 +8,7 @@
 - `ControllerIsActive()` instead of `ControllerActive` for R92
 
 ## 0.5.0
-### Features
+### Features:
 - Update BCT settings button to show after "Gender"
 - Change color of settings text on hover to better show it being able to be clicked
 - Added API (feel free to request access to additional functions)

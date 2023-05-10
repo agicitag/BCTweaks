@@ -918,7 +918,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 	modAPI.hookFunction("PreferenceClick", 2, (args, next) => {
 		if(Player.BCT.bctSettings.menuButtonFixEnabled === true){
 			if (controllerIsActive()) {
-				ClearButtons();
+				typeof ClearButtons === "function" ? ClearButtons() : ControllerClearAreas();
 			}
 			// Pass the click into the opened subscreen
 			if (PreferenceSubscreen != "") return CommonDynamicFunction("PreferenceSubscreen" + PreferenceSubscreen + "Click()");
