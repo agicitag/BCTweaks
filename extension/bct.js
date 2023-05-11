@@ -1,4 +1,4 @@
-const BCT_VERSION = "B.0.6.0";
+const BCT_VERSION = "B.0.6.1";
 const BCT_Settings_Version = 9;
 
 const BCT_API = {};
@@ -1513,23 +1513,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 					}
 				}
 			}
-			// Do the work TimerProcess wouldve normally done
-			else{
-				// Increments the time from the last frame
-				TimerRunInterval = args[0] - TimerLastTime;
-				TimerLastTime = args[0];
-				CurrentTime = CurrentTime + TimerRunInterval;
-
-				if (controllerIsActive()) {
-					if (ControllerCurrentButton >= ControllerButtonsX.length) {
-						ControllerCurrentButton = 0;
-					}
-					DrawRect(MouseX - 5, MouseY - 5, 10, 10, "Cyan");
-				}
-			
-				// Launches the main again for the next frame
-				requestAnimationFrame(MainRun);
-			}
+			next(args);
 		});
 
 	}

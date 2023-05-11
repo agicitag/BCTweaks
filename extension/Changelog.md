@@ -1,4 +1,8 @@
 # BCT Changelog
+## 0.6.1
+## Bugfixes:
+- `TimerProcess` updated for R92
+
 ## 0.6.0
 ### Features:
 - Change when you can add Best Friends. Now you can add any friend as Best Friend from Friendlist
