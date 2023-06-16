@@ -1,5 +1,5 @@
-const BCT_VERSION = "0.5.2";
-const BCT_Settings_Version = 9;
+const BCT_VERSION = "0.5.3";
+const BCT_Settings_Version = 10;
 
 const BCT_API = {};
 
@@ -111,6 +111,7 @@ async function runBCT(){
 			bestFriendsEnabled: true,
 			bestFriendsRoomShare: true,
 			bestFriendsList: [],
+			miscShareRoomList: [],
 			hsToBFLockconvert: false,
 			ItemPerm : {
 				[BF_LOCK_NAME] : "Normal",
@@ -896,6 +897,10 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			`Converts any High-Security Padlock added by a best friend to Best Friend Padlock.`,
 			"!Player.BCT.bctSettings.bestFriendsEnabled"
 			);
+			addMenuInput(300, "Show Room Name directly to:", "miscShareRoomList", "InputMiscShareRoomList",
+			`Show these users your private room without adding them as Best Friend (You need to have Room Share Enabled).
+Input should be comma separated Member IDs.`
+			);
 		}
 		PreferenceSubscreenBCTBestFriendsRun = function () {
 			drawMenuElements();
@@ -909,9 +914,22 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 					SendBeep(friend,BCT_BEEP,BCT_BEEP_DELETE_SHARED,true);
 				}
 			}
-			defaultExit();
+			let ShareList = ElementValue("InputMiscShareRoomList").split(",");
+			let memberCheck = (ele) => {
+				if (CommonIsNumeric(ele) && Number.isInteger(parseFloat(ele))) return true;
+			}
+			if (ElementValue("InputMiscShareRoomList") === "") {
+				Player.BCT.bctSettings.miscShareRoomList = [];
+				ElementRemove("InputMiscShareRoomList");
+				defaultExit();
+			}
+			else if (ShareList.every(memberCheck)) {
+				Player.BCT.bctSettings.miscShareRoomList = ShareList.map((ele) => {return parseInt(ele);});
+				ElementRemove("InputMiscShareRoomList");
+				defaultExit();
+			}
+			else PreferenceMessage = "Member ID List is invalid";
 		};
-
 	}
 
 	//fix wrong settings button hitboxes (changed 500 to 420)
@@ -1597,9 +1615,6 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 	}
 
 	async function bctBestFriend() {
-		// this is required to make sure the friend has added player too
-		let friendFlag = {};
-		let timeoutFriend = {};
 		// save currently online friends room
 		let currentFriendsRoom = {};
 		// online friends list
@@ -1656,11 +1671,6 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 						for (const friend of data) { 
 							if (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) {
 								bfList.push(friend);
-								if ((friend.Private) && (friend.ChatRoomName === null)
-								&& (friend.MemberNumber in currentFriendsRoom)) {
-									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber].ChatRoomName;
-									friend.ChatRoomSpace = currentFriendsRoom[friend.MemberNumber].ChatRoomSpace;
-								}
 							}
 							else if ((Player.Ownership != null && Player.Ownership.MemberNumber === friend.MemberNumber)
 									|| (Player.Lovership.some(lover => lover.MemberNumber == friend.MemberNumber))
@@ -1669,6 +1679,10 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 							}
 							else {
 								normalfriends.push(friend);
+							}
+							if ((friend.Private) && (friend.ChatRoomName === null) && (friend.MemberNumber in currentFriendsRoom)) {
+									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber].ChatRoomName;
+									friend.ChatRoomSpace = currentFriendsRoom[friend.MemberNumber].ChatRoomSpace;
 							}
 						}
 						args[0] = sortedOSL.concat(bfList).concat(normalfriends)
@@ -1755,26 +1769,42 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		// check if the target has added you to receive room name
 		async function IsBestFriend(target) {
 			SendBeep(target,BCT_BEEP,BCT_BEEP_IS_BEST_FRIEND_MSG,true);
-			//wait somehow?
-			await sleep(2000);
-			timeoutFriend[target];
 		}
 
 		// Returns intersection of Online Friends and Best Friends
-		async function ReuiredFriendList() {
+		async function AvailableBFList() {
 			bctOnlineCheck = true;
 			onlineFriends = null;
 			ServerSend("AccountQuery", { Query: "OnlineFriends" });
-			await waitFor(() => !!onlineFriends)
+			await waitFor(() => !!onlineFriends);
 			let intersect = Player.BCT.bctSettings.bestFriendsList.filter(ele => onlineFriends.has(ele));
 			return intersect;
+		}
+
+		// Returns intersection of Online Friends and Room Share Only Friends
+		async function AvailableMiscList() {
+			bctOnlineCheck = true;
+			onlineFriends = null;
+			ServerSend("AccountQuery", { Query: "OnlineFriends" });
+			await waitFor(() => !!onlineFriends);
+			let intersect = Player.BCT.bctSettings.miscShareRoomList.filter(ele => onlineFriends.has(ele));
+			return intersect;
+		}
+
+		// Returns Online Friends List
+		async function AvailableFriendList() {
+			bctOnlineCheck = true;
+			onlineFriends = null;
+			ServerSend("AccountQuery", { Query: "OnlineFriends" });
+			await waitFor(() => !!onlineFriends);
+			return onlineFriends;
 		}
 		
 		// Ask best friends room name on quick relog or first entry
 		// For complete load it should work directly
 		async function RequestRoomName() {
-			let reqList = await ReuiredFriendList();
-			for (const friend of reqList) {
+			let onlineFriends = await AvailableFriendList();
+			for (const friend of onlineFriends) {
 				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true);
 			}
 		}
@@ -1785,16 +1815,16 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 
 		// checks if the other person has added player and then sends room
 		async function CheckAndSendRoomName() {
-			let reqList = await ReuiredFriendList();
+			let reqList = await AvailableBFList();
 			for (const friend of reqList) {
 				IsBestFriend(friend);
-				await waitFor(() => friendFlag[friend] || timeoutFriend[friend])
-				if (friendFlag[friend]) { 
-					SendRoomName(friend);
-				}
 			}
-			timeoutFriend = {};
-			friendFlag = {};
+		}
+		async function SendRoomNameToMisc() {
+			let reqList = await AvailableMiscList();
+			for( const member of reqList) {
+				SendRoomName(member);
+			}
 		}
 
 		// send player room name when they enter a chatroom or update the room
@@ -1804,9 +1834,10 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 				if ((data != null) && (typeof data === "object") && (data.Content != null) && (typeof data.Content === "string")
 				&& (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) 
 				{
-					if ((data.Content === "ServerUpdateRoom") || 
-						(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) {
+					if (((data.Content === "ServerUpdateRoom") || 
+						(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) && (ChatRoomData.Private)) {
 							CheckAndSendRoomName();
+							SendRoomNameToMisc();
 						}
 				}
 			}
@@ -1818,6 +1849,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			if (Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare) {
 				if ((data != null) && (typeof data === "string") && (data === "ChatRoomCreated")) {
 					CheckAndSendRoomName();
+					SendRoomNameToMisc();
 				}
 			}
 		}
@@ -1828,7 +1860,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 					(typeof data.MemberNumber === "number") && (data.MemberName != null) && (typeof data.MemberName === "string"))	{
 						
 						if(data.BeepType === BCT_BEEP){
-							//console.log("BEEP Type : ",data);
+							// console.log("BEEP Type : ",data);
 							let beep = data;
 							switch(beep.Message) {
 								case BCT_BEEP_ROOM_NAME_MSG:
@@ -1842,15 +1874,23 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 									}
 									break;
 								case BCT_BEEP_ACK_FRIEND_MSG:
-									friendFlag[beep.MemberNumber] = true;
+									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare 
+										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private) {
+										if ((Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
+											SendRoomName(beep.MemberNumber);
+											SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_BFLOCK_ACCESS,true);
+											BFLockAccessOn.add(beep.MemberNumber); // Room request happens on each login and best friend add	
+										}
+									}
 									break;
 								case BCT_BEEP_REQUEST_ROOM:
-									if(Player.BCT.bctSettings.bestFriendsEnabled && (Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
-										if ((CurrentScreen === "ChatRoom" && Player.BCT.bctSettings.bestFriendsRoomShare)) {
+									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare 
+										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private) {
+										if ((Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
+											IsBestFriend(beep.MemberNumber);
+										} else if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber)) {
 											SendRoomName(beep.MemberNumber);
 										}
-										SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_BFLOCK_ACCESS,true);
-										BFLockAccessOn.add(beep.MemberNumber); // Room request happens on each login and best friend add
 									}
 									break;
 								case BCT_BEEP_DELETE_SHARED:
@@ -1859,7 +1899,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 									}
 									break;
 								case BCT_BEEP_BFLOCK_ACCESS:
-									BFLockAccessOn.add(beep.MemberNumber);
+									if (Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber)) BFLockAccessOn.add(beep.MemberNumber);
 									break;
 								case BCT_BEEP_REMOVE_LOCK_ACCESS:
 									BFLockAccessOn.delete(beep.MemberNumber);
@@ -2038,6 +2078,8 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 		}
 		next(args);
 	})
+
+	//DialogGetLockIcon (The small lock icon) in R93 will need to be modified. item.Property.Name
 
 	modAPI.hookFunction("DialogCanUnlock",2,(args,next) => {
 		let C = args[0];
