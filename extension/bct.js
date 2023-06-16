@@ -30,7 +30,6 @@ async function runBCT(){
 	const BCT_BEEP_ROOM_NAME_MSG = "RoomName",
 	BCT_BEEP_IS_BEST_FRIEND_MSG = "Friends",
 	BCT_BEEP_ACK_FRIEND_MSG = "AckFriends",
-	// BCT_BEEP_NOTIFY_ONLINE = "Notify",
 	BCT_BEEP_REQUEST_ROOM = "ReqRoom",
 	BCT_BEEP_DELETE_SHARED = "DelRoom",
 	BCT_BEEP_BFLOCK_ACCESS = "BFLockAcc",
@@ -1616,9 +1615,6 @@ Input should be comma separated Member IDs.`
 	}
 
 	async function bctBestFriend() {
-		// this is required to make sure the friend has added player too
-		let friendFlag = {};
-		let timeoutFriend = {};
 		// save currently online friends room
 		let currentFriendsRoom = {};
 		// online friends list
@@ -1773,9 +1769,6 @@ Input should be comma separated Member IDs.`
 		// check if the target has added you to receive room name
 		async function IsBestFriend(target) {
 			SendBeep(target,BCT_BEEP,BCT_BEEP_IS_BEST_FRIEND_MSG,true);
-			//wait somehow?
-			await sleep(2000);
-			timeoutFriend[target];
 		}
 
 		// Returns intersection of Online Friends and Best Friends
@@ -1811,10 +1804,6 @@ Input should be comma separated Member IDs.`
 		// For complete load it should work directly
 		async function RequestRoomName() {
 			let onlineFriends = await AvailableFriendList();
-			// let reqList = Player.BCT.bctSettings.bestFriendsList.filter(ele => onlineFriends.has(ele));
-			// for (const friend of reqList) {
-			// 	SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true);
-			// }
 			for (const friend of onlineFriends) {
 				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true);
 			}
@@ -1829,13 +1818,7 @@ Input should be comma separated Member IDs.`
 			let reqList = await AvailableBFList();
 			for (const friend of reqList) {
 				IsBestFriend(friend);
-				await waitFor(() => friendFlag[friend] || timeoutFriend[friend])
-				if (friendFlag[friend]) { 
-					SendRoomName(friend);
-				}
 			}
-			timeoutFriend = {};
-			friendFlag = {};
 		}
 		async function SendRoomNameToMisc() {
 			let reqList = await AvailableMiscList();
@@ -1891,15 +1874,20 @@ Input should be comma separated Member IDs.`
 									}
 									break;
 								case BCT_BEEP_ACK_FRIEND_MSG:
-									friendFlag[beep.MemberNumber] = true;
-									break;
-								case BCT_BEEP_REQUEST_ROOM:
 									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare 
 										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private) {
 										if ((Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
 											SendRoomName(beep.MemberNumber);
 											SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_BFLOCK_ACCESS,true);
 											BFLockAccessOn.add(beep.MemberNumber); // Room request happens on each login and best friend add	
+										}
+									}
+									break;
+								case BCT_BEEP_REQUEST_ROOM:
+									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare 
+										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private) {
+										if ((Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
+											IsBestFriend(beep.MemberNumber);
 										} else if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber)) {
 											SendRoomName(beep.MemberNumber);
 										}
@@ -1916,11 +1904,6 @@ Input should be comma separated Member IDs.`
 								case BCT_BEEP_REMOVE_LOCK_ACCESS:
 									BFLockAccessOn.delete(beep.MemberNumber);
 									break;
-								// case BCT_BEEP_NOTIFY_ONLINE:
-								// 	if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber)) {
-								// 		SendRoomName(beep.MemberNumber);
-								// 	}
-								// 	break;
 								default:
 									console.log("Invalid Message Type for BCT Beep: ", beep);
 							}

@@ -1,4 +1,11 @@
 # BCT Changelog
+## 0.6.2
+## Features:
+- A new setting to share private rooms directly.
+
+## Bugfixes:
+- Room sharing should work more reliably now.
+
 ## 0.6.1
 ## Bugfixes:
 - `TimerProcess` updated for R92
