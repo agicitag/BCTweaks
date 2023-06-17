@@ -5,6 +5,7 @@
 
 ## Bugfixes:
 - Room sharing should work more reliably now.
+- Rate limit fix.
 
 ## 0.5.2
 ### Bugfixes:
