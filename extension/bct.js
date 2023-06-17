@@ -899,7 +899,7 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			);
 			addMenuInput(300, "Show Room Name directly to:", "miscShareRoomList", "InputMiscShareRoomList",
 			`Show these users your private room without adding them as Best Friend (You need to have Room Share Enabled).
-Input should be comma separated Member IDs.`
+Input should be comma separated Member IDs. (Maximum 30 members)`
 			);
 		}
 		PreferenceSubscreenBCTBestFriendsRun = function () {
@@ -923,8 +923,8 @@ Input should be comma separated Member IDs.`
 				ElementRemove("InputMiscShareRoomList");
 				defaultExit();
 			}
-			else if (ShareList.every(memberCheck)) {
-				Player.BCT.bctSettings.miscShareRoomList = ShareList.map((ele) => {return parseInt(ele);});
+			else if (ShareList.length <= 30 && ShareList.every(memberCheck)) {
+				Player.BCT.bctSettings.miscShareRoomList = [...new Set(ShareList.map((ele) => {return parseInt(ele);}))];
 				ElementRemove("InputMiscShareRoomList");
 				defaultExit();
 			}
@@ -1805,6 +1805,7 @@ Input should be comma separated Member IDs.`
 		async function RequestRoomName() {
 			let onlineFriends = await AvailableFriendList();
 			for (const friend of onlineFriends) {
+				await sleep(100);
 				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true);
 			}
 		}
@@ -1817,12 +1818,14 @@ Input should be comma separated Member IDs.`
 		async function CheckAndSendRoomName() {
 			let reqList = await AvailableBFList();
 			for (const friend of reqList) {
+				await sleep(50);
 				IsBestFriend(friend);
 			}
 		}
 		async function SendRoomNameToMisc() {
 			let reqList = await AvailableMiscList();
 			for( const member of reqList) {
+				await sleep(50);
 				SendRoomName(member);
 			}
 		}
