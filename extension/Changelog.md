@@ -1,4 +1,9 @@
 # BCT Changelog
+
+## 0.6.3
+## Bugfixes:
+- Removes redundant menu hitbox fix.
+
 ## 0.6.2
 ## Features:
 - A new setting to share private rooms directly.

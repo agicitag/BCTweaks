@@ -1,5 +1,5 @@
-const BCT_VERSION = "B.0.6.2";
-const BCT_Settings_Version = 10;
+const BCT_VERSION = "B.0.6.3";
+const BCT_Settings_Version = 11;
 
 const BCT_API = {};
 
@@ -107,7 +107,6 @@ async function runBCT(){
 			tailWaggingTailTwoColor: "#310D0C",
 			tailWaggingDelay: 500,
 			tailWaggingCount: 3,
-			menuButtonFixEnabled: true,
 			bestFriendsEnabled: true,
 			bestFriendsRoomShare: true,
 			bestFriendsList: [],
@@ -347,13 +346,13 @@ async function runBCT(){
 		const bctSettingsCategories = [
 			"BCTArousal",
 			"BCTTailwag",
-			"BCTTweaks",
+			// "BCTTweaks",
 			"BCTBestFriends"
 		];
 		const bctSettingCategoryLabels = {
 			BCTArousal: "Arousal",
 			BCTTailwag: "Tail Wagging",
-			BCTTweaks: "Tweaks",
+			// BCTTweaks: "Tweaks",
 			BCTBestFriends: "Best Friends"
 		};
 		const MENU_ELEMENT_X_OFFSET = 1050;
@@ -860,25 +859,25 @@ async function runBCT(){
 			else PreferenceMessage = "Put a valid number"
 		};
 
-		PreferenceSubscreenBCTTweaksLoad = function () {
-			PreferenceSubscreen = "BCTTweaks";
-			addMenuCheckbox(64, 64, "Enable Menu Button Hitbox Fix: ", "menuButtonFixEnabled",
-			"The hitboxes for the buttons in the default BC settings menu move to the left of the actual button in the right rows. " +
-			"This tweak fixes that."
-			);
-		}
+		// PreferenceSubscreenBCTTweaksLoad = function () {
+		// 	PreferenceSubscreen = "BCTTweaks";
+		// 	addMenuCheckbox(64, 64, "Enable Menu Button Hitbox Fix: ", "menuButtonFixEnabled",
+		// 	"The hitboxes for the buttons in the default BC settings menu move to the left of the actual button in the right rows. " +
+		// 	"This tweak fixes that."
+		// 	);
+		// }
 
-		PreferenceSubscreenBCTTweaksRun = function () {
-			drawMenuElements();
-		}
+		// PreferenceSubscreenBCTTweaksRun = function () {
+		// 	drawMenuElements();
+		// }
 
-		PreferenceSubscreenBCTTweaksClick = function () {
-			handleMenuClicks();
-		}
+		// PreferenceSubscreenBCTTweaksClick = function () {
+		// 	handleMenuClicks();
+		// }
 
-		PreferenceSubscreenBCTTweaksExit = function () {
-			defaultExit();
-		};
+		// PreferenceSubscreenBCTTweaksExit = function () {
+		// 	defaultExit();
+		// };
 
 		PreferenceSubscreenBCTBestFriendsLoad = function () {
 			PreferenceSubscreen = "BCTBestFriends";
@@ -931,34 +930,6 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			else PreferenceMessage = "Member ID List is invalid";
 		};
 	}
-
-	//fix wrong settings button hitboxes (changed 500 to 420)
-	modAPI.hookFunction("PreferenceClick", 2, (args, next) => {
-		if(Player.BCT.bctSettings.menuButtonFixEnabled === true){
-			if (controllerIsActive()) {
-				typeof ClearButtons === "function" ? ClearButtons() : ControllerClearAreas();
-			}
-			// Pass the click into the opened subscreen
-			if (PreferenceSubscreen != "") return CommonDynamicFunction("PreferenceSubscreen" + PreferenceSubscreen + "Click()");
-
-			// Exit button
-			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
-
-			// Open the selected subscreen
-			for (let A = 0; A < PreferenceSubscreenList.length; A++){
-				if (MouseIn(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90)) {
-					if (typeof window["PreferenceSubscreen" + PreferenceSubscreenList[A] + "Load"] === "function")
-						CommonDynamicFunction("PreferenceSubscreen" + PreferenceSubscreenList[A] + "Load()");
-					PreferenceSubscreen = PreferenceSubscreenList[A];
-					PreferencePageCurrent = 1;
-					break;
-				}
-			}
-		}
-		else{
-			next(args);
-		}
-	});
 
 	//Bar Splitter
 	function splitOrgasmArousal(){
