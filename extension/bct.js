@@ -1914,7 +1914,6 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		Value: 80,
 		Wear: false,
 		MaxTime: 604800,
-		//Changed RemoveTimer -> RemovalTime because server go nope, but literally adding a new property is fine
 		RemovalTime: 300
 	}
 
@@ -2092,12 +2091,12 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.EnableRandomInput == null)) DialogFocusSourceItem.Property.EnableRandomInput = false;
 		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.MemberNumberList == null)) DialogFocusSourceItem.Property.MemberNumberList = [];	
 	}
-	const BestFriendTimerChooseList = [1, 2, 4, 8, 16, 24, 48, 72, 96, 120, 144, 168, -144, -72, -48, -24, -8, -4];
+	const BestFriendTimerChooseList = [1, 2, 4, 8, 16, 24, 48, 72, 96, 120, 144, 168, -144, -72, -48, -24, -8, -4, -1];
 	let BestFriendTimerChooseIndex = 0;
 
 	function InventoryItemMiscBestFriendTimerPadlockDraw() {
-		var C = CharacterGetCurrent();
-		if ((DialogFocusItem == null) || (DialogFocusSourceItem.Property.RemovalTime < CurrentTime)) { InventoryItemMiscBestFriendTimerPadlockExit(); return; }
+		const C = CharacterGetCurrent();
+		if ((DialogFocusItem == null) || (DialogFocusSourceItem.Property.RemovalTime < CurrentTime)) { DialogLeaveFocusItem(); return; }
 		if (DialogFocusSourceItem.Property.ShowTimer) {
 			DrawText(DialogFindPlayer("TimerLeft") + " " + TimerToString(DialogFocusSourceItem.Property.RemovalTime - CurrentTime), 1500, 150, "white", "gray");
 		} else { DrawText(DialogFindPlayer("TimerUnknown"), 1500, 150, "white", "gray"); }
@@ -2134,7 +2133,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				() => BestFriendTimerChooseList[(BestFriendTimerChooseList.length + BestFriendTimerChooseIndex - 1) % BestFriendTimerChooseList.length] + " " + DialogFindPlayer("Hours"),
 				() => BestFriendTimerChooseList[(BestFriendTimerChooseIndex + 1) % BestFriendTimerChooseList.length] + " " + DialogFindPlayer("Hours"));
 		}
-		else if (Player.CanInteract() && DialogFocusSourceItem.Property.EnableRandomInput) {
+		else if (Player.CanInteract() && DialogFocusSourceItem.Property.EnableRandomInput && C.MemberNumber != Player.MemberNumber && !DialogFocusSourceItem.Property.MemberNumberList.includes(Player.MemberNumber)) {
 			for (let I = 0; I < DialogFocusSourceItem.Property.MemberNumberList.length; I++) {
 				if (DialogFocusSourceItem.Property.MemberNumberList[I] == Player.MemberNumber) return;
 			}
@@ -2145,11 +2144,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	}
 
 	function InventoryItemMiscBestFriendTimerPadlockClick() {
-		if ((MouseX >= 1885) && (MouseX <= 1975) && (MouseY >= 25) && (MouseY <= 110)) InventoryItemMiscBestFriendTimerPadlockExit();
+		if ((MouseX >= 1885) && (MouseX <= 1975) && (MouseY >= 25) && (MouseY <= 110)) DialogLeaveFocusItem();
 		if (!Player.CanInteract()) return;
-		var C = CharacterGetCurrent();
+		const C = CharacterGetCurrent();
 	
-		if (!!C.BCT && checkBForAbove(C)) {
+		if (checkBForAbove(C)) {
 			if ((MouseX >= 1100) && (MouseX <= 1164)) {
 				if ((MouseY >= 666) && (MouseY <= 730)) { DialogFocusSourceItem.Property.RemoveItem = !(DialogFocusSourceItem.Property.RemoveItem); }
 				if ((MouseY >= 746) && (MouseY <= 810)) { DialogFocusSourceItem.Property.ShowTimer = !(DialogFocusSourceItem.Property.ShowTimer); }
@@ -2159,17 +2158,17 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		}
 	
 		if ((MouseY >= 910) && (MouseY <= 975)) {
-			if (!!C.BCT && checkBForAbove(C)) {
+			if (checkBForAbove(C)) {
 				if ((MouseX >= 1100) && (MouseX < 1350)) InventoryItemMiscBestFriendTimerPadlockAdd(BestFriendTimerChooseList[BestFriendTimerChooseIndex] * 3600);
 				if ((MouseX >= 1400) && (MouseX < 1650)) {
 					if (MouseX <= 1525) BestFriendTimerChooseIndex = (BestFriendTimerChooseList.length + BestFriendTimerChooseIndex - 1) % BestFriendTimerChooseList.length;
 					else BestFriendTimerChooseIndex = (BestFriendTimerChooseIndex + 1) % BestFriendTimerChooseList.length;
 				}
 			}
-			else if (DialogFocusSourceItem.Property.EnableRandomInput) {
-				for (let I = 0; I < DialogFocusSourceItem.Property.MemberNumberList.length; I++) {
-					if (DialogFocusSourceItem.Property.MemberNumberList[I] == Player.MemberNumber) return;
-				}
+			else if (DialogFocusSourceItem.Property.EnableRandomInput && !DialogFocusSourceItem.Property.MemberNumberList.includes(Player.MemberNumber)) {
+				// for (let I = 0; I < DialogFocusSourceItem.Property.MemberNumberList.length; I++) {
+				// 	if (DialogFocusSourceItem.Property.MemberNumberList[I] == Player.MemberNumber) return;
+				// }
 				if ((MouseX >= 1100) && (MouseX < 1350)) { InventoryItemMiscBestFriendTimerPadlockAdd(-2 * 3600, true); }
 				if ((MouseX >= 1400) && (MouseX < 1650)) { InventoryItemMiscBestFriendTimerPadlockAdd(4 * 3600 * ((Math.random() >= 0.5) ? 1 : -1), true); }
 				if ((MouseX >= 1700) && (MouseX < 1950)) { InventoryItemMiscBestFriendTimerPadlockAdd(2 * 3600, true); }
@@ -2207,13 +2206,12 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	
 			ChatRoomPublishCustomAction(msg, true, dictionary);
 		} 
-		else { CharacterRefresh(C); }
-		InventoryItemMiscBestFriendTimerPadlockExit();
+		else {DialogLeaveFocusItem();}
 	}
 	
 	function InventoryItemMiscBestFriendTimerPadlockExit() {
-		DialogFocusItem = null;
-		if (DialogInventory != null) DialogMenuButtonBuild(CharacterGetCurrent());
+		// DialogFocusItem = null;
+		// if (DialogInventory != null) DialogMenuButtonBuild(CharacterGetCurrent());
 	}
 	// Handle inspect best friend timer lock: END
 

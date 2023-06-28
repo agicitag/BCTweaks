@@ -3,6 +3,8 @@
 ## 0.6.3
 ## Bugfixes:
 - Removes redundant menu hitbox fix.
+- Fixed crash on timer lock options.
+- Add or remove time option was available for the wearer when "Enable Random Input" is ticked.
 
 ## 0.6.2
 ## Features:
