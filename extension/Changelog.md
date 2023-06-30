@@ -1,6 +1,9 @@
 # BCT Changelog
 
 ## 0.6.3
+## Features: 
+- Preview Lock Icons now shows BF locks correctly.
+
 ## Bugfixes:
 - Removes redundant menu hitbox fix.
 - Fixed crash on timer lock options.

@@ -2042,17 +2042,29 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		}
 	})
 
-	modAPI.hookFunction("DrawPreviewBox",2, (args,next) => {
-		//args[2] is the path
-		if(args[2] === "Assets/Female3DCG/ItemMisc/Preview/"+BF_LOCK_NAME+".png") {
-			args[2] = IMAGES.BEST_FRIEND_LOCK;
-		}else if(args[2] === "Assets/Female3DCG/ItemMisc/Preview/"+BF_TIMER_LOCK_NAME+".png") {
-			args[2] = IMAGES.BEST_FRIEND_TIMER_LOCK;
+	modAPI.hookFunction("DrawImageResize",2, (args,next) => {
+		//args[0] is the path
+		if(args[0] === "Assets/Female3DCG/ItemMisc/Preview/"+BF_LOCK_NAME+".png") {
+			args[0] = IMAGES.BEST_FRIEND_LOCK;
+		}else if(args[0] === "Assets/Female3DCG/ItemMisc/Preview/"+BF_TIMER_LOCK_NAME+".png") {
+			args[0] = IMAGES.BEST_FRIEND_TIMER_LOCK;
 		}
 		next(args);
 	})
 
-	//DialogGetLockIcon (The small lock icon) in R93 will need to be modified. item.Property.Name
+	// Preview Lock Icon for BF locks
+	{
+		const replace = `if (InventoryItemHasEffect(item, "Lock")) {`;
+		const replaceBy = `if (InventoryItemHasEffect(item, "Lock")) {
+			if (item.Property && item.Property.Name === "${BF_LOCK_NAME}") {
+				icons.push("${BF_LOCK_NAME}");
+				return icons; }
+			else if (item.Property && item.Property.Name === "${BF_TIMER_LOCK_NAME}") {
+				icons.push("${BF_TIMER_LOCK_NAME}");
+				return icons; }
+		`;
+		modAPI.patchFunction("DialogGetLockIcon",{[replace]:replaceBy});
+	}
 
 	modAPI.hookFunction("DialogCanUnlock",2,(args,next) => {
 		let C = args[0];
