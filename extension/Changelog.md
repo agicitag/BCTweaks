@@ -3,6 +3,8 @@
 ## 0.6.3
 ## Features: 
 - Preview Lock Icons now shows BF locks correctly.
+- Added BCTweaks icon and Best Friends icon.
+- Option to show icons only while hovering the mouse above the characters.
 
 ## Bugfixes:
 - Removes redundant menu hitbox fix.

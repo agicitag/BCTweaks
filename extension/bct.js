@@ -1,5 +1,5 @@
 const BCT_VERSION = "B.0.6.3";
-const BCT_Settings_Version = 11;
+const BCT_Settings_Version = 12;
 
 const BCT_API = {};
 
@@ -115,7 +115,9 @@ async function runBCT(){
 			ItemPerm : {
 				[BF_LOCK_NAME] : "Normal",
 				[BF_TIMER_LOCK_NAME] : "Normal",
-			}
+			},
+			allIconOnlyShowOnHover : false,
+			bctIconOnlyShowOnHover : true,
 		};
 		
 		Player.BCT = {};
@@ -346,13 +348,13 @@ async function runBCT(){
 		const bctSettingsCategories = [
 			"BCTArousal",
 			"BCTTailwag",
-			// "BCTTweaks",
+			"BCTTweaks",
 			"BCTBestFriends"
 		];
 		const bctSettingCategoryLabels = {
 			BCTArousal: "Arousal",
 			BCTTailwag: "Tail Wagging",
-			// BCTTweaks: "Tweaks",
+			BCTTweaks: "Tweaks",
 			BCTBestFriends: "Best Friends"
 		};
 		const MENU_ELEMENT_X_OFFSET = 1050;
@@ -859,25 +861,27 @@ async function runBCT(){
 			else PreferenceMessage = "Put a valid number"
 		};
 
-		// PreferenceSubscreenBCTTweaksLoad = function () {
-		// 	PreferenceSubscreen = "BCTTweaks";
-		// 	addMenuCheckbox(64, 64, "Enable Menu Button Hitbox Fix: ", "menuButtonFixEnabled",
-		// 	"The hitboxes for the buttons in the default BC settings menu move to the left of the actual button in the right rows. " +
-		// 	"This tweak fixes that."
-		// 	);
-		// }
+		PreferenceSubscreenBCTTweaksLoad = function () {
+			PreferenceSubscreen = "BCTTweaks";
+			addMenuCheckbox(64, 64, "Show BCT Icon on hover: ", "bctIconOnlyShowOnHover",
+			"BCTweaks overlay icon (the ones that show above a character in chatroom) would only show when the mouse hovers above the character. Otherwise it will be hidden."
+			);
+			addMenuCheckbox(64, 64, "Show Base BC Icon on hover: ", "allIconOnlyShowOnHover",
+			"Base BC's overlay icons would only show when the mouse hovers above the character. Otherwise it will be hidden. Reduces the icon clutter without losing functionality."
+			);
+		}
 
-		// PreferenceSubscreenBCTTweaksRun = function () {
-		// 	drawMenuElements();
-		// }
+		PreferenceSubscreenBCTTweaksRun = function () {
+			drawMenuElements();
+		}
 
-		// PreferenceSubscreenBCTTweaksClick = function () {
-		// 	handleMenuClicks();
-		// }
+		PreferenceSubscreenBCTTweaksClick = function () {
+			handleMenuClicks();
+		}
 
-		// PreferenceSubscreenBCTTweaksExit = function () {
-		// 	defaultExit();
-		// };
+		PreferenceSubscreenBCTTweaksExit = function () {
+			defaultExit();
+		};
 
 		PreferenceSubscreenBCTBestFriendsLoad = function () {
 			PreferenceSubscreen = "BCTBestFriends";
@@ -930,6 +934,37 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			else PreferenceMessage = "Member ID List is invalid";
 		};
 	}
+	function addEveryTs() {
+		oth = oth % 100 + 1;
+	}
+	function addEverySec() {
+		countchange = countchange % 100 + 1;
+	}
+	var countchange = 0;
+	const bct = ["𝓑","𝓒","𝓣"];
+	var oth = 0;
+	const rainbowcolors = ["#ff0000", "#ff8000", "#ffff00", "#80ff00", "#00ff00", "#00ff80", "#00ffff", "#0080ff", "#0000ff", "#8000ff", "#ff00ff", "#ff0080"];
+	// const bctIconOnlyShowOnHover = true;
+	// const allIconOnlyShowOnHover = false;
+	setInterval(addEverySec, 1000);
+	setInterval(addEveryTs, 3000);
+
+	modAPI.patchFunction("ChatRoomDrawCharacterOverlay", {
+		"if (ChatRoomHideIconState == 0)":
+		"if (ChatRoomHideIconState == 0 && (!Player.BCT.bctSettings.allIconOnlyShowOnHover || MouseHovering(CharX,CharY,500*Zoom,70*Zoom)))"
+	});
+	modAPI.hookFunction("ChatRoomDrawCharacterOverlay", 2, (args,next) => {		
+		const [C, CharX, CharY, Zoom] = args;
+		// if (!allIconOnlyShowOnHover && !MouseHovering(CharX,CharY,500*Zoom,70*Zoom)) return;
+		if (C.BCT && ChatRoomHideIconState == 0 && (!Player.BCT.bctSettings.bctIconOnlyShowOnHover || MouseHovering(CharX,CharY,500*Zoom,70*Zoom))) {
+			if ((Player.BCT.bctSettings.bestFriendsList.includes(C.MemberNumber))) {
+					DrawImageResize("Assets/Female3DCG/Emoticon/Hearts/Emoticon.png",CharX + 133 * Zoom, CharY + 27 * Zoom, 40 * Zoom, 40 * Zoom);
+				}
+			DrawTextFit(bct[oth%3], CharX + 130 * Zoom, CharY + 55 * Zoom, 25 * Zoom, rainbowcolors[countchange%rainbowcolors.length]);
+		}
+		next(args);
+	});
+
 
 	//Bar Splitter
 	function splitOrgasmArousal(){
