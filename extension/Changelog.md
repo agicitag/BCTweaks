@@ -1,26 +1,30 @@
 # BCT Changelog
 
+## 0.6.4
+### Changed:
+- Modified settings button
+
 ## 0.6.3
-## Features: 
+### Features: 
 - Preview Lock Icons now shows BF locks correctly.
 - Added BCTweaks icon and Best Friends icon.
 - Option to show icons only while hovering the mouse above the characters.
 
-## Bugfixes:
+### Bugfixes:
 - Removes redundant menu hitbox fix.
 - Fixed crash on timer lock options.
 - Add or remove time option was available for the wearer when "Enable Random Input" is ticked.
 
 ## 0.6.2
-## Features:
+### Features:
 - A new setting to share private rooms directly.
 
-## Bugfixes:
+### Bugfixes:
 - Room sharing should work more reliably now.
 - Rate limit fix.
 
 ## 0.6.1
-## Bugfixes:
+### Bugfixes:
 - `TimerProcess` updated for R92
 
 ## 0.6.0

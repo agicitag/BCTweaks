@@ -1,4 +1,4 @@
-const BCT_VERSION = "B.0.6.3";
+const BCT_VERSION = "B.0.6.4";
 const BCT_Settings_Version = 12;
 
 const BCT_API = {};
@@ -368,10 +368,10 @@ async function runBCT(){
 		let currentHint = 0;
 
 		// keep same position in menu
-		PreferenceSubscreenList.splice(14, 0 ,"BCTSettings");
+		PreferenceSubscreenList.splice(16, 0 ,"BCTSettings");
 
 		modAPI.hookFunction("TextGet", 2, (args, next) => {
-			if(args[0] == "HomepageBCTSettings") return "BCT Settings";
+			if(args[0] == "HomepageBCTSettings") return "BCTweaks Settings";
 			else return next(args);
 		});
 
