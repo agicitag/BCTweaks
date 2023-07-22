@@ -1,5 +1,13 @@
 const BCT_VERSION = "B.0.6.4";
-const BCT_Settings_Version = 12;
+const BCT_Settings_Version = 14;
+const BCT_CHANGELOG = `${BCT_VERSION}
+- Modified settings button
+- Money Transfer!
+	-Send money to users in current chatroom.
+	-Use command "/send-money [Member Number] [Amount]" without quotes or brackets.
+		eg. /send-money 78366 100
+- Added Chat Changelogs
+`
 
 const BCT_API = {};
 
@@ -238,10 +246,12 @@ async function runBCT(){
 	async function beepChangelog() {
 		await waitFor(() => !!Player?.AccountName);
 		await sleep(5000);
-		bctBeepNotify("BCTweaks updated", "BCTweaks got updated. You can find the changelog in the settings.");
+		bctBeepNotify("BCTweaks updated", "BCTweaks got updated. You can find the changelog in the settings or through /bctweaks-changelog command.");
+		await waitFor(() => !!document.getElementById("TextAreaChatLog"));
+		bctChatNotify(`BCTweaks got updated. Changelog (/bctweaks-changelog):\n${BCT_CHANGELOG}`);
 	}
 
-	function BctChatNotify(node) {
+	function bctChatNotify(node) {
 		const div = document.createElement("div");
 		div.setAttribute("class", "ChatMessage ChatMessageChat");
 		div.setAttribute("data-time", ChatRoomCurrentTime());
@@ -330,8 +340,8 @@ async function runBCT(){
 								MoneyAcceptorDeclineButton(data.Sender, message.bctMoneySentAmount);
 								break;
 							case BCT_MSG_MONEY_TAKEN:
-								if(message.bctMoneyTaken) AcceptedMoneyHandler(CharacterNickname(sender), message.bctAmount);
-								else DeclinedMoneyHandler(CharacterNickname(sender),message.bctAmount);
+								if(message.bctMoneyTaken) AcceptedMoneyHandler(CharacterNickname(sender), data.Sender, message.bctAmount);
+								else DeclinedMoneyHandler(CharacterNickname(sender), data.Sender,message.bctAmount);
 								break;	
 							default:
 								console.log("Unidentified BCT message:");
@@ -382,16 +392,29 @@ async function runBCT(){
 					let MemberNumber;
 					let Amount;
 					if(pattern.test(args[0])) MemberNumber = parseInt(args[0]);
-					else BctChatNotify("Invalid Member Number");
+					else {
+						bctChatNotify("Invalid Member Number");
+						return;
+					}
 					if(pattern.test(args[1])) Amount = parseInt(args[1]);
-					else BctChatNotify("Invalid Amount");
+					else {
+						bctChatNotify("Invalid Amount");
+						return;
+					}
 
 					let charData = ChatRoomCharacter.find((char) => char.MemberNumber === MemberNumber);
 					if(!!charData) {
 						SendMoneyToMember(MemberNumber, CharacterNickname(charData),Amount);
 					}
-					else BctChatNotify("Target player currently not in the same chatroom");
+					else bctChatNotify("Target player currently not in the same chatroom");
 				},
+			},
+			{
+				Tag:"bctweaks-changelog",
+				Description:"Shows the changes in the newer version of BCTweaks.",
+				Action:() => {
+					bctChatNotify(BCT_CHANGELOG);
+				}
 			},
 		]
 		CommandCombine(BCT_COMMANDS);
@@ -1650,13 +1673,30 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		ServerPlayerSync();
 	}
 
+	let moneyInTransaction = [];
+
+	modAPI.hookFunction("ChatRoomLeave",2,(args,next) => {
+		next(args);
+		moneyInTransaction = [];
+	});
+
+	modAPI.hookFunction("ChatRoomSyncMemberLeave",2, (args,next) => {
+		moneyInTransaction = moneyInTransaction.filter((x) => x.MemberNumber != args[0].SourceMemberNumber);
+		next(args);
+	});
+
 	// Sends Money through hidden chat message
-	function SendMoneyToMember(Target, TargetName, Amount) {
-		if(Player.Money - Amount < 0) {
-			BctChatNotify(`Not enough Money (Current Balance: ${Player.Money} and sending ${Amount})`);
+	function SendMoneyToMember(TargetNumber, TargetName, Amount) {
+		var currTransactionAmount = moneyInTransaction.reduce((previousValue,curr) => previousValue + curr.Amount,0) + Amount;
+		if(Player.Money - currTransactionAmount < 0) {
+			bctChatNotify(`Not enough Money (Current Balance: ${Player.Money}$, in transaction: ${currTransactionAmount}$ and sending ${Amount}$)`);
 			return;
 		}
-		BctChatNotify(`Sending ${Amount}$ to ${TargetName}...`);
+		bctChatNotify(`Sending ${Amount}$ to ${TargetName}...`);
+		moneyInTransaction.push({
+			"MemberNumber" : TargetNumber,
+			"Amount": Amount,
+		});
 
 		const message = {
 			Type: HIDDEN,
@@ -1668,25 +1708,26 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 						type: BCT_MSG_MONEY_SEND,
 						bctVersion: BCT_VERSION,
 						bctMoneySentAmount: Amount,
-						target: Target,
+						target: TargetNumber,
 					},
 				},
 			],
+			Target: TargetNumber,
 		};
 		ServerSend("ChatRoomChat", message);
 	}
 	// Send if player accepted or rejected the money
 	let MoneySendCount = 0;
-	function SendMoneyAcceptAck(Sender, SentNum, Amount, Accept) {
+	function SendMoneyAcceptAck(SenderNumber, SentNum, Amount, Accept) {
 		if(Accept) {
-			BctChatNotify("Money Accepted");
+			bctChatNotify("Money Accepted");
 			AddMoney(Amount);
 		}
 		else {
-			BctChatNotify("Money Declined");
+			bctChatNotify("Money Declined");
 		}
-		document.getElementById(`moneyaccept-${Sender}-${SentNum}`).style.display = "none";
-		document.getElementById(`moneydecline-${Sender}-${SentNum}`).style.display = "none";
+		document.getElementById(`moneyaccept-${SenderNumber}-${SentNum}`).style.display = "none";
+		document.getElementById(`moneydecline-${SenderNumber}-${SentNum}`).style.display = "none";
 
 		const message = {
 			Type: HIDDEN,
@@ -1698,24 +1739,31 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 						type: BCT_MSG_MONEY_TAKEN,
 						bctMoneyTaken: Accept,
 						bctAmount: Amount,
-						target: Sender,
+						target: SenderNumber,
 					},
 				},
 			],
+			Target: SenderNumber,
 		};
 		ServerSend("ChatRoomChat", message);
 	}
 
 	//Handle Declined money message 
-	function DeclinedMoneyHandler(SenderName, Amount) {
+	function DeclinedMoneyHandler(SenderName, SenderNumber, Amount) {
 		//show some message that the sent money got rejected
-		BctChatNotify(`${SenderName} declined the offered money ${Amount}$.`);
+		moneyInTransaction = moneyInTransaction.filter((x) => {
+			return (SenderNumber != x.MemberNumber) && (Amount != x.Amount);
+		});
+		bctChatNotify(`${SenderName} declined the offered money ${Amount}$.`);
 	}
 	//Handle Accepted money message (If the money was accepted, take money out of player's account)
-	function AcceptedMoneyHandler(SenderName, Amount) {
+	function AcceptedMoneyHandler(SenderName, SenderNumber, Amount) {
 		WithdrawMoney(Amount);
 		//messsage
-		BctChatNotify(`${SenderName} accepted the offered money ${Amount}$.`);
+		moneyInTransaction = moneyInTransaction.filter((x) => {
+			return (SenderNumber != x.MemberNumber) && (Amount != x.Amount);
+		});
+		bctChatNotify(`${SenderName} accepted the offered money ${Amount}$.`);
 	}
 	function htmlToElement(html) {
 		var template = document.createElement('template');

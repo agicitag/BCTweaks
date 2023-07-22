@@ -1,6 +1,10 @@
 # BCT Changelog
 
 ## 0.6.4
+### Features:
+- Money Transfer added (Using /send-money command)
+- Changelog as chat message added
+
 ### Changed:
 - Modified settings button
 

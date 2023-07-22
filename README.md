@@ -42,3 +42,16 @@ Check out the BCTweaks settings in Preferences/Settings menu of Bondage Club.
   <img src="./images/bflockspreview.png"  width="35%" height="25%">
   
   Make your partners helpless by using best friend locks and best friend timer locks! A lock limited only to best friends and above in hierarchy. Non BCTweaks users would only be able to see it as a high-security padlock but would be impossible to pick.
+
+- ### Money Transfer
+  Send money to other players in the same chatroom using the /send-money command.
+
+  <img src="images\MoneySend.png" width="95%">
+
+  /send-money [MemberNumber] [Amount]
+
+  Sends the target player the specified amount of money.
+
+  <img src="images\MoneyAccept.png" width="95%">
+  
+  Accept or Decline the sent money using the buttons that show up in chat.
