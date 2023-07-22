@@ -25,7 +25,11 @@ async function runBCT(){
 	HIDDEN = "Hidden", // Needs to be capital 'H' !
 	BCT_MSG_ACTIVITY_AROUSAL_SYNC = "bctMsgActivityArousalSync",
 	BCT_MSG_INITILIZATION_SYNC = "bctMsgInitilizationSync",
-	BCT_MSG_SETTINGS_SYNC = "bctMsgSettingsSync";
+	BCT_MSG_SETTINGS_SYNC = "bctMsgSettingsSync",
+	BCT_CHAT_BACKGROUND_COLOR = "#539";
+
+	const BCT_MSG_MONEY_SEND = "moneysend",
+	BCT_MSG_MONEY_TAKEN = "moneytaken";
 
 	const BCT_BEEP_ROOM_NAME_MSG = "RoomName",
 	BCT_BEEP_IS_BEST_FRIEND_MSG = "Friends",
@@ -80,7 +84,8 @@ async function runBCT(){
 								// Add when you add someone as BF and vice versa
 
 	await bctSettingsLoad();
-	splitOrgasmArousal()
+	splitOrgasmArousal();
+	commands();
 	settingsPage();
 	tailWagging();
 	bctBestFriend();
@@ -236,6 +241,24 @@ async function runBCT(){
 		bctBeepNotify("BCTweaks updated", "BCTweaks got updated. You can find the changelog in the settings.");
 	}
 
+	function BctChatNotify(node) {
+		const div = document.createElement("div");
+		div.setAttribute("class", "ChatMessage ChatMessageChat");
+		div.setAttribute("data-time", ChatRoomCurrentTime());
+		div.setAttribute("data-sender", Player.MemberNumber.toString());
+		div.style.backgroundColor = BCT_CHAT_BACKGROUND_COLOR;
+		div.style.fontWeight = "bold";
+		if (typeof node === "string") {
+			div.appendChild(document.createTextNode(node));
+		} else if (Array.isArray(node)) {
+			div.append(...node);
+		} else {
+			div.appendChild(node);
+		}
+
+		ChatRoomAppendChat(div);
+	};
+
 	function bctBeepNotify (title, text){
 		modAPI.callOriginal("ServerAccountBeep", [
 			{
@@ -303,6 +326,13 @@ async function runBCT(){
 								sender.BCT.bctSettings = message.bctSettings;
 								AddRelationDialog(sender);
 								break;
+							case BCT_MSG_MONEY_SEND:
+								MoneyAcceptorDeclineButton(data.Sender, message.bctMoneySentAmount);
+								break;
+							case BCT_MSG_MONEY_TAKEN:
+								if(message.bctMoneyTaken) AcceptedMoneyHandler(CharacterNickname(sender), message.bctAmount);
+								else DeclinedMoneyHandler(CharacterNickname(sender),message.bctAmount);
+								break;	
 							default:
 								console.log("Unidentified BCT message:");
 								console.log(message);
@@ -341,6 +371,33 @@ async function runBCT(){
 		}
 	}
 	
+	async function commands() {
+		await waitFor(() => !!Commands);
+		const BCT_COMMANDS = [
+			{
+				Tag:"send-money",
+				Description:"[MemberNumber] [Amount] Sends the target player the specified amount of money.",
+				Action:(x,y,args) => {
+					let pattern = /^\d+$/;
+					let MemberNumber;
+					let Amount;
+					if(pattern.test(args[0])) MemberNumber = parseInt(args[0]);
+					else BctChatNotify("Invalid Member Number");
+					if(pattern.test(args[1])) Amount = parseInt(args[1]);
+					else BctChatNotify("Invalid Amount");
+
+					let charData = ChatRoomCharacter.find((char) => char.MemberNumber === MemberNumber);
+					if(!!charData) {
+						SendMoneyToMember(MemberNumber, CharacterNickname(charData),Amount);
+					}
+					else BctChatNotify("Target player currently not in the same chatroom");
+				},
+			},
+		]
+		CommandCombine(BCT_COMMANDS);
+	}
+
+
 	//Settings Page
 	async function settingsPage() {
 		await waitFor(() => !!PreferenceSubscreenList);
@@ -1581,6 +1638,107 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		BCT_API.tailWag = tailWag;
 	}
 
+	// Money transfer
+	//Add Money to Player
+	function AddMoney(Amount) {
+		Player.Money += Amount;
+		ServerPlayerSync();
+	}
+	// Withdraw from Player
+	function WithdrawMoney(Amount) {
+		Player.Money -= Amount;
+		ServerPlayerSync();
+	}
+
+	// Sends Money through hidden chat message
+	function SendMoneyToMember(Target, TargetName, Amount) {
+		if(Player.Money - Amount < 0) {
+			BctChatNotify(`Not enough Money (Current Balance: ${Player.Money} and sending ${Amount})`);
+			return;
+		}
+		BctChatNotify(`Sending ${Amount}$ to ${TargetName}...`);
+
+		const message = {
+			Type: HIDDEN,
+			Content: BCT_MSG,
+			Sender: Player.MemberNumber,
+			Dictionary: [
+				{
+					message: {
+						type: BCT_MSG_MONEY_SEND,
+						bctVersion: BCT_VERSION,
+						bctMoneySentAmount: Amount,
+						target: Target,
+					},
+				},
+			],
+		};
+		ServerSend("ChatRoomChat", message);
+	}
+	// Send if player accepted or rejected the money
+	let MoneySendCount = 0;
+	function SendMoneyAcceptAck(Sender, SentNum, Amount, Accept) {
+		if(Accept) {
+			BctChatNotify("Money Accepted");
+			AddMoney(Amount);
+		}
+		else {
+			BctChatNotify("Money Declined");
+		}
+		document.getElementById(`moneyaccept-${Sender}-${SentNum}`).style.display = "none";
+		document.getElementById(`moneydecline-${Sender}-${SentNum}`).style.display = "none";
+
+		const message = {
+			Type: HIDDEN,
+			Content: BCT_MSG,
+			Sender: Player.MemberNumber,
+			Dictionary: [
+				{
+					message: {
+						type: BCT_MSG_MONEY_TAKEN,
+						bctMoneyTaken: Accept,
+						bctAmount: Amount,
+						target: Sender,
+					},
+				},
+			],
+		};
+		ServerSend("ChatRoomChat", message);
+	}
+
+	//Handle Declined money message 
+	function DeclinedMoneyHandler(SenderName, Amount) {
+		//show some message that the sent money got rejected
+		BctChatNotify(`${SenderName} declined the offered money ${Amount}$.`);
+	}
+	//Handle Accepted money message (If the money was accepted, take money out of player's account)
+	function AcceptedMoneyHandler(SenderName, Amount) {
+		WithdrawMoney(Amount);
+		//messsage
+		BctChatNotify(`${SenderName} accepted the offered money ${Amount}$.`);
+	}
+	function htmlToElement(html) {
+		var template = document.createElement('template');
+		html = html.trim();
+		template.innerHTML = html;
+		return template.content.firstChild;
+	}
+	//Show a button on screen to accept or reject money from sender
+	function MoneyAcceptorDeclineButton(Sender, Amount) {
+		//on accept or decline pressed
+		const SenderDet = ChatRoomCharacter.find((a) => a.MemberNumber === Sender);
+		if(!SenderDet) return;
+		const SenderName = CharacterNickname(SenderDet);
+		const moneySendDiv = `<div id="moneysend" class="ChatMessage ChatMessageChat" data-time="${ChatRoomCurrentTime()}" data-sender="${Sender}" style="background: ${BCT_CHAT_BACKGROUND_COLOR};"><span class="ChatMessageName" style="color:${SenderDet.LabelColor};">${SenderName} is sending you ${Amount}$: </span><button id="moneyaccept-${Sender}-${MoneySendCount}" class="ChatMessageName" style="color:#572844;background-color: lightgreen;margin-left: 5px;font-size: inherit;"> Accept </button><button id="moneydecline-${Sender}-${MoneySendCount}" class="ChatMessageName" style="color:#572844;background-color: red;margin-left: 5px;font-size: inherit;"> Decline </button></div>`
+		const div = htmlToElement(moneySendDiv);
+		ChatRoomAppendChat(div);
+		const accbtn = document.getElementById(`moneyaccept-${Sender}-${MoneySendCount}`);
+		accbtn.addEventListener("click", (args => () => SendMoneyAcceptAck(...args))([Sender,MoneySendCount,Amount,true]));
+		const decbtn = document.getElementById(`moneydecline-${Sender}-${MoneySendCount}`);
+		decbtn.addEventListener("click", (args => () => SendMoneyAcceptAck(...args))([Sender,MoneySendCount,Amount,false]));
+		MoneySendCount += 1;
+	}
+	
 	// Best Friend Feature start
 
 	ChatRoomCanAddAsBF = () => {
