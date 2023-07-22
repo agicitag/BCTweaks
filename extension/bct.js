@@ -6,7 +6,7 @@ const BCT_CHANGELOG = `${BCT_VERSION}
 	-Send money to users in current chatroom.
 	-Use command "/send-money [Member Number] [Amount]" without quotes or brackets.
 		eg. /send-money 78366 100
-- Added Chat Changelogs
+- Added Chat Changelogs (you can disable this in the settings)
 `
 
 const BCT_API = {};
@@ -131,6 +131,7 @@ async function runBCT(){
 			},
 			allIconOnlyShowOnHover : false,
 			bctIconOnlyShowOnHover : true,
+			showChangelog: true,
 		};
 		
 		Player.BCT = {};
@@ -248,7 +249,7 @@ async function runBCT(){
 		await sleep(5000);
 		bctBeepNotify("BCTweaks updated", "BCTweaks got updated. You can find the changelog in the settings or through /bctweaks-changelog command.");
 		await waitFor(() => !!document.getElementById("TextAreaChatLog"));
-		bctChatNotify(`BCTweaks got updated. Changelog (/bctweaks-changelog):\n${BCT_CHANGELOG}`);
+		if(Player.BCT.bctSettings.showChangelog) bctChatNotify(`BCTweaks got updated. Changelog (/bctweaks-changelog):\n${BCT_CHANGELOG}`);
 	}
 
 	function bctChatNotify(node) {
@@ -948,6 +949,9 @@ async function runBCT(){
 			);
 			addMenuCheckbox(64, 64, "Show Base BC Icon on hover: ", "allIconOnlyShowOnHover",
 			"Base BC's overlay icons would only show when the mouse hovers above the character. Otherwise it will be hidden. Reduces the icon clutter without losing functionality."
+			);
+			addMenuCheckbox(64, 64, "Show Changelog on Update: ", "showChangelog",
+			"Show the newest changes in your chat the first time you join a room after an update. You can always show them by typing /bctweaks-changelog"
 			);
 		}
 
