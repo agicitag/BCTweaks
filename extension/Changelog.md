@@ -8,6 +8,10 @@
 ### Changed:
 - Modified settings button
 
+### Bugfixes:
+- Sender must be present in chatroom to accept their offer.
+- Multiple transactions of same amount got removed incorrectly.
+
 ## 0.6.3
 ### Features: 
 - Preview Lock Icons now shows BF locks correctly.

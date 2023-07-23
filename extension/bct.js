@@ -1672,8 +1672,9 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		ServerPlayerSync();
 	}
 	// Withdraw from Player
-	function WithdrawMoney(Amount) {
+	function DeductMoney(Amount) {
 		Player.Money -= Amount;
+		if(Player.Money < 0) Player.Money = 0;
 		ServerPlayerSync();
 	}
 
@@ -1723,6 +1724,13 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	// Send if player accepted or rejected the money
 	let MoneySendCount = 0;
 	function SendMoneyAcceptAck(SenderNumber, SentNum, Amount, Accept) {
+		document.getElementById(`moneyaccept-${SenderNumber}-${SentNum}`).style.display = "none";
+		document.getElementById(`moneydecline-${SenderNumber}-${SentNum}`).style.display = "none";
+		//Sender not in chatroom then don't accept
+		if(!ChatRoomCharacter.some((character) => character.MemberNumber === SenderNumber)) {
+			bctChatNotify("Sender left the chatroom.");
+			return;
+		}
 		if(Accept) {
 			bctChatNotify("Money Accepted");
 			AddMoney(Amount);
@@ -1730,8 +1738,6 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		else {
 			bctChatNotify("Money Declined");
 		}
-		document.getElementById(`moneyaccept-${SenderNumber}-${SentNum}`).style.display = "none";
-		document.getElementById(`moneydecline-${SenderNumber}-${SentNum}`).style.display = "none";
 
 		const message = {
 			Type: HIDDEN,
@@ -1755,18 +1761,16 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	//Handle Declined money message 
 	function DeclinedMoneyHandler(SenderName, SenderNumber, Amount) {
 		//show some message that the sent money got rejected
-		moneyInTransaction = moneyInTransaction.filter((x) => {
-			return (SenderNumber != x.MemberNumber) && (Amount != x.Amount);
-		});
+		let remIdx = moneyInTransaction.findIndex((ele) => SenderNumber === ele.MemberNumber && Amount === ele.Amount);
+		moneyInTransaction.splice(remIdx,1);
 		bctChatNotify(`${SenderName} declined the offered money ${Amount}$.`);
 	}
 	//Handle Accepted money message (If the money was accepted, take money out of player's account)
 	function AcceptedMoneyHandler(SenderName, SenderNumber, Amount) {
-		WithdrawMoney(Amount);
+		DeductMoney(Amount);
 		//messsage
-		moneyInTransaction = moneyInTransaction.filter((x) => {
-			return (SenderNumber != x.MemberNumber) && (Amount != x.Amount);
-		});
+		let remIdx = moneyInTransaction.findIndex((ele) => SenderNumber === ele.MemberNumber && Amount === ele.Amount);
+		moneyInTransaction.splice(remIdx,1);
 		bctChatNotify(`${SenderName} accepted the offered money ${Amount}$.`);
 	}
 	function htmlToElement(html) {
