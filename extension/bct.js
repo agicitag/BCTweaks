@@ -1,5 +1,15 @@
-const BCT_VERSION = "0.5.3";
-const BCT_Settings_Version = 10;
+const BCT_VERSION = "0.6.0";
+const BCT_Settings_Version = 14;
+const BCT_CHANGELOG = `${BCT_VERSION}
+- Modified settings button
+- Money Transfer!
+  -Send money to users in current chatroom.
+  -Use command "/send-money [Member Number] [Amount]" without quotes or brackets.
+    eg. /send-money 78366 100
+- Added Chat Changelogs (you can disable this in the settings)
+- BCTweaks icon shows on character hover
+- Preview lock icon available for BF locks
+`
 
 const BCT_API = {};
 
@@ -25,7 +35,11 @@ async function runBCT(){
 	HIDDEN = "Hidden", // Needs to be capital 'H' !
 	BCT_MSG_ACTIVITY_AROUSAL_SYNC = "bctMsgActivityArousalSync",
 	BCT_MSG_INITILIZATION_SYNC = "bctMsgInitilizationSync",
-	BCT_MSG_SETTINGS_SYNC = "bctMsgSettingsSync";
+	BCT_MSG_SETTINGS_SYNC = "bctMsgSettingsSync",
+	BCT_CHAT_BACKGROUND_COLOR = "#539";
+
+	const BCT_MSG_MONEY_SEND = "moneysend",
+	BCT_MSG_MONEY_TAKEN = "moneytaken";
 
 	const BCT_BEEP_ROOM_NAME_MSG = "RoomName",
 	BCT_BEEP_IS_BEST_FRIEND_MSG = "Friends",
@@ -80,7 +94,8 @@ async function runBCT(){
 								// Add when you add someone as BF and vice versa
 
 	await bctSettingsLoad();
-	splitOrgasmArousal()
+	splitOrgasmArousal();
+	commands();
 	settingsPage();
 	tailWagging();
 	bctBestFriend();
@@ -107,7 +122,6 @@ async function runBCT(){
 			tailWaggingTailTwoColor: "#310D0C",
 			tailWaggingDelay: 500,
 			tailWaggingCount: 3,
-			menuButtonFixEnabled: true,
 			bestFriendsEnabled: true,
 			bestFriendsRoomShare: true,
 			bestFriendsList: [],
@@ -116,7 +130,10 @@ async function runBCT(){
 			ItemPerm : {
 				[BF_LOCK_NAME] : "Normal",
 				[BF_TIMER_LOCK_NAME] : "Normal",
-			}
+			},
+			allIconOnlyShowOnHover : false,
+			bctIconOnlyShowOnHover : true,
+			showChangelog: true,
 		};
 		
 		Player.BCT = {};
@@ -232,8 +249,28 @@ async function runBCT(){
 	async function beepChangelog() {
 		await waitFor(() => !!Player?.AccountName);
 		await sleep(5000);
-		bctBeepNotify("BCTweaks updated", "BCTweaks got updated. You can find the changelog in the settings.");
+		bctBeepNotify("BCTweaks updated", "BCTweaks got updated. You can find the changelog in the settings or through /bctweaks-changelog command.");
+		await waitFor(() => !!document.getElementById("TextAreaChatLog"));
+		if(Player.BCT.bctSettings.showChangelog) bctChatNotify(`BCTweaks got updated. Changelog (/bctweaks-changelog):\n${BCT_CHANGELOG}`);
 	}
+
+	function bctChatNotify(node) {
+		const div = document.createElement("div");
+		div.setAttribute("class", "ChatMessage ChatMessageChat");
+		div.setAttribute("data-time", ChatRoomCurrentTime());
+		div.setAttribute("data-sender", Player.MemberNumber.toString());
+		div.style.backgroundColor = BCT_CHAT_BACKGROUND_COLOR;
+		div.style.fontWeight = "bold";
+		if (typeof node === "string") {
+			div.appendChild(document.createTextNode(node));
+		} else if (Array.isArray(node)) {
+			div.append(...node);
+		} else {
+			div.appendChild(node);
+		}
+
+		ChatRoomAppendChat(div);
+	};
 
 	function bctBeepNotify (title, text){
 		modAPI.callOriginal("ServerAccountBeep", [
@@ -302,6 +339,13 @@ async function runBCT(){
 								sender.BCT.bctSettings = message.bctSettings;
 								AddRelationDialog(sender);
 								break;
+							case BCT_MSG_MONEY_SEND:
+								MoneyAcceptorDeclineButton(data.Sender, message.bctMoneySentAmount);
+								break;
+							case BCT_MSG_MONEY_TAKEN:
+								if(message.bctMoneyTaken) AcceptedMoneyHandler(CharacterNickname(sender), data.Sender, message.bctAmount);
+								else DeclinedMoneyHandler(CharacterNickname(sender), data.Sender,message.bctAmount);
+								break;	
 							default:
 								console.log("Unidentified BCT message:");
 								console.log(message);
@@ -340,6 +384,46 @@ async function runBCT(){
 		}
 	}
 	
+	async function commands() {
+		await waitFor(() => !!Commands);
+		const BCT_COMMANDS = [
+			{
+				Tag:"send-money",
+				Description:"[MemberNumber] [Amount] Sends the target player the specified amount of money.",
+				Action:(x,y,args) => {
+					let pattern = /^\d+$/;
+					let MemberNumber;
+					let Amount;
+					if(pattern.test(args[0])) MemberNumber = parseInt(args[0]);
+					else {
+						bctChatNotify("Invalid Member Number");
+						return;
+					}
+					if(pattern.test(args[1])) Amount = parseInt(args[1]);
+					else {
+						bctChatNotify("Invalid Amount");
+						return;
+					}
+
+					let charData = ChatRoomCharacter.find((char) => char.MemberNumber === MemberNumber);
+					if(!!charData) {
+						SendMoneyToMember(MemberNumber, CharacterNickname(charData),Amount);
+					}
+					else bctChatNotify("Target player currently not in the same chatroom");
+				},
+			},
+			{
+				Tag:"bctweaks-changelog",
+				Description:"Shows the changes in the newer version of BCTweaks.",
+				Action:() => {
+					bctChatNotify(BCT_CHANGELOG);
+				}
+			},
+		]
+		CommandCombine(BCT_COMMANDS);
+	}
+
+
 	//Settings Page
 	async function settingsPage() {
 		await waitFor(() => !!PreferenceSubscreenList);
@@ -367,10 +451,10 @@ async function runBCT(){
 		let currentHint = 0;
 
 		// keep same position in menu
-		PreferenceSubscreenList.splice(14, 0 ,"BCTSettings");
+		PreferenceSubscreenList.splice(16, 0 ,"BCTSettings");
 
 		modAPI.hookFunction("TextGet", 2, (args, next) => {
-			if(args[0] == "HomepageBCTSettings") return "BCT Settings";
+			if(args[0] == "HomepageBCTSettings") return "BCTweaks Settings";
 			else return next(args);
 		});
 
@@ -862,9 +946,14 @@ async function runBCT(){
 
 		PreferenceSubscreenBCTTweaksLoad = function () {
 			PreferenceSubscreen = "BCTTweaks";
-			addMenuCheckbox(64, 64, "Enable Menu Button Hitbox Fix: ", "menuButtonFixEnabled",
-			"The hitboxes for the buttons in the default BC settings menu move to the left of the actual button in the right rows. " +
-			"This tweak fixes that."
+			addMenuCheckbox(64, 64, "Show BCT Icon on hover: ", "bctIconOnlyShowOnHover",
+			"BCTweaks overlay icon (the ones that show above a character in chatroom) would only show when the mouse hovers above the character. Otherwise it will be hidden."
+			);
+			addMenuCheckbox(64, 64, "Show Base BC Icon on hover: ", "allIconOnlyShowOnHover",
+			"Base BC's overlay icons would only show when the mouse hovers above the character. Otherwise it will be hidden. Reduces the icon clutter without losing functionality."
+			);
+			addMenuCheckbox(64, 64, "Show Changelog on Update: ", "showChangelog",
+			"Show the newest changes in your chat the first time you join a room after an update. You can always show them by typing /bctweaks-changelog"
 			);
 		}
 
@@ -931,34 +1020,37 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			else PreferenceMessage = "Member ID List is invalid";
 		};
 	}
+	function addEveryTs() {
+		oth = oth % 100 + 1;
+	}
+	function addEverySec() {
+		countchange = countchange % 100 + 1;
+	}
+	var countchange = 0;
+	const bct = ["𝓑","𝓒","𝓣"];
+	var oth = 0;
+	const rainbowcolors = ["#ff0000", "#ff8000", "#ffff00", "#80ff00", "#00ff00", "#00ff80", "#00ffff", "#0080ff", "#0000ff", "#8000ff", "#ff00ff", "#ff0080"];
+	// const bctIconOnlyShowOnHover = true;
+	// const allIconOnlyShowOnHover = false;
+	setInterval(addEverySec, 1000);
+	setInterval(addEveryTs, 3000);
 
-	//fix wrong settings button hitboxes (changed 500 to 420)
-	modAPI.hookFunction("PreferenceClick", 2, (args, next) => {
-		if(Player.BCT.bctSettings.menuButtonFixEnabled === true){
-			if (controllerIsActive()) {
-				typeof ClearButtons === "function" ? ClearButtons() : ControllerClearAreas();
-			}
-			// Pass the click into the opened subscreen
-			if (PreferenceSubscreen != "") return CommonDynamicFunction("PreferenceSubscreen" + PreferenceSubscreen + "Click()");
-
-			// Exit button
-			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
-
-			// Open the selected subscreen
-			for (let A = 0; A < PreferenceSubscreenList.length; A++){
-				if (MouseIn(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90)) {
-					if (typeof window["PreferenceSubscreen" + PreferenceSubscreenList[A] + "Load"] === "function")
-						CommonDynamicFunction("PreferenceSubscreen" + PreferenceSubscreenList[A] + "Load()");
-					PreferenceSubscreen = PreferenceSubscreenList[A];
-					PreferencePageCurrent = 1;
-					break;
-				}
-			}
-		}
-		else{
-			next(args);
-		}
+	modAPI.patchFunction("ChatRoomDrawCharacterOverlay", {
+		"if (ChatRoomHideIconState == 0)":
+		"if (ChatRoomHideIconState == 0 && (!Player.BCT.bctSettings.allIconOnlyShowOnHover || MouseHovering(CharX,CharY,500*Zoom,70*Zoom)))"
 	});
+	modAPI.hookFunction("ChatRoomDrawCharacterOverlay", 2, (args,next) => {		
+		const [C, CharX, CharY, Zoom] = args;
+		// if (!allIconOnlyShowOnHover && !MouseHovering(CharX,CharY,500*Zoom,70*Zoom)) return;
+		if (C.BCT && ChatRoomHideIconState == 0 && (!Player.BCT.bctSettings.bctIconOnlyShowOnHover || MouseHovering(CharX,CharY,500*Zoom,70*Zoom))) {
+			if ((Player.BCT.bctSettings.bestFriendsList.includes(C.MemberNumber))) {
+					DrawImageResize("Assets/Female3DCG/Emoticon/Hearts/Emoticon.png",CharX + 133 * Zoom, CharY + 27 * Zoom, 40 * Zoom, 40 * Zoom);
+				}
+			DrawTextFit(bct[oth%3], CharX + 130 * Zoom, CharY + 55 * Zoom, 25 * Zoom, rainbowcolors[countchange%rainbowcolors.length]);
+		}
+		next(args);
+	});
+
 
 	//Bar Splitter
 	function splitOrgasmArousal(){
@@ -1575,6 +1667,136 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		BCT_API.tailWag = tailWag;
 	}
 
+	// Money transfer
+	//Add Money to Player
+	function AddMoney(Amount) {
+		Player.Money += Amount;
+		ServerPlayerSync();
+	}
+	// Withdraw from Player
+	function DeductMoney(Amount) {
+		Player.Money -= Amount;
+		if(Player.Money < 0) Player.Money = 0;
+		ServerPlayerSync();
+	}
+
+	let moneyInTransaction = [];
+
+	modAPI.hookFunction("ChatRoomLeave",2,(args,next) => {
+		next(args);
+		moneyInTransaction = [];
+	});
+
+	modAPI.hookFunction("ChatRoomSyncMemberLeave",2, (args,next) => {
+		moneyInTransaction = moneyInTransaction.filter((x) => x.MemberNumber != args[0].SourceMemberNumber);
+		next(args);
+	});
+
+	// Sends Money through hidden chat message
+	function SendMoneyToMember(TargetNumber, TargetName, Amount) {
+		var currTransactionAmount = moneyInTransaction.reduce((previousValue,curr) => previousValue + curr.Amount,0) + Amount;
+		if(Player.Money - currTransactionAmount < 0) {
+			bctChatNotify(`Not enough Money (Current Balance: ${Player.Money}$, in transaction: ${currTransactionAmount}$ and sending ${Amount}$)`);
+			return;
+		}
+		bctChatNotify(`Sending ${Amount}$ to ${TargetName}...`);
+		moneyInTransaction.push({
+			"MemberNumber" : TargetNumber,
+			"Amount": Amount,
+		});
+
+		const message = {
+			Type: HIDDEN,
+			Content: BCT_MSG,
+			Sender: Player.MemberNumber,
+			Dictionary: [
+				{
+					message: {
+						type: BCT_MSG_MONEY_SEND,
+						bctVersion: BCT_VERSION,
+						bctMoneySentAmount: Amount,
+						target: TargetNumber,
+					},
+				},
+			],
+			Target: TargetNumber,
+		};
+		ServerSend("ChatRoomChat", message);
+	}
+	// Send if player accepted or rejected the money
+	let MoneySendCount = 0;
+	function SendMoneyAcceptAck(SenderNumber, SentNum, Amount, Accept) {
+		document.getElementById(`moneyaccept-${SenderNumber}-${SentNum}`).style.display = "none";
+		document.getElementById(`moneydecline-${SenderNumber}-${SentNum}`).style.display = "none";
+		//Sender not in chatroom then don't accept
+		if(!ChatRoomCharacter.some((character) => character.MemberNumber === SenderNumber)) {
+			bctChatNotify("Sender left the chatroom.");
+			return;
+		}
+		if(Accept) {
+			bctChatNotify("Money Accepted");
+			AddMoney(Amount);
+		}
+		else {
+			bctChatNotify("Money Declined");
+		}
+
+		const message = {
+			Type: HIDDEN,
+			Content: BCT_MSG,
+			Sender: Player.MemberNumber,
+			Dictionary: [
+				{
+					message: {
+						type: BCT_MSG_MONEY_TAKEN,
+						bctMoneyTaken: Accept,
+						bctAmount: Amount,
+						target: SenderNumber,
+					},
+				},
+			],
+			Target: SenderNumber,
+		};
+		ServerSend("ChatRoomChat", message);
+	}
+
+	//Handle Declined money message 
+	function DeclinedMoneyHandler(SenderName, SenderNumber, Amount) {
+		//show some message that the sent money got rejected
+		let remIdx = moneyInTransaction.findIndex((ele) => SenderNumber === ele.MemberNumber && Amount === ele.Amount);
+		moneyInTransaction.splice(remIdx,1);
+		bctChatNotify(`${SenderName} declined the offered money ${Amount}$.`);
+	}
+	//Handle Accepted money message (If the money was accepted, take money out of player's account)
+	function AcceptedMoneyHandler(SenderName, SenderNumber, Amount) {
+		DeductMoney(Amount);
+		//messsage
+		let remIdx = moneyInTransaction.findIndex((ele) => SenderNumber === ele.MemberNumber && Amount === ele.Amount);
+		moneyInTransaction.splice(remIdx,1);
+		bctChatNotify(`${SenderName} accepted the offered money ${Amount}$.`);
+	}
+	function htmlToElement(html) {
+		var template = document.createElement('template');
+		html = html.trim();
+		template.innerHTML = html;
+		return template.content.firstChild;
+	}
+	//Show a button on screen to accept or reject money from sender
+	function MoneyAcceptorDeclineButton(Sender, Amount) {
+		//on accept or decline pressed
+		const SenderDet = ChatRoomCharacter.find((a) => a.MemberNumber === Sender);
+		if(!SenderDet) return;
+		const SenderName = CharacterNickname(SenderDet);
+		const moneySendDiv = `<div id="moneysend" class="ChatMessage ChatMessageChat" data-time="${ChatRoomCurrentTime()}" data-sender="${Sender}" style="background: ${BCT_CHAT_BACKGROUND_COLOR};"><span class="ChatMessageName" style="color:${SenderDet.LabelColor};">${SenderName} is sending you ${Amount}$: </span><button id="moneyaccept-${Sender}-${MoneySendCount}" class="ChatMessageName" style="color:#572844;background-color: lightgreen;margin-left: 5px;font-size: inherit;"> Accept </button><button id="moneydecline-${Sender}-${MoneySendCount}" class="ChatMessageName" style="color:#572844;background-color: red;margin-left: 5px;font-size: inherit;"> Decline </button></div>`
+		const div = htmlToElement(moneySendDiv);
+		ChatRoomAppendChat(div);
+		const accbtn = document.getElementById(`moneyaccept-${Sender}-${MoneySendCount}`);
+		accbtn.addEventListener("click", (args => () => SendMoneyAcceptAck(...args))([Sender,MoneySendCount,Amount,true]));
+		const decbtn = document.getElementById(`moneydecline-${Sender}-${MoneySendCount}`);
+		decbtn.addEventListener("click", (args => () => SendMoneyAcceptAck(...args))([Sender,MoneySendCount,Amount,false]));
+		MoneySendCount += 1;
+	}
+	
 	// Best Friend Feature start
 
 	ChatRoomCanAddAsBF = () => {
@@ -1943,7 +2165,6 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		Value: 80,
 		Wear: false,
 		MaxTime: 604800,
-		//Changed RemoveTimer -> RemovalTime because server go nope, but literally adding a new property is fine
 		RemovalTime: 300
 	}
 
@@ -2072,17 +2293,29 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		}
 	})
 
-	modAPI.hookFunction("DrawPreviewBox",2, (args,next) => {
-		//args[2] is the path
-		if(args[2] === "Assets/Female3DCG/ItemMisc/Preview/"+BF_LOCK_NAME+".png") {
-			args[2] = IMAGES.BEST_FRIEND_LOCK;
-		}else if(args[2] === "Assets/Female3DCG/ItemMisc/Preview/"+BF_TIMER_LOCK_NAME+".png") {
-			args[2] = IMAGES.BEST_FRIEND_TIMER_LOCK;
+	modAPI.hookFunction("DrawImageResize",2, (args,next) => {
+		//args[0] is the path
+		if(args[0] === "Assets/Female3DCG/ItemMisc/Preview/"+BF_LOCK_NAME+".png") {
+			args[0] = IMAGES.BEST_FRIEND_LOCK;
+		}else if(args[0] === "Assets/Female3DCG/ItemMisc/Preview/"+BF_TIMER_LOCK_NAME+".png") {
+			args[0] = IMAGES.BEST_FRIEND_TIMER_LOCK;
 		}
 		next(args);
 	})
 
-	//DialogGetLockIcon (The small lock icon) in R93 will need to be modified. item.Property.Name
+	// Preview Lock Icon for BF locks
+	{
+		const replace = `if (InventoryItemHasEffect(item, "Lock")) {`;
+		const replaceBy = `if (InventoryItemHasEffect(item, "Lock")) {
+			if (item.Property && item.Property.Name === "${BF_LOCK_NAME}") {
+				icons.push("${BF_LOCK_NAME}");
+				return icons; }
+			else if (item.Property && item.Property.Name === "${BF_TIMER_LOCK_NAME}") {
+				icons.push("${BF_TIMER_LOCK_NAME}");
+				return icons; }
+		`;
+		modAPI.patchFunction("DialogGetLockIcon",{[replace]:replaceBy});
+	}
 
 	modAPI.hookFunction("DialogCanUnlock",2,(args,next) => {
 		let C = args[0];
@@ -2121,12 +2354,12 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.EnableRandomInput == null)) DialogFocusSourceItem.Property.EnableRandomInput = false;
 		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.MemberNumberList == null)) DialogFocusSourceItem.Property.MemberNumberList = [];	
 	}
-	const BestFriendTimerChooseList = [1, 2, 4, 8, 16, 24, 48, 72, 96, 120, 144, 168, -144, -72, -48, -24, -8, -4];
+	const BestFriendTimerChooseList = [1, 2, 4, 8, 16, 24, 48, 72, 96, 120, 144, 168, -144, -72, -48, -24, -8, -4, -1];
 	let BestFriendTimerChooseIndex = 0;
 
 	function InventoryItemMiscBestFriendTimerPadlockDraw() {
-		var C = CharacterGetCurrent();
-		if ((DialogFocusItem == null) || (DialogFocusSourceItem.Property.RemovalTime < CurrentTime)) { InventoryItemMiscBestFriendTimerPadlockExit(); return; }
+		const C = CharacterGetCurrent();
+		if ((DialogFocusItem == null) || (DialogFocusSourceItem.Property.RemovalTime < CurrentTime)) { DialogLeaveFocusItem(); return; }
 		if (DialogFocusSourceItem.Property.ShowTimer) {
 			DrawText(DialogFindPlayer("TimerLeft") + " " + TimerToString(DialogFocusSourceItem.Property.RemovalTime - CurrentTime), 1500, 150, "white", "gray");
 		} else { DrawText(DialogFindPlayer("TimerUnknown"), 1500, 150, "white", "gray"); }
@@ -2163,7 +2396,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				() => BestFriendTimerChooseList[(BestFriendTimerChooseList.length + BestFriendTimerChooseIndex - 1) % BestFriendTimerChooseList.length] + " " + DialogFindPlayer("Hours"),
 				() => BestFriendTimerChooseList[(BestFriendTimerChooseIndex + 1) % BestFriendTimerChooseList.length] + " " + DialogFindPlayer("Hours"));
 		}
-		else if (Player.CanInteract() && DialogFocusSourceItem.Property.EnableRandomInput) {
+		else if (Player.CanInteract() && DialogFocusSourceItem.Property.EnableRandomInput && C.MemberNumber != Player.MemberNumber && !DialogFocusSourceItem.Property.MemberNumberList.includes(Player.MemberNumber)) {
 			for (let I = 0; I < DialogFocusSourceItem.Property.MemberNumberList.length; I++) {
 				if (DialogFocusSourceItem.Property.MemberNumberList[I] == Player.MemberNumber) return;
 			}
@@ -2174,11 +2407,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	}
 
 	function InventoryItemMiscBestFriendTimerPadlockClick() {
-		if ((MouseX >= 1885) && (MouseX <= 1975) && (MouseY >= 25) && (MouseY <= 110)) InventoryItemMiscBestFriendTimerPadlockExit();
+		if ((MouseX >= 1885) && (MouseX <= 1975) && (MouseY >= 25) && (MouseY <= 110)) DialogLeaveFocusItem();
 		if (!Player.CanInteract()) return;
-		var C = CharacterGetCurrent();
+		const C = CharacterGetCurrent();
 	
-		if (!!C.BCT && checkBForAbove(C)) {
+		if (checkBForAbove(C)) {
 			if ((MouseX >= 1100) && (MouseX <= 1164)) {
 				if ((MouseY >= 666) && (MouseY <= 730)) { DialogFocusSourceItem.Property.RemoveItem = !(DialogFocusSourceItem.Property.RemoveItem); }
 				if ((MouseY >= 746) && (MouseY <= 810)) { DialogFocusSourceItem.Property.ShowTimer = !(DialogFocusSourceItem.Property.ShowTimer); }
@@ -2188,17 +2421,17 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		}
 	
 		if ((MouseY >= 910) && (MouseY <= 975)) {
-			if (!!C.BCT && checkBForAbove(C)) {
+			if (checkBForAbove(C)) {
 				if ((MouseX >= 1100) && (MouseX < 1350)) InventoryItemMiscBestFriendTimerPadlockAdd(BestFriendTimerChooseList[BestFriendTimerChooseIndex] * 3600);
 				if ((MouseX >= 1400) && (MouseX < 1650)) {
 					if (MouseX <= 1525) BestFriendTimerChooseIndex = (BestFriendTimerChooseList.length + BestFriendTimerChooseIndex - 1) % BestFriendTimerChooseList.length;
 					else BestFriendTimerChooseIndex = (BestFriendTimerChooseIndex + 1) % BestFriendTimerChooseList.length;
 				}
 			}
-			else if (DialogFocusSourceItem.Property.EnableRandomInput) {
-				for (let I = 0; I < DialogFocusSourceItem.Property.MemberNumberList.length; I++) {
-					if (DialogFocusSourceItem.Property.MemberNumberList[I] == Player.MemberNumber) return;
-				}
+			else if (DialogFocusSourceItem.Property.EnableRandomInput && !DialogFocusSourceItem.Property.MemberNumberList.includes(Player.MemberNumber)) {
+				// for (let I = 0; I < DialogFocusSourceItem.Property.MemberNumberList.length; I++) {
+				// 	if (DialogFocusSourceItem.Property.MemberNumberList[I] == Player.MemberNumber) return;
+				// }
 				if ((MouseX >= 1100) && (MouseX < 1350)) { InventoryItemMiscBestFriendTimerPadlockAdd(-2 * 3600, true); }
 				if ((MouseX >= 1400) && (MouseX < 1650)) { InventoryItemMiscBestFriendTimerPadlockAdd(4 * 3600 * ((Math.random() >= 0.5) ? 1 : -1), true); }
 				if ((MouseX >= 1700) && (MouseX < 1950)) { InventoryItemMiscBestFriendTimerPadlockAdd(2 * 3600, true); }
@@ -2236,13 +2469,12 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	
 			ChatRoomPublishCustomAction(msg, true, dictionary);
 		} 
-		else { CharacterRefresh(C); }
-		InventoryItemMiscBestFriendTimerPadlockExit();
+		else {DialogLeaveFocusItem();}
 	}
 	
 	function InventoryItemMiscBestFriendTimerPadlockExit() {
-		DialogFocusItem = null;
-		if (DialogInventory != null) DialogMenuButtonBuild(CharacterGetCurrent());
+		// DialogFocusItem = null;
+		// if (DialogInventory != null) DialogMenuButtonBuild(CharacterGetCurrent());
 	}
 	// Handle inspect best friend timer lock: END
 

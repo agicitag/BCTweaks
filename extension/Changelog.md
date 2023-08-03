@@ -1,9 +1,18 @@
 # BCT Changelog
+
+## 0.6.0
+### Features:
+- Money Transfer added (Using /send-money command)
+- Changelog as chat message added
+- Preview Lock Icons now shows BF locks correctly.
+- Added BCTweaks icon and Best Friends icon.
+- Option to show icons only while hovering the mouse above the characters.
+
 ## 0.5.3
 ## Features:
 - A new setting to share private rooms directly.
 
-## Bugfixes:
+### Bugfixes:
 - Room sharing should work more reliably now.
 - Rate limit fix.
 
@@ -33,25 +42,3 @@
 - Timer Locks on items with extra effects didn't unlock on correct time
 - Vibrators on zones that cant make you orgasm, still gave orgasm progress
 - Random effects affected orgasm progress, regardless of zone
-
-## 0.4.3
-### Bugfixes:
-- Updated to new mod sdk version 1.1.0
-
-## 0.4.2
-### Bugfixes:
-- Private Rooms not working properly in R86 for Mixed and Male sections
-
-## 0.4.1
-### Bugfixes:
-- Fixed a bug that caused the screen to flicker when edging with an orgasm multiplier > 1
-
-## 0.4.0
-### Features:
-- Added the option to let arousal affect orgasm progress
-- Show saved tails preview in settings
-- Added the Best Friend feature (by Haruhi #78366)
-
-### Bugfixes:
-- Fixed a bug where arousal progress was shown as 0% to others after resisting an orgasm
-- Fixed a bug that caused the arousal bar to not be shown on mobile
