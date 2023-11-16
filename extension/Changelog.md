@@ -1,5 +1,9 @@
 # BCT Changelog
 
+## 0.7.0
+### Minor Chane:
+- Exposed Colors for hint settings in BCT_API
+
 ## 0.6.4
 ### Features:
 - Money Transfer added (Using /send-money command)

@@ -1,4 +1,4 @@
-const BCT_VERSION = "B.0.6.4";
+const BCT_VERSION = "B.0.7.0";
 const BCT_Settings_Version = 14;
 const BCT_CHANGELOG = `${BCT_VERSION}
 - Modified settings button
@@ -9,7 +9,10 @@ const BCT_CHANGELOG = `${BCT_VERSION}
 - Added Chat Changelogs (you can disable this in the settings)
 `
 
-const BCT_API = {};
+const BCT_API = {
+	HintForeColor : "Black",
+	HintBackColor : "Yellow",
+};
 
 async function runBCT(){
 	
@@ -474,7 +477,7 @@ async function runBCT(){
 		 * @param {number} [MaxLine] - Maximum of lines the word can wrap for
 		 * @returns {void} - Nothing
 		 */
-		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor, BackColor = null, MaxLine = null) {
+		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor = "Black", BackColor = null, MaxLine = null) {
 			if (controllerIsActive()) {
 				setButton(X, Y);
 			}
@@ -613,7 +616,7 @@ async function runBCT(){
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
 			DrawText("- " + bctSettingCategoryLabels[PreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
 			if(settingsHint != ""){
-				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, "Black", "Yellow");
+				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, ForeColor = BCT_API.HintForeColor, BackColor = BCT_API.HintBackColor);
 			}
 
 			let currentElement;
@@ -741,7 +744,7 @@ async function runBCT(){
 			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 
-			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 500, 400, 100, "Black");
+			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 500, 400, 100, ForeColor = BCT_API.HintForeColor);
 
 			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 665, "Black", "Gray");
 			DrawButton(1450, 715, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
@@ -920,9 +923,9 @@ async function runBCT(){
 		PreferenceSubscreenBCTTailwagRun = function () {
 			drawMenuElements();
 			MainCanvas.textAlign = "center";
-			DrawTextWrapGood("Main Tail:", 550, 750, 100, 80, "Black");
+			DrawTextWrapGood("Main Tail:", 550, 750, 100, 80, ForeColor = BCT_API.HintForeColor);
 			DrawCharacter(tailPreviewMain, 600, 600, 0.5, false);
-			DrawTextWrapGood("Secondary Tail:", 1000, 750, 200, 80, "Black");
+			DrawTextWrapGood("Secondary Tail:", 1000, 750, 200, 80, Forecolor = BCT_API.HintForeColor);
 			DrawCharacter(tailPreviewSecondary, 1100, 600, 0.5, false);
 		}
 
