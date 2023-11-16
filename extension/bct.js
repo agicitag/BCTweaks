@@ -12,6 +12,7 @@ const BCT_CHANGELOG = `${BCT_VERSION}
 const BCT_API = {
 	HintForeColor : "Black",
 	HintBackColor : "Yellow",
+	HintBorderColor : "Black",
 };
 
 async function runBCT(){
@@ -477,7 +478,7 @@ async function runBCT(){
 		 * @param {number} [MaxLine] - Maximum of lines the word can wrap for
 		 * @returns {void} - Nothing
 		 */
-		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor = "Black", BackColor = null, MaxLine = null) {
+		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor = "Black", BackColor = null, BorderColor = "Black", MaxLine = null) {
 			if (controllerIsActive()) {
 				setButton(X, Y);
 			}
@@ -489,7 +490,7 @@ async function runBCT(){
 				MainCanvas.fillRect(X, Y, Width, Height);
 				MainCanvas.fill();
 				MainCanvas.lineWidth = 2;
-				MainCanvas.strokeStyle = ForeColor;
+				MainCanvas.strokeStyle = BorderColor;
 				MainCanvas.stroke();
 				MainCanvas.closePath();
 			}
@@ -616,7 +617,7 @@ async function runBCT(){
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
 			DrawText("- " + bctSettingCategoryLabels[PreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
 			if(settingsHint != ""){
-				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, ForeColor = BCT_API.HintForeColor, BackColor = BCT_API.HintBackColor);
+				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, ForeColor = BCT_API.HintForeColor, BackColor = BCT_API.HintBackColor, BorderColor = BCT_API.HintBorderColor);
 			}
 
 			let currentElement;

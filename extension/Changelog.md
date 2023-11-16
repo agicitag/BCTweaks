@@ -1,8 +1,8 @@
 # BCT Changelog
 
 ## 0.7.0
-### Minor Chane:
-- Exposed Colors for hint settings in BCT_API
+### Minor Change:
+- Exposed Colors for hints in settings in BCT_API
 
 ## 0.6.4
 ### Features:
