@@ -1,7 +1,8 @@
 const BCT_VERSION = "0.6.1";
 const BCT_Settings_Version = 15;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- Updated for R101
+- Updated for R101.
+- Fixed an error with BF Lock where player wouldn't get access without Room Share enabled.
 `
 
 const BCT_API = {
@@ -2096,13 +2097,13 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 									}
 									break;
 								case BCT_BEEP_ACK_FRIEND_MSG:
-									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare 
-										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private) {
-										if ((Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
+									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber)) {
+										if (( Player.BCT.bctSettings.bestFriendsRoomShare 
+										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private)) {
 											SendRoomName(beep.MemberNumber);
-											SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_BFLOCK_ACCESS,true);
-											BFLockAccessOn.add(beep.MemberNumber); // Room request happens on each login and best friend add	
 										}
+										SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_BFLOCK_ACCESS,true);
+										BFLockAccessOn.add(beep.MemberNumber); // Room request happens on each login and best friend add
 									}
 									break;
 								case BCT_BEEP_REQUEST_ROOM:

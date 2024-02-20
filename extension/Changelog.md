@@ -2,6 +2,7 @@
 
 ## 0.6.1
 - Update for R101
+- Fixed an error with BF Lock where player wouldn't get access without Room Share enabled
 
 ## 0.6.0
 ### Features:
