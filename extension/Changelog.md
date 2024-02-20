@@ -2,6 +2,7 @@
 
 ## 0.7.1
 - Updated for R101
+- Fixed an error with BF Lock where player wouldn't get access without Room Share enabled
 ## 0.7.0
 ### Minor Change:
 - Exposed Colors for hints in settings in BCT_API
