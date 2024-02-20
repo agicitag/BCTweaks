@@ -1,5 +1,8 @@
 # BCT Changelog
 
+## 0.6.1
+- Update for R101
+
 ## 0.6.0
 ### Features:
 - Money Transfer added (Using /send-money command)
