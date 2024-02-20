@@ -1,12 +1,7 @@
-const BCT_VERSION = "B.0.7.0";
-const BCT_Settings_Version = 14;
+const BCT_VERSION = "B.0.7.1";
+const BCT_Settings_Version = 15;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- Modified settings button
-- Money Transfer!
-	-Send money to users in current chatroom.
-	-Use command "/send-money [Member Number] [Amount]" without quotes or brackets.
-		eg. /send-money 78366 100
-- Added Chat Changelogs (you can disable this in the settings)
+- Updated for R101
 `
 
 const BCT_API = {
@@ -1037,11 +1032,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	setInterval(addEverySec, 1000);
 	setInterval(addEveryTs, 3000);
 
-	modAPI.patchFunction("ChatRoomDrawCharacterOverlay", {
+	modAPI.patchFunction("ChatRoomCharacterViewDrawOverlay", {
 		"if (ChatRoomHideIconState == 0)":
 		"if (ChatRoomHideIconState == 0 && (!Player.BCT.bctSettings.allIconOnlyShowOnHover || MouseHovering(CharX,CharY,500*Zoom,70*Zoom)))"
 	});
-	modAPI.hookFunction("ChatRoomDrawCharacterOverlay", 2, (args,next) => {		
+	modAPI.hookFunction("ChatRoomCharacterViewDrawOverlay", 2, (args,next) => {		
 		const [C, CharX, CharY, Zoom] = args;
 		// if (!allIconOnlyShowOnHover && !MouseHovering(CharX,CharY,500*Zoom,70*Zoom)) return;
 		if (C.BCT && ChatRoomHideIconState == 0 && (!Player.BCT.bctSettings.bctIconOnlyShowOnHover || MouseHovering(CharX,CharY,500*Zoom,70*Zoom))) {
@@ -1325,7 +1320,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 
 		});
 
-		modAPI.hookFunction('ChatRoomClickCharacter', 2, (args, next) => {
+		modAPI.hookFunction('ChatRoomCharacterViewClickCharacter', 2, (args, next) => {
 			let C = args[0];
 			try {
 				if(C.BCT != null && C.BCT.bctSettings.splitOrgasmArousal === true){

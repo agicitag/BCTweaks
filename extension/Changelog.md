@@ -1,5 +1,7 @@
 # BCT Changelog
 
+## 0.7.1
+- Updated for R101
 ## 0.7.0
 ### Minor Change:
 - Exposed Colors for hints in settings in BCT_API
