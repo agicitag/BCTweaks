@@ -2107,11 +2107,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 									}
 									break;
 								case BCT_BEEP_REQUEST_ROOM:
-									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare 
-										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private) {
+									if(Player.BCT.bctSettings.bestFriendsEnabled) {
 										if ((Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
 											IsBestFriend(beep.MemberNumber);
-										} else if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber)) {
+										} else if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber) && Player.BCT.bctSettings.bestFriendsRoomShare 
+										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private) {
 											SendRoomName(beep.MemberNumber);
 										}
 									}
