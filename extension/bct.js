@@ -100,7 +100,7 @@ async function runBCT(){
 	//send Initilization when started when already in a chatroom
 	sendBctInitilization(true);
 	
-	async function bctSettingsLoad() {
+	async function bctSettingsLoad(reset = false) {
 		await waitFor(() => !!Player?.AccountName);
 
 		const BCT_DEFAULT_SETTINGS = {
@@ -146,12 +146,19 @@ async function runBCT(){
 		Player.BCT.splitOrgasmArousal.vibrationLevel = 0;
 		Player.BCT.splitOrgasmArousal.changeTime = 0;
 
+		if (reset == true) {
+			Player.OnlineSettings.BCT = null;
+			localStorage.removeItem(bctSettingsKey());
+			bctBeepNotify("BCTweaks Reset", "All your settings have been changed to default.");
+
+		}
+
 		//if settings are not already loaded
 		if (!Object.keys(Player.BCT.bctSettings).length > 0){
 			let settings = JSON.parse(localStorage.getItem(bctSettingsKey()));
 			const bctOnlineSettings = JSON.parse(
 				LZString.decompressFromBase64(Player.OnlineSettings.BCT) || null
-			);		
+			);
 			//if online settings are not an older version then local ones, use them instead
 			if (
 				bctOnlineSettings?.version >= settings?.version ||
@@ -187,8 +194,9 @@ async function runBCT(){
 
 			//if the version of the current settings is newer then the loaded ones, beep that bct got an update
 			if (
-				typeof settings.version === "undefined" ||
-				settings.version < BCT_Settings_Version
+				(typeof settings.version === "undefined" ||
+				settings.version < BCT_Settings_Version) &&
+				(reset != true)
 			) {
 				beepChangelog();
 			}
@@ -741,11 +749,12 @@ async function runBCT(){
 			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 
-			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 500, 400, 100, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 460, 400, 100, ForeColor = BCT_API.HintForeColor);
 
-			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 665, "Black", "Gray");
-			DrawButton(1450, 715, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
-			DrawButton(1450, 825, 400, 90, "Open Beta Changelog", "White", "", "Open Beta Changelog on Github");
+			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 625, "Black", "Gray");
+			DrawButton(1450, 650, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
+			DrawButton(1450, 755, 400, 90, "Open Beta Changelog", "White", "", "Open Beta Changelog on Github");
+			DrawButton(1500, 860, 300, 90, "Reset", "Red", "Icons/Reset.png", "Reset ALL Settings (including best friends list).")
 			
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 865, 125, "Red", "Black");
 			
@@ -761,14 +770,40 @@ async function runBCT(){
 				}
 			}
 		};
+
+		function resetSettings() {
+				CommonDynamicFunction("PreferenceSubscreenResetLoad()")
+				PreferenceSubscreen = "Reset";
+				PreferencePageCurrent = 1;
+		}
+		PreferenceSubscreenResetLoad = function () {
+			currentPageNumber = 1;
+		}
+		PreferenceSubscreenResetRun = function () {
+			DrawTextWrapGood("Do you want to reset all settings to Defaults?",1000, 200, 800, 100, ForeColor = BCT_API.HintForeColor);
+			DrawButton(400, 650, 300, 100, "Confirm", "Red","","Confirm Reset and Exit");
+			DrawButton(1300, 650, 300, 100, "Cancel","White","","Cancel Reset");
+		}
+		PreferenceSubscreenResetClick = function () {
+			if (MouseIn(400, 650, 300, 100)) {
+				bctSettingsLoad(reset = true);
+				defaultExit();
+			}
+			if (MouseIn(1300, 650, 300, 100)) {
+				defaultExit();
+			}
+		}
+		PreferenceSubscreenResetExit = function () {
+			defaultExit();
+		}
 		
 		PreferenceSubscreenBCTSettingsClick = function () {
 			
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
-			if (MouseIn(1450, 715, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/main/extension/Changelog.md", "_blank");
-			if (MouseIn(1450, 825, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/beta/extension/Changelog.md", "_blank");
-			
+			if (MouseIn(1450, 650, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/main/extension/Changelog.md", "_blank");
+			if (MouseIn(1450, 755, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/beta/extension/Changelog.md", "_blank");
+			if (MouseIn(1500, 860, 300, 90)) resetSettings();
 			// Open the selected subscreen
 			for (let A = 0; A < bctSettingsCategories.length; A++){
 				if (MouseIn(500 + 500 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90)) {
