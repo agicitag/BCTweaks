@@ -1053,15 +1053,18 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			else PreferenceMessage = "Member ID List is invalid";
 		};
 	}
+
+	const BCT_AUTHORS = [80525,78366];
+	var countchange = 0;
+	const BCT_CHARS = ["𝓑","𝓒","𝓣"];
+	var oth = 0;
+
 	function addEveryTs() {
 		oth = oth % 100 + 1;
 	}
 	function addEverySec() {
 		countchange = countchange % 100 + 1;
 	}
-	var countchange = 0;
-	const bct = ["𝓑","𝓒","𝓣"];
-	var oth = 0;
 	const rainbowcolors = ["#ff0000", "#ff8000", "#ffff00", "#80ff00", "#00ff00", "#00ff80", "#00ffff", "#0080ff", "#0000ff", "#8000ff", "#ff00ff", "#ff0080"];
 	// const bctIconOnlyShowOnHover = true;
 	// const allIconOnlyShowOnHover = false;
@@ -1079,7 +1082,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			if ((Player.BCT.bctSettings.bestFriendsList.includes(C.MemberNumber))) {
 					DrawImageResize("Assets/Female3DCG/Emoticon/Hearts/Emoticon.png",CharX + 133 * Zoom, CharY + 27 * Zoom, 40 * Zoom, 40 * Zoom);
 				}
-			DrawTextFit(bct[oth%3], CharX + 130 * Zoom, CharY + 55 * Zoom, 25 * Zoom, rainbowcolors[countchange%rainbowcolors.length]);
+			DrawTextFit(BCT_CHARS[oth%BCT_CHARS.length], CharX + 130 * Zoom, CharY + 55 * Zoom, 25 * Zoom, rainbowcolors[countchange%rainbowcolors.length]);
+			if (BCT_AUTHORS.includes(C.MemberNumber)) {
+				DrawTextFit("Author",CharX + 130 * Zoom, CharY + 75 * Zoom, 40 * Zoom, rainbowcolors[countchange%rainbowcolors.length]);
+			}
 		}
 		next(args);
 	});
