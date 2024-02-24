@@ -1,8 +1,18 @@
 # BCT Changelog
 
+## 0.7.2
+## Bugfixes:
+- Fixed a bug with BF Locks which made them unavailable to unlock in public rooms
+
+## Changed:
+- Added a reset button for all settings
+- Item permissions for BF Locks are now handled in BCTweaks settings page under Best Friends
+
 ## 0.7.1
+## Bugfixes:
 - Updated for R101
 - Fixed an error with BF Lock where player wouldn't get access without Room Share enabled
+
 ## 0.7.0
 ### Minor Change:
 - Exposed Colors for hints in settings in BCT_API

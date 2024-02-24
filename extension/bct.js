@@ -1,8 +1,10 @@
-const BCT_VERSION = "B.0.7.1";
-const BCT_Settings_Version = 15;
+const BCT_VERSION = "B.0.7.2";
+const BCT_Settings_Version = 16;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- Updated for R101.
-- Fixed an error with BF Lock where player wouldn't get access without Room Share enabled.
+- Fixed an error with BF Lock, where player wouldn't get access without Room Share enabled.
+- Fixed a bug with BF Locks which made them unavailable to unlock in public rooms.
+- Added a reset button for all settings.
+- Item permissions for BF Locks are now handled in BCTweaks settings page under Best Friends.
 `
 
 const BCT_API = {
