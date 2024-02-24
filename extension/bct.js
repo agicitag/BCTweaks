@@ -596,6 +596,20 @@ async function runBCT(){
 			});
 			ElementCreateInput(identifier, "text", Player.BCT.bctSettings[setting], "100");
 		}
+		function backNextWithBF(setting, backNextOptions) {
+			if (setting == BF_LOCK_NAME || setting == BF_TIMER_LOCK_NAME) {
+				if((backNextOptions.indexOf(Player.BCT.bctSettings.ItemPerm[setting]) < 0)) {
+					return 0;
+				}else {
+					return backNextOptions.indexOf(Player.BCT.bctSettings.ItemPerm[setting]);
+				}
+			}
+			if((backNextOptions.indexOf(Player.BCT.bctSettings[setting]) < 0)) {
+				return 0;
+			}else {
+				return backNextOptions.indexOf(Player.BCT.bctSettings[setting]);
+			}
+		}
 		function addMenuBackNext(width, height, text, setting, backNextOptions, hint, xModifier = 0, yModifier = 0){
 			menuElements[PreferenceSubscreen].push({
 				type: "BackNext",
@@ -608,7 +622,8 @@ async function runBCT(){
 				hint: hint,
 				xModifier: xModifier,
 				yModifier: yModifier,
-				index: (backNextOptions.indexOf(Player.BCT.bctSettings[setting]) < 0) ? 0 : backNextOptions.indexOf(Player.BCT.bctSettings[setting])
+				index: backNextWithBF(setting, backNextOptions),
+				//(backNextOptions.indexOf(Player.BCT.bctSettings[setting]) < 0) ? 0 : backNextOptions.indexOf(Player.BCT.bctSettings[setting])
 			});
 		}
 
@@ -711,7 +726,10 @@ async function runBCT(){
 						if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
 							if (MouseX <= MENU_ELEMENT_X_OFFSET + currentElement.width/2) currentElement.index = PreferenceGetPreviousIndex(currentElement.backNextOptions, currentElement.index);
 							else currentElement.index = PreferenceGetNextIndex(currentElement.backNextOptions, currentElement.index);
-							Player.BCT.bctSettings[currentElement.setting] = currentElement.backNextOptions[currentElement.index];
+							if(currentElement.setting == BF_LOCK_NAME || currentElement.setting == BF_TIMER_LOCK_NAME) {
+								Player.BCT.bctSettings.ItemPerm[currentElement.setting] = currentElement.backNextOptions[currentElement.index];
+							}
+							else Player.BCT.bctSettings[currentElement.setting] = currentElement.backNextOptions[currentElement.index];
 							foundElement = true;
 						}
 						break;
@@ -1023,6 +1041,12 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			`Show these users your private room without adding them as Best Friend (You need to have Room Share Enabled).
 Input should be comma separated Member IDs. (Maximum 30 members)`
 			);
+			addMenuBackNext(250, 60, "BF Lock Permission", BF_LOCK_NAME, ["Normal", "Limited", "Blocked", "Fav"],
+			"Use this instead of regular item permissions."
+			);
+			addMenuBackNext(250, 60, "BF Timer Lock Permission", BF_TIMER_LOCK_NAME, ["Normal", "Limited", "Blocked", "Fav"],
+			"Use this instead of regular item permissions."
+			);
 		}
 		PreferenceSubscreenBCTBestFriendsRun = function () {
 			drawMenuElements();
@@ -1031,6 +1055,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			handleMenuClicks();
 		}
 		PreferenceSubscreenBCTBestFriendsExit = function () {
+			//Filter for item permissions of locks
+			FilterItemPermissions();
+			//Add perms
+			UpdateItemPermissions();
 			if (!(Player.BCT.bctSettings.bestFriendsEnabled) || !(Player.BCT.bctSettings.bestFriendsRoomShare)) {
 				for (const friend of Player.BCT.bctSettings.bestFriendsList) {
 					SendBeep(friend,BCT_BEEP,BCT_BEEP_DELETE_SHARED,true);
@@ -2602,14 +2630,28 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		next(args);
 	})
 
-	//Add it again and ServerPlayerBlockItemsSync()
-	for(let itemName in Player.BCT.bctSettings.ItemPerm) {
-		let permissionItem = { Name: itemName, Group: "ItemMisc", Type: null};
-		if(Player.BCT.bctSettings.ItemPerm[itemName] === "Limited") Player.LimitedItems.push(permissionItem);
-		else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Blocked") Player.BlockItems.push(permissionItem);
-		else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Fav") Player.FavoriteItems.push(permissionItem);
-		ServerPlayerBlockItemsSync()
+	//Updating item permissions
+	function UpdateItemPermissions() {
+		for(let itemName in Player.BCT.bctSettings.ItemPerm) {
+			let permissionItem = { Name: itemName, Group: "ItemMisc", Type: null};
+			if(Player.BCT.bctSettings.ItemPerm[itemName] === "Limited") Player.LimitedItems.push(permissionItem);
+			else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Blocked") Player.BlockItems.push(permissionItem);
+			else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Fav") Player.FavoriteItems.push(permissionItem);
+			ServerPlayerBlockItemsSync();
+		}
 	}
+
+	//Filtering item permissions
+	function FilterItemPermissions() {
+		for(let itemName in Player.BCT.bctSettings.ItemPerm) {
+			Player.LimitedItems = Player.LimitedItems.filter((item) => item.Name != itemName);
+			Player.BlockItems = Player.BlockItems.filter((item) => item.Name != itemName);
+			Player.FavoriteItems = Player.FavoriteItems.filter((item) => item.Name != itemName);
+		}
+	}
+
+	//Add it again during reloads and ServerPlayerBlockItemsSync()
+	UpdateItemPermissions();
 
 	// Convert HighSec Lock to BF lock if the setting is true and your best friend is adding the lock
 	
