@@ -1,8 +1,10 @@
-const BCT_VERSION = "0.6.1";
-const BCT_Settings_Version = 15;
+const BCT_VERSION = "0.6.2";
+const BCT_Settings_Version = 16;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- Updated for R101.
-- Fixed an error with BF Lock where player wouldn't get access without Room Share enabled.
+- Fixed an error with BF Lock, where player wouldn't get access without Room Share enabled.
+- Fixed a bug with BF Locks which made them unavailable to unlock in public rooms.
+- Added a reset button for all settings.
+- Item permissions for BF Locks are now handled in BCTweaks settings page under Best Friends.
 `
 
 const BCT_API = {
@@ -100,7 +102,7 @@ async function runBCT(){
 	//send Initilization when started when already in a chatroom
 	sendBctInitilization(true);
 	
-	async function bctSettingsLoad() {
+	async function bctSettingsLoad(reset = false) {
 		await waitFor(() => !!Player?.AccountName);
 
 		const BCT_DEFAULT_SETTINGS = {
@@ -146,12 +148,19 @@ async function runBCT(){
 		Player.BCT.splitOrgasmArousal.vibrationLevel = 0;
 		Player.BCT.splitOrgasmArousal.changeTime = 0;
 
+		if (reset == true) {
+			Player.OnlineSettings.BCT = null;
+			localStorage.removeItem(bctSettingsKey());
+			bctBeepNotify("BCTweaks Reset", "All your settings have been changed to default.");
+
+		}
+
 		//if settings are not already loaded
 		if (!Object.keys(Player.BCT.bctSettings).length > 0){
 			let settings = JSON.parse(localStorage.getItem(bctSettingsKey()));
 			const bctOnlineSettings = JSON.parse(
 				LZString.decompressFromBase64(Player.OnlineSettings.BCT) || null
-			);		
+			);
 			//if online settings are not an older version then local ones, use them instead
 			if (
 				bctOnlineSettings?.version >= settings?.version ||
@@ -187,8 +196,9 @@ async function runBCT(){
 
 			//if the version of the current settings is newer then the loaded ones, beep that bct got an update
 			if (
-				typeof settings.version === "undefined" ||
-				settings.version < BCT_Settings_Version
+				(typeof settings.version === "undefined" ||
+				settings.version < BCT_Settings_Version) &&
+				(reset != true)
 			) {
 				beepChangelog();
 			}
@@ -588,6 +598,20 @@ async function runBCT(){
 			});
 			ElementCreateInput(identifier, "text", Player.BCT.bctSettings[setting], "100");
 		}
+		function backNextWithBF(setting, backNextOptions) {
+			if (setting == BF_LOCK_NAME || setting == BF_TIMER_LOCK_NAME) {
+				if((backNextOptions.indexOf(Player.BCT.bctSettings.ItemPerm[setting]) < 0)) {
+					return 0;
+				}else {
+					return backNextOptions.indexOf(Player.BCT.bctSettings.ItemPerm[setting]);
+				}
+			}
+			if((backNextOptions.indexOf(Player.BCT.bctSettings[setting]) < 0)) {
+				return 0;
+			}else {
+				return backNextOptions.indexOf(Player.BCT.bctSettings[setting]);
+			}
+		}
 		function addMenuBackNext(width, height, text, setting, backNextOptions, hint, xModifier = 0, yModifier = 0){
 			menuElements[PreferenceSubscreen].push({
 				type: "BackNext",
@@ -600,7 +624,8 @@ async function runBCT(){
 				hint: hint,
 				xModifier: xModifier,
 				yModifier: yModifier,
-				index: (backNextOptions.indexOf(Player.BCT.bctSettings[setting]) < 0) ? 0 : backNextOptions.indexOf(Player.BCT.bctSettings[setting])
+				index: backNextWithBF(setting, backNextOptions),
+				//(backNextOptions.indexOf(Player.BCT.bctSettings[setting]) < 0) ? 0 : backNextOptions.indexOf(Player.BCT.bctSettings[setting])
 			});
 		}
 
@@ -703,7 +728,10 @@ async function runBCT(){
 						if (MouseIn(MENU_ELEMENT_X_OFFSET + currentElement.xModifier, currentElement.yPos - currentElement.height/2, currentElement.width, currentElement.height)){
 							if (MouseX <= MENU_ELEMENT_X_OFFSET + currentElement.width/2) currentElement.index = PreferenceGetPreviousIndex(currentElement.backNextOptions, currentElement.index);
 							else currentElement.index = PreferenceGetNextIndex(currentElement.backNextOptions, currentElement.index);
-							Player.BCT.bctSettings[currentElement.setting] = currentElement.backNextOptions[currentElement.index];
+							if(currentElement.setting == BF_LOCK_NAME || currentElement.setting == BF_TIMER_LOCK_NAME) {
+								Player.BCT.bctSettings.ItemPerm[currentElement.setting] = currentElement.backNextOptions[currentElement.index];
+							}
+							else Player.BCT.bctSettings[currentElement.setting] = currentElement.backNextOptions[currentElement.index];
 							foundElement = true;
 						}
 						break;
@@ -741,11 +769,12 @@ async function runBCT(){
 			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 
-			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 500, 400, 100, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood("Show hints for the settings by clicking on them.", 1450+400/2, 460, 400, 100, ForeColor = BCT_API.HintForeColor);
 
-			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 665, "Black", "Gray");
-			DrawButton(1450, 715, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
-			DrawButton(1450, 825, 400, 90, "Open Beta Changelog", "White", "", "Open Beta Changelog on Github");
+			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 625, "Black", "Gray");
+			DrawButton(1450, 650, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
+			DrawButton(1450, 755, 400, 90, "Open Beta Changelog", "White", "", "Open Beta Changelog on Github");
+			DrawButton(1500, 860, 300, 90, "Reset", "Red", "Icons/Reset.png", "Reset ALL Settings (including best friends list).")
 			
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 865, 125, "Red", "Black");
 			
@@ -761,14 +790,40 @@ async function runBCT(){
 				}
 			}
 		};
+
+		function resetSettings() {
+				CommonDynamicFunction("PreferenceSubscreenResetLoad()")
+				PreferenceSubscreen = "Reset";
+				PreferencePageCurrent = 1;
+		}
+		PreferenceSubscreenResetLoad = function () {
+			currentPageNumber = 1;
+		}
+		PreferenceSubscreenResetRun = function () {
+			DrawTextWrapGood("Do you want to reset all settings to Defaults?",1000, 200, 800, 100, ForeColor = BCT_API.HintForeColor);
+			DrawButton(400, 650, 300, 100, "Confirm", "Red","","Confirm Reset and Exit");
+			DrawButton(1300, 650, 300, 100, "Cancel","White","","Cancel Reset");
+		}
+		PreferenceSubscreenResetClick = function () {
+			if (MouseIn(400, 650, 300, 100)) {
+				bctSettingsLoad(reset = true);
+				defaultExit();
+			}
+			if (MouseIn(1300, 650, 300, 100)) {
+				defaultExit();
+			}
+		}
+		PreferenceSubscreenResetExit = function () {
+			defaultExit();
+		}
 		
 		PreferenceSubscreenBCTSettingsClick = function () {
 			
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
-			if (MouseIn(1450, 715, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/main/extension/Changelog.md", "_blank");
-			if (MouseIn(1450, 825, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/beta/extension/Changelog.md", "_blank");
-			
+			if (MouseIn(1450, 650, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/main/extension/Changelog.md", "_blank");
+			if (MouseIn(1450, 755, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/beta/extension/Changelog.md", "_blank");
+			if (MouseIn(1500, 860, 300, 90)) resetSettings();
 			// Open the selected subscreen
 			for (let A = 0; A < bctSettingsCategories.length; A++){
 				if (MouseIn(500 + 500 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90)) {
@@ -988,6 +1043,12 @@ They can be deleted in Friend List by hovering over "Best Friend" and clicking o
 			`Show these users your private room without adding them as Best Friend (You need to have Room Share Enabled).
 Input should be comma separated Member IDs. (Maximum 30 members)`
 			);
+			addMenuBackNext(250, 60, "BF Lock Permission", BF_LOCK_NAME, ["Normal", "Limited", "Blocked", "Fav"],
+			"Use this instead of regular item permissions."
+			);
+			addMenuBackNext(250, 60, "BF Timer Lock Permission", BF_TIMER_LOCK_NAME, ["Normal", "Limited", "Blocked", "Fav"],
+			"Use this instead of regular item permissions."
+			);
 		}
 		PreferenceSubscreenBCTBestFriendsRun = function () {
 			drawMenuElements();
@@ -996,6 +1057,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			handleMenuClicks();
 		}
 		PreferenceSubscreenBCTBestFriendsExit = function () {
+			//Filter for item permissions of locks
+			FilterItemPermissions();
+			//Add perms
+			UpdateItemPermissions();
 			if (!(Player.BCT.bctSettings.bestFriendsEnabled) || !(Player.BCT.bctSettings.bestFriendsRoomShare)) {
 				for (const friend of Player.BCT.bctSettings.bestFriendsList) {
 					SendBeep(friend,BCT_BEEP,BCT_BEEP_DELETE_SHARED,true);
@@ -1018,15 +1083,18 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			else PreferenceMessage = "Member ID List is invalid";
 		};
 	}
+
+	const BCT_AUTHORS = [80525,78366];
+	var countchange = 0;
+	const BCT_CHARS = ["𝓑","𝓒","𝓣"];
+	var oth = 0;
+
 	function addEveryTs() {
 		oth = oth % 100 + 1;
 	}
 	function addEverySec() {
 		countchange = countchange % 100 + 1;
 	}
-	var countchange = 0;
-	const bct = ["𝓑","𝓒","𝓣"];
-	var oth = 0;
 	const rainbowcolors = ["#ff0000", "#ff8000", "#ffff00", "#80ff00", "#00ff00", "#00ff80", "#00ffff", "#0080ff", "#0000ff", "#8000ff", "#ff00ff", "#ff0080"];
 	// const bctIconOnlyShowOnHover = true;
 	// const allIconOnlyShowOnHover = false;
@@ -1044,7 +1112,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			if ((Player.BCT.bctSettings.bestFriendsList.includes(C.MemberNumber))) {
 					DrawImageResize("Assets/Female3DCG/Emoticon/Hearts/Emoticon.png",CharX + 133 * Zoom, CharY + 27 * Zoom, 40 * Zoom, 40 * Zoom);
 				}
-			DrawTextFit(bct[oth%3], CharX + 130 * Zoom, CharY + 55 * Zoom, 25 * Zoom, rainbowcolors[countchange%rainbowcolors.length]);
+			DrawTextFit(BCT_CHARS[oth%BCT_CHARS.length], CharX + 130 * Zoom, CharY + 55 * Zoom, 25 * Zoom, rainbowcolors[countchange%rainbowcolors.length]);
+			if (BCT_AUTHORS.includes(C.MemberNumber)) {
+				DrawTextFit("Author",CharX + 130 * Zoom, CharY + 75 * Zoom, 40 * Zoom, rainbowcolors[countchange%rainbowcolors.length]);
+			}
 		}
 		next(args);
 	});
@@ -2107,11 +2178,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 									}
 									break;
 								case BCT_BEEP_REQUEST_ROOM:
-									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare 
-										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private) {
+									if(Player.BCT.bctSettings.bestFriendsEnabled) {
 										if ((Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
 											IsBestFriend(beep.MemberNumber);
-										} else if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber)) {
+										} else if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber) && Player.BCT.bctSettings.bestFriendsRoomShare 
+										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private) {
 											SendRoomName(beep.MemberNumber);
 										}
 									}
@@ -2561,14 +2632,28 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		next(args);
 	})
 
-	//Add it again and ServerPlayerBlockItemsSync()
-	for(let itemName in Player.BCT.bctSettings.ItemPerm) {
-		let permissionItem = { Name: itemName, Group: "ItemMisc", Type: null};
-		if(Player.BCT.bctSettings.ItemPerm[itemName] === "Limited") Player.LimitedItems.push(permissionItem);
-		else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Blocked") Player.BlockItems.push(permissionItem);
-		else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Fav") Player.FavoriteItems.push(permissionItem);
-		ServerPlayerBlockItemsSync()
+	//Updating item permissions
+	function UpdateItemPermissions() {
+		for(let itemName in Player.BCT.bctSettings.ItemPerm) {
+			let permissionItem = { Name: itemName, Group: "ItemMisc", Type: null};
+			if(Player.BCT.bctSettings.ItemPerm[itemName] === "Limited") Player.LimitedItems.push(permissionItem);
+			else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Blocked") Player.BlockItems.push(permissionItem);
+			else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Fav") Player.FavoriteItems.push(permissionItem);
+			ServerPlayerBlockItemsSync();
+		}
 	}
+
+	//Filtering item permissions
+	function FilterItemPermissions() {
+		for(let itemName in Player.BCT.bctSettings.ItemPerm) {
+			Player.LimitedItems = Player.LimitedItems.filter((item) => item.Name != itemName);
+			Player.BlockItems = Player.BlockItems.filter((item) => item.Name != itemName);
+			Player.FavoriteItems = Player.FavoriteItems.filter((item) => item.Name != itemName);
+		}
+	}
+
+	//Add it again during reloads and ServerPlayerBlockItemsSync()
+	UpdateItemPermissions();
 
 	// Convert HighSec Lock to BF lock if the setting is true and your best friend is adding the lock
 	
