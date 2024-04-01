@@ -1,5 +1,10 @@
 # BCT Changelog
 
+## 0.6.3
+### Minor Change:
+- Updated to ModSdk 1.2.0
+- Tips available on settings page
+
 ## 0.6.2
 ### Bugfixes:
 - Fixed a bug with BF Locks which made them unavailable to unlock in public rooms
