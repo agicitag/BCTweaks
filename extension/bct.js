@@ -781,7 +781,7 @@ async function runBCT(){
 			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 
-			DrawTextWrapGood(BCT_TIPS[Math.floor(Math.random()*(BCT_TIPS.length+1))], 1450+400/2, 460, 400, 100, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood(BCT_TIPS[2], 1450+400/2, 460, 400, 100, ForeColor = BCT_API.HintForeColor);
 
 			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 625, "Black", "Gray");
 			DrawButton(1450, 650, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
