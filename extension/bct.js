@@ -58,7 +58,8 @@ async function runBCT(){
 		"Tip: You can add players as Best Friends through Friendlist.",
 		"Tip: Setting hints are shown by clicking on them.",
 		"Note: Permission to use High-sec lock is required to use BF locks.",
-		"Tip: Check Arousal setting if you want to use auto-erection.",
+		"Tip for male genitals: Check Arousal setting if you want to use auto-erection.",
+		"Tip: You can share private rooms directly with anyone through Best Friends settings."
 	]
 
 	const bctSettingsKey = () => `bctSettings.${Player?.AccountName}`;
@@ -781,7 +782,7 @@ async function runBCT(){
 			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 			//Show tips every 10 secs
-			DrawTextWrapGood(BCT_TIPS[Math.floor(((TimerGetTime()%100000)/100000)*(BCT_TIPS.length+1))], 1450+400/2, 460, 400, 100, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood(BCT_TIPS[Math.floor(((TimerGetTime()%100000)/100000)*(BCT_TIPS.length))], 1450+400/2, 460, 400, 100, ForeColor = BCT_API.HintForeColor);
 
 			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 625, "Black", "Gray");
 			DrawButton(1450, 650, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
