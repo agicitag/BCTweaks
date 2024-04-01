@@ -1,15 +1,20 @@
 # BCT Changelog
 
+## 0.7.3
+### Minor Change:
+- Updated to ModSdk 1.2.0
+- Tips available on settings page
+
 ## 0.7.2
-## Bugfixes:
+### Bugfixes:
 - Fixed a bug with BF Locks which made them unavailable to unlock in public rooms
 
-## Changed:
+### Changed:
 - Added a reset button for all settings
 - Item permissions for BF Locks are now handled in BCTweaks settings page under Best Friends
 
 ## 0.7.1
-## Bugfixes:
+### Bugfixes:
 - Updated for R101
 - Fixed an error with BF Lock where player wouldn't get access without Room Share enabled
 
