@@ -349,10 +349,12 @@ async function runBCT(){
 								if(message.replyRequested)	sendBctInitilization(false);
 								break;
 							case BCT_MSG_ACTIVITY_AROUSAL_SYNC:
+								if (!sender.BCT) break;
 								sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
 								sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;
 								break;
 							case BCT_MSG_SETTINGS_SYNC:
+								if (!sender.BCT) break;
 								sender.BCT.bctSettings = message.bctSettings;
 								AddRelationDialog(sender);
 								break;
