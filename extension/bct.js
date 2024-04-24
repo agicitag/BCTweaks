@@ -1395,9 +1395,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 
 			//only let the orgasm bar progress if its and orgasm zone
 			try {
-				if(!C.BCT || PreferenceGetZoneOrgasm(C, Zone) || C.BCT.bctSettings.splitOrgasmArousal === false
+				if(Zone !== "ActivityOnOther" && (!C.BCT || PreferenceGetZoneOrgasm(C, Zone) || C.BCT.bctSettings.splitOrgasmArousal === false)){
+					next(args);
+				}
 				// Male genital support
-					|| (Asset?.Name == "Penis" && Zone == "ActivityOnOther" && PreferenceGetZoneOrgasm(C, "ItemVulva"))){
+				else if (Asset?.Name == "Penis" && Zone == "ActivityOnOther" && PreferenceGetZoneOrgasm(C, "ItemVulva")){
 					next(args);
 				}
 			} catch (error) {
