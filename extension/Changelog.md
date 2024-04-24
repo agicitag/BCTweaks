@@ -1,6 +1,10 @@
 # BCT Changelog
 
 ## 0.7.3
+### Bugfixes:
+- Fixes Activity error which made the arousal go up on using any activity on others
+- Added safeguards against `sender.BCT` being unitialized (By Rama)
+
 ### Minor Change:
 - Updated to ModSdk 1.2.0
 - Tips available on settings page
