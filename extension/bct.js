@@ -1,10 +1,8 @@
 const BCT_VERSION = "0.6.3";
-const BCT_Settings_Version = 16;
+const BCT_Settings_Version = 17;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- Fixed an error with BF Lock, where player wouldn't get access without Room Share enabled.
-- Fixed a bug with BF Locks which made them unavailable to unlock in public rooms.
-- Added a reset button for all settings.
-- Item permissions for BF Locks are now handled in BCTweaks settings page under Best Friends.
+- Fixed the error which made using any activities on others raised your arousal
+- Slowed down room name syncing for connection rate issues
 `
 
 const BCT_API = {
@@ -784,7 +782,7 @@ async function runBCT(){
 			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 			//Show tips every 10 secs
-			DrawTextWrapGood(BCT_TIPS[Math.floor(((TimerGetTime()%100000)/100000)*(BCT_TIPS.length))], 1450+400/2, 460, 400, 100, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood(BCT_TIPS[Math.floor(((TimerGetTime()%100000)/100000)*(BCT_TIPS.length))], 1650, 400, 400, 100, ForeColor = BCT_API.HintForeColor);
 
 			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 625, "Black", "Gray");
 			DrawButton(1450, 650, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
@@ -2112,9 +2110,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		// For complete load it should work directly
 		async function RequestRoomName() {
 			let onlineFriends = await AvailableFriendList();
+			let i = 1;
 			for (const friend of onlineFriends) {
-				await sleep(100);
+				await sleep(300 * i);
 				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true);
+				i++;
 			}
 		}
 		RequestRoomName();
@@ -2125,28 +2125,34 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		// checks if the other person has added player and then sends room
 		async function CheckAndSendRoomName() {
 			let reqList = await AvailableBFList();
+			let i = 1;
 			for (const friend of reqList) {
-				await sleep(50);
+				await sleep(100 * i);
 				IsBestFriend(friend);
+				i++;
 			}
 		}
 		async function SendRoomNameToMisc() {
 			let reqList = await AvailableMiscList();
-			for( const member of reqList) {
-				await sleep(50);
+			let i = 1;
+			for(const member of reqList) {
+				await sleep(100 * i);
 				SendRoomName(member);
+				i++;
 			}
 		}
 
 		// send player room name when they enter a chatroom or update the room
+		let CurrentChatRoomName = "";
 		async function SendRoomNameOnChatRoomOnEntryUpdate(data) 
 		{
 			if (Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare) {
 				if ((data != null) && (typeof data === "object") && (data.Content != null) && (typeof data.Content === "string")
 				&& (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) 
 				{
-					if (((data.Content === "ServerUpdateRoom") || 
-						(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) && (ChatRoomData.Private)) {
+					if (((data.Content === "ServerUpdateRoom") || (data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) 
+					&& (ChatRoomData.Private) && (ChatRoomData.Name !== CurrentChatRoomName)) {
+							CurrentChatRoomName = ChatRoomData.Name;
 							CheckAndSendRoomName();
 							SendRoomNameToMisc();
 						}
