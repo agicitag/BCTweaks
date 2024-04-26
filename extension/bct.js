@@ -1,10 +1,8 @@
 const BCT_VERSION = "B.0.7.3";
-const BCT_Settings_Version = 16;
+const BCT_Settings_Version = 17;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- Fixed an error with BF Lock, where player wouldn't get access without Room Share enabled.
-- Fixed a bug with BF Locks which made them unavailable to unlock in public rooms.
-- Added a reset button for all settings.
-- Item permissions for BF Locks are now handled in BCTweaks settings page under Best Friends.
+- Fixed the error which made using any activities on others raised your arousal
+- Slowed down room name syncing for connection rate issues
 `
 
 const BCT_API = {
@@ -784,7 +782,7 @@ async function runBCT(){
 			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 			//Show tips every 10 secs
-			DrawTextWrapGood(BCT_TIPS[Math.floor(((TimerGetTime()%100000)/100000)*(BCT_TIPS.length))], 1450+400/2, 460, 400, 100, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood(BCT_TIPS[Math.floor(((TimerGetTime()%100000)/100000)*(BCT_TIPS.length))], 1650, 400, 400, 100, ForeColor = BCT_API.HintForeColor);
 
 			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 625, "Black", "Gray");
 			DrawButton(1450, 650, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
