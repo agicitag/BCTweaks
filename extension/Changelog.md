@@ -2,6 +2,7 @@
 
 ## 0.7.3
 ### Bugfixes:
+- Slow down of room request on login
 - Fixes Activity error which made the arousal go up on using any activity on others
 - Added safeguards against `sender.BCT` being unitialized (By Rama)
 

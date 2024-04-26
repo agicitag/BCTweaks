@@ -2112,9 +2112,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		// For complete load it should work directly
 		async function RequestRoomName() {
 			let onlineFriends = await AvailableFriendList();
+			let i = 1;
 			for (const friend of onlineFriends) {
-				await sleep(100);
+				await sleep(300 * i);
 				SendBeep(friend,BCT_BEEP,BCT_BEEP_REQUEST_ROOM,true);
+				i++;
 			}
 		}
 		RequestRoomName();
@@ -2125,16 +2127,20 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		// checks if the other person has added player and then sends room
 		async function CheckAndSendRoomName() {
 			let reqList = await AvailableBFList();
+			let i = 1;
 			for (const friend of reqList) {
-				await sleep(50);
+				await sleep(100 * i);
 				IsBestFriend(friend);
+				i++;
 			}
 		}
 		async function SendRoomNameToMisc() {
 			let reqList = await AvailableMiscList();
-			for( const member of reqList) {
-				await sleep(50);
+			let i = 1;
+			for(const member of reqList) {
+				await sleep(100 * i);
 				SendRoomName(member);
+				i++;
 			}
 		}
 
