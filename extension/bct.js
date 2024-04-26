@@ -2139,14 +2139,16 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		}
 
 		// send player room name when they enter a chatroom or update the room
+		let CurrentChatRoomName = "";
 		async function SendRoomNameOnChatRoomOnEntryUpdate(data) 
 		{
 			if (Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare) {
 				if ((data != null) && (typeof data === "object") && (data.Content != null) && (typeof data.Content === "string")
 				&& (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) 
 				{
-					if (((data.Content === "ServerUpdateRoom") || 
-						(data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) && (ChatRoomData.Private)) {
+					if (((data.Content === "ServerUpdateRoom") || (data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) 
+					&& (ChatRoomData.Private) && (ChatRoomData.Name !== CurrentChatRoomName)) {
+							CurrentChatRoomName = ChatRoomData.Name;
 							CheckAndSendRoomName();
 							SendRoomNameToMisc();
 						}
