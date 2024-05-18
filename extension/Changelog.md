@@ -1,5 +1,9 @@
 # BCT Changelog
 
+## 0.7.4
+### Bugfixes:
+- Updated for R104
+
 ## 0.7.3
 ### Bugfixes:
 - Slow down of room request on login

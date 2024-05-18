@@ -2453,8 +2453,8 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		const C = CharacterGetCurrent();
 		if ((DialogFocusItem == null) || (DialogFocusSourceItem.Property.RemovalTime < CurrentTime)) { DialogLeaveFocusItem(); return; }
 		if (DialogFocusSourceItem.Property.ShowTimer) {
-			DrawText(DialogFindPlayer("TimerLeft") + " " + TimerToString(DialogFocusSourceItem.Property.RemovalTime - CurrentTime), 1500, 150, "white", "gray");
-		} else { DrawText(DialogFindPlayer("TimerUnknown"), 1500, 150, "white", "gray"); }
+			DrawText(InterfaceTextGet("TimerLeft") + " " + TimerToString(DialogFocusSourceItem.Property.RemovalTime - CurrentTime), 1500, 150, "white", "gray");
+		} else { DrawText(InterfaceTextGet("TimerUnknown"), 1500, 150, "white", "gray"); }
 		//changed Asset to draw
 		DrawAssetPreview(1387, 225, AssetGet("Female3DCG","ItemMisc",BF_TIMER_LOCK_NAME));//AssetGet("Female3DCG","ItemMisc","LoversTimerPadlock"));
 		DrawText(BF_LOCK_QUOTE, 1500, 600, "white", "gray");
@@ -2463,38 +2463,38 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		if (Player.CanInteract() && checkBForAbove(C)) {
 			MainCanvas.textAlign = "left";
 			DrawButton(1100, 666, 64, 64, "", "White", (DialogFocusSourceItem.Property.RemoveItem) ? "Icons/Checked.png" : "");
-			DrawText(DialogFindPlayer("RemoveItemWithTimer"), 1200, 698, "white", "gray");
+			DrawText(InterfaceTextGet("RemoveItemWithTimer"), 1200, 698, "white", "gray");
 			DrawButton(1100, 746, 64, 64, "", "White", (DialogFocusSourceItem.Property.ShowTimer) ? "Icons/Checked.png" : "");
-			DrawText(DialogFindPlayer("ShowItemWithTimerRemaining"), 1200, 778, "white", "gray");
+			DrawText(InterfaceTextGet("ShowItemWithTimerRemaining"), 1200, 778, "white", "gray");
 			DrawButton(1100, 826, 64, 64, "", "White", (DialogFocusSourceItem.Property.EnableRandomInput) ? "Icons/Checked.png" : "");
-			DrawText(DialogFindPlayer("EnableRandomInput"), 1200, 858, "white", "gray");
+			DrawText(InterfaceTextGet("EnableRandomInput"), 1200, 858, "white", "gray");
 			MainCanvas.textAlign = "center";
 		} else {
 			if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.LockMemberNumber != null))
-				DrawText(DialogFindPlayer("LockMemberNumber") + " " + DialogFocusSourceItem.Property.LockMemberNumber.toString(), 1500, 700, "white", "gray");
+				DrawText(InterfaceTextGet("LockMemberNumber") + " " + DialogFocusSourceItem.Property.LockMemberNumber.toString(), 1500, 700, "white", "gray");
 	
 			let msg = "Can only be unlocked or extended by Best Friends and above";//DialogFindPlayer(DialogFocusItem.Asset.Group.Name + DialogFocusItem.Asset.Name + "Detail");
 			// const subst = ChatRoomPronounSubstitutions(CurrentCharacter, "TargetPronoun", false);
 			// msg = CommonStringSubstitute(msg, subst);
 			DrawText(msg, 1500, 800, "white", "gray");
 	
-			DrawText(DialogFindPlayer((DialogFocusSourceItem.Property.RemoveItem) ? "WillRemoveItemWithTimer" : "WontRemoveItemWithTimer"), 1500, 868, "white", "gray");
+			DrawText(InterfaceTextGet((DialogFocusSourceItem.Property.RemoveItem) ? "WillRemoveItemWithTimer" : "WontRemoveItemWithTimer"), 1500, 868, "white", "gray");
 		}
 	
 		// Draw buttons to add/remove time if available
 		if (Player.CanInteract() && checkBForAbove(C)) {
-			DrawButton(1100, 910, 250, 70, DialogFindPlayer("AddTimerTime"), "White");
-			DrawBackNextButton(1400, 910, 250, 70, BestFriendTimerChooseList[BestFriendTimerChooseIndex] + " " + DialogFindPlayer("Hours"), "White", "",
-				() => BestFriendTimerChooseList[(BestFriendTimerChooseList.length + BestFriendTimerChooseIndex - 1) % BestFriendTimerChooseList.length] + " " + DialogFindPlayer("Hours"),
-				() => BestFriendTimerChooseList[(BestFriendTimerChooseIndex + 1) % BestFriendTimerChooseList.length] + " " + DialogFindPlayer("Hours"));
+			DrawButton(1100, 910, 250, 70, InterfaceTextGet("AddTimerTime"), "White");
+			DrawBackNextButton(1400, 910, 250, 70, BestFriendTimerChooseList[BestFriendTimerChooseIndex] + " " + InterfaceTextGet("Hours"), "White", "",
+				() => BestFriendTimerChooseList[(BestFriendTimerChooseList.length + BestFriendTimerChooseIndex - 1) % BestFriendTimerChooseList.length] + " " + InterfaceTextGet("Hours"),
+				() => BestFriendTimerChooseList[(BestFriendTimerChooseIndex + 1) % BestFriendTimerChooseList.length] + " " + InterfaceTextGet("Hours"));
 		}
 		else if (Player.CanInteract() && DialogFocusSourceItem.Property.EnableRandomInput && C.MemberNumber != Player.MemberNumber && !DialogFocusSourceItem.Property.MemberNumberList.includes(Player.MemberNumber)) {
 			for (let I = 0; I < DialogFocusSourceItem.Property.MemberNumberList.length; I++) {
 				if (DialogFocusSourceItem.Property.MemberNumberList[I] == Player.MemberNumber) return;
 			}
-			DrawButton(1100, 910, 250, 70, "- 2 " + DialogFindPlayer("Hours"), "White");
-			DrawButton(1400, 910, 250, 70, DialogFindPlayer("Random"), "White");
-			DrawButton(1700, 910, 250, 70, "+ 2 " + DialogFindPlayer("Hours"), "White");
+			DrawButton(1100, 910, 250, 70, "- 2 " + InterfaceTextGet("Hours"), "White");
+			DrawButton(1400, 910, 250, 70, InterfaceTextGet("Random"), "White");
+			DrawButton(1700, 910, 250, 70, "+ 2 " + InterfaceTextGet("Hours"), "White");
 		}
 	}
 
@@ -2578,7 +2578,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		DrawAssetPreview(1387, 225, AssetGet("Female3DCG","ItemMisc",BF_LOCK_NAME));
 		DrawText(BF_LOCK_QUOTE, 1500, 600, "white", "gray");
 		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.LockMemberNumber != null))
-			DrawText(DialogFindPlayer("LockMemberNumber") + " " + DialogFocusSourceItem.Property.LockMemberNumber.toString(), 1500, 700, "white", "gray");
+			DrawText(InterfaceTextGet("LockMemberNumber") + " " + DialogFocusSourceItem.Property.LockMemberNumber.toString(), 1500, 700, "white", "gray");
 	
 		let msg = "Can only be unlocked by Best Friends and above";//DialogFindPlayer(DialogFocusItem.Asset.Group.Name + DialogFocusItem.Asset.Name + "Detail");
 		// const subst = ChatRoomPronounSubstitutions(CurrentCharacter, "TargetPronoun", false);
