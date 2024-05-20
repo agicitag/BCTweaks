@@ -2869,51 +2869,103 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 	})
 
 	//InventoryTogglePermission < save if item is blocked/limited as server removes it
-	modAPI.hookFunction("InventoryTogglePermission",2,(args,next) => {
-		let Item = args[0];
-		let Type = args[1];
-		let Worn = args[2];
-		if (Item.Asset.Name === BF_LOCK_NAME || Item.Asset.Name === BF_TIMER_LOCK_NAME){
-			const onExtreme = Player.GetDifficulty() >= 3;
-			const blockAllowed = !Worn && !onExtreme;
-			const limitedAllowed = !Worn && (!onExtreme || MainHallStrongLocks.includes(Item.Asset.Name));
-			if (InventoryIsPermissionBlocked(Player, Item.Asset.Name, Item.Asset.Group.Name, Type)) {
-				Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Limited";
-			} else if (InventoryIsPermissionLimited(Player, Item.Asset.Name, Item.Asset.Group.Name, Type)) {
-				Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Normal";
-			} else if (InventoryIsFavorite(Player, Item.Asset.Name, Item.Asset.Group.Name, Type)) {
-				if (blockAllowed){
-					Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Blocked";
-				}
-				else if (limitedAllowed){
+	if (typeof InventorySetPermission === "undefined") {
+		// R104
+		modAPI.hookFunction("InventoryTogglePermission",2,(args,next) => {
+			let Item = args[0];
+			let Type = args[1];
+			let Worn = args[2];
+			if (Item.Asset.Name === BF_LOCK_NAME || Item.Asset.Name === BF_TIMER_LOCK_NAME){
+				const onExtreme = Player.GetDifficulty() >= 3;
+				const blockAllowed = !Worn && !onExtreme;
+				const limitedAllowed = !Worn && (!onExtreme || MainHallStrongLocks.includes(Item.Asset.Name));
+				if (InventoryIsPermissionBlocked(Player, Item.Asset.Name, Item.Asset.Group.Name, Type)) {
 					Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Limited";
+				} else if (InventoryIsPermissionLimited(Player, Item.Asset.Name, Item.Asset.Group.Name, Type)) {
+					Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Normal";
+				} else if (InventoryIsFavorite(Player, Item.Asset.Name, Item.Asset.Group.Name, Type)) {
+					if (blockAllowed){
+						Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Blocked";
+					}
+					else if (limitedAllowed){
+						Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Limited";
+					}
+				} else {
+					Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Fav";
 				}
-			} else {
-				Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Fav";
+				// console.log(Player.BCT.bctSettings.ItemPerm);
+				bctSettingsSave(false);
 			}
-			// console.log(Player.BCT.bctSettings.ItemPerm);
-			bctSettingsSave(false);
-		}
-		next(args);
-	})
+			next(args);
+		})
+	} else {
+		// R105
+		modAPI.hookFunction("InventorySetPermission", 0, ([groupName, assetName, permissionType, ...args], next) => {
+			if (assetName === BF_LOCK_NAME || assetName === BF_TIMER_LOCK_NAME) {
+				switch (permissionType) {
+					case "Default":
+						Player.BCT.bctSettings.ItemPerm[assetName] = "Normal";
+						break;
+					case "Block":
+						Player.BCT.bctSettings.ItemPerm[assetName] = "Blocked";
+						break;
+					case "Limited":
+						Player.BCT.bctSettings.ItemPerm[assetName] = "Limited";
+						break;
+					case "Favorite":
+						Player.BCT.bctSettings.ItemPerm[assetName] = "Fav";
+						break;
+				}
+				bctSettingsSave(false);
+			}
+			return next([groupName, assetName, permissionType, ...args]);
+		});
+	}
 
 	//Updating item permissions
 	function UpdateItemPermissions() {
-		for(let itemName in Player.BCT.bctSettings.ItemPerm) {
-			let permissionItem = { Name: itemName, Group: "ItemMisc", Type: null};
-			if(Player.BCT.bctSettings.ItemPerm[itemName] === "Limited") Player.LimitedItems.push(permissionItem);
-			else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Blocked") Player.BlockItems.push(permissionItem);
-			else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Fav") Player.FavoriteItems.push(permissionItem);
+		if (typeof InventorySetPermission === "undefined") {
+			// R104
+			for(let itemName in Player.BCT.bctSettings.ItemPerm) {
+				let permissionItem = { Name: itemName, Group: "ItemMisc", Type: null};
+				if(Player.BCT.bctSettings.ItemPerm[itemName] === "Limited") Player.LimitedItems.push(permissionItem);
+				else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Blocked") Player.BlockItems.push(permissionItem);
+				else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Fav") Player.FavoriteItems.push(permissionItem);
+				ServerPlayerBlockItemsSync();
+			}
+		} else {
+			// R105
+			for (const itemName in Player.BCT.bctSettings.ItemPerm) {
+				switch (Player.BCT.bctSettings.ItemPerm[itemName]) {
+					case "Limited":
+						InventorySetPermission("ItemMisc", itemName, "Limited");
+						break;
+					case "Blocked":
+						InventorySetPermission("ItemMisc", itemName, "Block");
+						break;
+					case "Fav":
+						InventorySetPermission("ItemMisc", itemName, "Favorite");
+						break;
+				}
+			}
 			ServerPlayerBlockItemsSync();
 		}
 	}
 
 	//Filtering item permissions
 	function FilterItemPermissions() {
-		for(let itemName in Player.BCT.bctSettings.ItemPerm) {
-			Player.LimitedItems = Player.LimitedItems.filter((item) => item.Name != itemName);
-			Player.BlockItems = Player.BlockItems.filter((item) => item.Name != itemName);
-			Player.FavoriteItems = Player.FavoriteItems.filter((item) => item.Name != itemName);
+		if (typeof InventorySetPermission === "undefined") {
+			// R104
+			for(let itemName in Player.BCT.bctSettings.ItemPerm) {
+				Player.LimitedItems = Player.LimitedItems.filter((item) => item.Name != itemName);
+				Player.BlockItems = Player.BlockItems.filter((item) => item.Name != itemName);
+				Player.FavoriteItems = Player.FavoriteItems.filter((item) => item.Name != itemName);
+			}
+		} else {
+			// R105
+			for (const itemName in Player.BCT.bctSettings.ItemPerm) {
+				delete Player.PermissionItems[`ItemMisc/${itemName}`];
+			}
 		}
 	}
 
