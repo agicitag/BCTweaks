@@ -1,4 +1,4 @@
-const BCT_VERSION = "B.0.7.3";
+const BCT_VERSION = "B.0.7.5";
 const BCT_Settings_Version = 17;
 const BCT_CHANGELOG = `${BCT_VERSION}
 - Fixed the error which made using any activities on others raised your arousal
@@ -2441,13 +2441,13 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							// If not, search for it
 							if(!foundRoom){
 								getRoomSlotsQueue(roomName,roomSpace);
-								await waitFor(() => searchResult[roomName].length > 0 || timeout);
+								await waitFor(() => searchResult.roomName?.length > 0 || timeout);
 								// Retry one more time
-								if(searchResult[roomName].length == 0) {
+								if(searchResult.roomName?.length == 0) {
 									getRoomSlotsQueue(roomName,roomSpace);
-									await waitFor(() => searchResult[roomName].length > 0 || timeout);
+									await waitFor(() => searchResult.roomName?.length > 0 || timeout);
 								}
-								if(searchResult[roomName].length > 0){
+								if(searchResult.roomName?.length > 0){
 									foundRoom = searchResult[roomName][0];
 									privateRooms.push(foundRoom);
 									foundRoomUpdate(foundRoom);

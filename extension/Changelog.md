@@ -1,5 +1,10 @@
 # BCT Changelog
 
+## 0.7.5
+### Features:
+- Show Room Slots added.
+- Friend list would now have an extra column (Slots) showing number of people in your friend's room and max capacity of the room.
+
 ## 0.7.4
 ### Bugfixes:
 - Updated for R104
