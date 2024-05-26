@@ -2236,22 +2236,76 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	}
 
 	function showRoomSlots(){
-		let searchResult;
+		let searchResult = {};
 		let previouslyFoundRooms = [];
 		let timeout = false;
+		let bctRoomSlotCallGeneral = 0;
+		let bctRoomSlotCallNarrow = 0;
+		let delayCount = 0;
 
-		function getRoomSlots(query = ""){
-			const SearchData = {Query: query.toUpperCase().trim(), Language: "", Space: "", Game: "", FullRooms: true};
-			searchResult = [];
+		function getRoomSlotsQueue(query,space) {
+			delayCount += 1;
+			setTimeout(getRoomSlots(query,space), delayCount * 2000);
+		}
+		// function getGeneralRoomSlots(spacesToSearch = ["X", "", "Asylum"]) {
+		// 	for(const space of spacesToSearch) {
+		// 		getRoomSlotsQueue("",space)
+		// 	}
+		// }
+
+		function getRoomSlots(query = "", space = "X"){
+			const SearchData = {Query: query.toUpperCase().trim(), Language: "", Space: space, Game: "", FullRooms: true};
+			
+			if(query == ""){
+				searchResult[space] = [];
+				bctRoomSlotCallGeneral += 1;
+			}
+			else{
+				searchResult[query] = [];
+				bctRoomSlotCallNarrow += 1;
+			}
 			timeout = false;
 			ServerSend("ChatRoomSearch", SearchData);
 		}
+		
+		// returns roomName, roomSpace, isPrivateRoom parsed from friendlist. eg. "X -- Private Room - abcd"
+		function roomNameParser(roomName) {
+			let firstHyphenOccur = roomName.indexOf("-");
+			let lastHyphenOccur = roomName.lastIndexOf("-");
+			let isPrivateRoom = ((lastHyphenOccur !== -1) && (roomName.slice(0,lastHyphenOccur).includes("Private room")));
+
+			// roomSpace
+			let roomSpace = "";
+			if (firstHyphenOccur-1 > 0) roomSpace = roomName.slice(0,firstHyphenOccur-1);
+			// "-" or "- Private Room -"
+			if ((lastHyphenOccur !== -1) && (lastHyphenOccur+2 > roomName.length)) roomSpace = null;
+
+			// roomName
+			if((lastHyphenOccur !== -1) && (lastHyphenOccur+2 < roomName.length)) {
+				roomName = roomName.slice(lastHyphenOccur+2,roomName.length);
+			}else if (lastHyphenOccur !== -1) {
+				roomName = "";
+			}
+
+			return [roomName, roomSpace, isPrivateRoom];
+		}
 
 		// Only interested in the actual list when we ask for it
-		modAPI.hookFunction("ChatSearchResultResponse", 2, async (args,next) => {
-			if(CurrentScreen === "FriendList"){
-				searchResult = Array.isArray(args[0]) ? args[0] : [];
+		modAPI.hookFunction("ChatSearchResultResponse", 12, async (args,next) => {
+			if(bctRoomSlotCallGeneral > 0){
+				if (Array.isArray(args[0]) && args[0].length > 0) {
+					searchResult[args[0][0].Space] = args[0];
+				}
 				await sleep(300);
+				bctRoomSlotCallGeneral -= 1;
+				timeout = true;
+			}
+			else if(bctRoomSlotCallNarrow > 0) {
+				if (Array.isArray(args[0]) && args[0].length > 0) {
+					searchResult[args[0][0].Name] = args[0];
+				}
+				await sleep(300);
+				bctRoomSlotCallNarrow -= 1;
 				timeout = true;
 			}
 			else next(args);
@@ -2278,11 +2332,40 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			}
 		});
 
+		// update previouslyFoundRooms only if room name is new or room slots has changed
+		function foundRoomUpdate(newRoom) {
+			let foundRoomIndex = previouslyFoundRooms.findIndex(function(room){
+				return (room.Name === newRoom.Name) && (room.Space === newRoom.Space);
+			});
+			let foundRoom;
+			if (foundRoomIndex !== -1) foundRoom = previouslyFoundRooms[foundRoomIndex];
+			if (!foundRoom) {
+				const addRoom = {
+					"Name": newRoom.Name,
+					"Space": newRoom.Space,
+					"MemberCount": newRoom.MemberCount,
+					"MemberLimit": newRoom.MemberLimit,
+				}
+				previouslyFoundRooms.push(addRoom);
+			} else if(foundRoom && (foundRoom.MemberCount != newRoom.MemberCount || foundRoom.MemberLimit != newRoom.MemberLimit)) {
+				previouslyFoundRooms[foundRoomIndex].MemberCount = newRoom.MemberCount;
+				previouslyFoundRooms[foundRoomIndex].MemberLimit = newRoom.MemberLimit;
+			}
+		}
+
+		// update from a list
+		function foundRoomListUpdate(newRoomsList) {
+			for(const room of newRoomsList) {
+				foundRoomUpdate(room);
+			}
+		}
+
 		modAPI.hookFunction("FriendListLoadFriendList", 2, async (args,next) => {
 			next(args);
 			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
 				const mode = FriendListMode[FriendListModeIndex];
 				if (mode === "Friends") {
+					let listRoomSpaces = [];
 					// Set up the page layout
 					const rows = document.getElementsByClassName("FriendListRow");
 					for(const row of rows){
@@ -2298,12 +2381,16 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 
 						// Initialize with old results
 						let foundRoom;
-						let roomName = row.children[2].innerText;
-						if(!(roomName === "- Private room -" || roomName === "-")){
-							if(roomName.startsWith("- Private room - ")) roomName = roomName.replace("- Private room - ", "");
+						let [roomName,roomSpace,isPrivateRoom] = roomNameParser(row.children[2].innerText);
+						
+						if(!!roomName) {
 							foundRoom = previouslyFoundRooms.find(function(room){
-								return room.Name === roomName;
+								return (room.Name === roomName) && (room.Space === roomSpace);
 							});
+						}
+						// which spaces should be queried for slots
+						if (roomSpace != null && !listRoomSpaces.includes(roomSpace)) {
+							listRoomSpaces.push(roomSpace);
 						}
 						let slotContent;
 						if(foundRoom) slotContent = document.createTextNode(foundRoom.MemberCount + "/" + foundRoom.MemberLimit);	
@@ -2313,65 +2400,69 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					}
 
 					// Get rooms with friends
-					getRoomSlots();
-					await waitFor(() => searchResult.length > 0 || timeout);
+					// getGeneralRoomSlots(listRoomSpaces);
+					// await waitFor(() => searchResult.length > 0 || timeout);
 					let roomsWithFriends = [];
-					previouslyFoundRooms = [];
-					for(room of searchResult){
-						if(room.Friends.length > 0) roomsWithFriends.push(room);
+					// previouslyFoundRooms = [];
+					// for(room of searchResult){
+					// 	if(room.Friends.length > 0) roomsWithFriends.push(room);
+					// }
+					for(const space of listRoomSpaces) {
+						getRoomSlotsQueue("",space);
+						await waitFor(() => searchResult[space].length > 0 || timeout);
+						for(room of searchResult[space]){
+							if(room.Friends.length > 0) roomsWithFriends.push(room);
+						}
 					}
-					previouslyFoundRooms = previouslyFoundRooms.concat(roomsWithFriends);
+					// previouslyFoundRooms = previouslyFoundRooms.concat(roomsWithFriends);
+					foundRoomListUpdate(roomsWithFriends)
 					let privateRooms = [];
 
 					// Fill in the correct slots
 					for(const row of rows){
 						let maxSlots = 0;
 						let currentSlots = 0;
-						let roomName = row.children[2].innerText;
-						if(!(roomName === "- Private room -" || roomName === "-")){
-							// Private rooms
-							if(roomName.startsWith("- Private room - ")){
-								roomName = roomName.replace("- Private room - ", "");
-								// Have we already found that room?
-								let foundRoom = privateRooms.find(function(room){
-									return room.Name === roomName;
-								});
-								// If not, search for it
-								if(!foundRoom){
-									// Server blocks too fast searches
-									await sleep(100);
-									getRoomSlots(roomName);
-									await waitFor(() => searchResult.length > 0 || timeout);
-									// Retry one more time
-									if(searchResult.length == 0) {
-										await sleep(100);
-										getRoomSlots(roomName);
-										await waitFor(() => searchResult.length > 0 || timeout);
-									}
-									if(searchResult.length > 0){
-										foundRoom = searchResult[0];	
-										privateRooms.push(foundRoom);
-										previouslyFoundRooms.push(foundRoom);
-									} 
-								}
-								if(foundRoom){
-									maxSlots = foundRoom.MemberLimit;
-									currentSlots = foundRoom.MemberCount;
+						let [roomName,roomSpace,isPrivateRoom] = roomNameParser(row.children[2].innerText);
+						// Public rooms
+						if(!isPrivateRoom){
+							for(const room of roomsWithFriends){
+								if(room.Name === roomName && room.Space === roomSpace){
+									maxSlots = room.MemberLimit;
+									currentSlots = room.MemberCount;
+									break;
 								}
 							}
-							// Public rooms
-							else{
-								for(room of roomsWithFriends){
-									if(room.Name === roomName){
-										maxSlots = room.MemberLimit;
-										currentSlots = room.MemberCount;
-									}
+						}
+						// Room name exists and Private Room
+						else if(!!roomName){
+							let foundRoom = privateRooms.find(function(room){
+								return (room.Name === roomName) && (room.Space === roomSpace);
+							});
+							// If not, search for it
+							if(!foundRoom){
+								getRoomSlotsQueue(roomName,roomSpace);
+								await waitFor(() => searchResult[roomName].length > 0 || timeout);
+								// Retry one more time
+								if(searchResult[roomName].length == 0) {
+									getRoomSlotsQueue(roomName,roomSpace);
+									await waitFor(() => searchResult[roomName].length > 0 || timeout);
 								}
+								if(searchResult[roomName].length > 0){
+									foundRoom = searchResult[roomName][0];
+									privateRooms.push(foundRoom);
+									foundRoomUpdate(foundRoom);
+								} 
+								delete searchResult[roomName];
+							}
+							if(foundRoom){
+								maxSlots = foundRoom.MemberLimit;
+								currentSlots = foundRoom.MemberCount;
 							}
 						}
 						if(currentSlots > 0) row.children[3].innerText = currentSlots + "/" + maxSlots;
 						else row.children[3].innerText = "-";
 					}
+					delayCount = 0;
 				}
 			}
 		});
