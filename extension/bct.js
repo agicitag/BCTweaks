@@ -4,7 +4,7 @@ const BCT_CHANGELOG = `${BCT_VERSION}
 - Show Room Slots added.
 - Online Friendlist would now have an extra column (Slots) showing the number of people in your friend's room and max capacity of the room.
 (Enabled by Default. Check "BCTweaks Settings > Tweaks > Enable Friendlist Slots" if you want to disable it.)
-This is an experimental feature. If you encounter any bugs, report on the github page or BC / Scripting discord server.
+This is an experimental feature. If you encounter any bugs, report on the github page (https://github.com/agicitag/BCTweaks) or BC / Scripting discord server.
 `
 
 const BCT_API = {
@@ -2238,11 +2238,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	}
 
 	function showRoomSlots(){
-		let searchResult = {};
+		window.searchResult = {};
 		let previouslyFoundRooms = [];
-		let timeout = false;
-		let bctRoomSlotCallGeneral = 0;
-		let bctRoomSlotCallNarrow = 0;
+		window.timeout = false;
+		window.bctRoomSlotCallGeneral = 0;
+		window.bctRoomSlotCallNarrow = 0;
 		let delayCount = 0;
 
 		function getRoomSlotsQueue(query,space) {
@@ -2287,26 +2287,31 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			return [roomName, roomSpace, isPrivateRoom];
 		}
 
-		// Only interested in the actual list when we ask for it
-		modAPI.hookFunction("ChatSearchResultResponse", 12, async (args,next) => {
-			if(bctRoomSlotCallGeneral > 0){
-				if (Array.isArray(args[0]) && args[0].length > 0) {
-					searchResult["bct-" + args[0][0].Space] = args[0];
-				}
-				await sleep(300);
-				bctRoomSlotCallGeneral -= 1;
-				timeout = true;
-			}
-			else if(bctRoomSlotCallNarrow > 0) {
-				if (Array.isArray(args[0]) && args[0].length > 0) {
-					searchResult[args[0][0].Name] = args[0];
-				}
-				await sleep(300);
-				bctRoomSlotCallNarrow -= 1;
-				timeout = true;
-			}
-			else next(args);
-		});
+// Only interested in the actual list when we ask for it
+const replaceResponseBegin = `
+if(bctRoomSlotCallGeneral > 0){
+	if (Array.isArray(data) && data.length > 0) {
+		searchResult["bct-" + data[0].Space] = data;
+	}
+	bctRoomSlotCallGeneral -= 1;
+	timeout = true;
+}
+else if(bctRoomSlotCallNarrow > 0) {
+	if (Array.isArray(data) && data.length > 0) {
+		searchResult[data[0].Name] = data;
+	}
+	bctRoomSlotCallNarrow -= 1;
+	timeout = true;
+}
+else {
+	ChatSearchResult = ChatSearchParseResponse(data ?? []);`
+
+const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
+		
+		modAPI.patchFunction("ChatSearchResultResponse",{
+			"ChatSearchResult = ChatSearchParseResponse(data ?? []);": replaceResponseBegin,
+			"ChatSearchAutoJoinRoom();": replaceResponseEnd,
+		})
 
 		modAPI.hookFunction("FriendListRun", 2, (args,next) => {
 			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
