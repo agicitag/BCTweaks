@@ -1,9 +1,14 @@
 # BCT Changelog
 
+## 0.7.6
+### Bugfixes:
+- Updated to Item permissions for R105 (By Rama)
+- Tailwag now works in ChatRooms
+
 ## 0.7.5
 ### Features:
-- Show Room Slots added.
-- Friend list would now have an extra column (Slots) showing number of people in your friend's room and max capacity of the room.
+- Show Room Slots added
+- Friend list would now have an extra column (Slots) showing number of people in your friend's room and max capacity of the room
 
 ## 0.7.4
 ### Bugfixes:

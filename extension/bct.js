@@ -1743,17 +1743,21 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		function tailWag(){
 			for(var i = 0; i<Player.BCT.bctSettings.tailWaggingCount; i++){
 				setTimeout(function(){InventoryWear(
-					Player,
-					Player.BCT.bctSettings.tailWaggingTailTwoName,
-					"TailStraps",
-					Player.BCT.bctSettings.tailWaggingTailTwoColor
-					);},i * Player.BCT.bctSettings.tailWaggingDelay * 2);
+						Player,
+						Player.BCT.bctSettings.tailWaggingTailTwoName,
+						"TailStraps",
+						Player.BCT.bctSettings.tailWaggingTailTwoColor
+					);
+					ChatRoomCharacterItemUpdate(Player,"TailStraps");}
+					,i * Player.BCT.bctSettings.tailWaggingDelay * 2);
 				setTimeout(function(){InventoryWear(
-					Player,
-					Player.BCT.bctSettings.tailWaggingTailOneName,
-					"TailStraps",
-					Player.BCT.bctSettings.tailWaggingTailOneColor
-					);},i * Player.BCT.bctSettings.tailWaggingDelay * 2 + Player.BCT.bctSettings.tailWaggingDelay);
+						Player,
+						Player.BCT.bctSettings.tailWaggingTailOneName,
+						"TailStraps",
+						Player.BCT.bctSettings.tailWaggingTailOneColor
+					);
+					ChatRoomCharacterItemUpdate(Player,"TailStraps");}
+					,i * Player.BCT.bctSettings.tailWaggingDelay * 2 + Player.BCT.bctSettings.tailWaggingDelay);
 			  }
 		}
 		BCT_API.tailWag = tailWag;

@@ -57,3 +57,11 @@ Check out the BCTweaks settings in Preferences/Settings menu of Bondage Club.
   <img src="images\MoneyAccept.png" width="95%">
   
   Accept or Decline the sent money using the buttons that show up in chat.
+
+  ### Chat Room Slots
+
+  Shows the room occupancy/max capacity of your friend's room with a quick glance at the online friendlist.
+
+  <img src="images\RoomSlots.png" width="60%">
+
+  No need to hop out of a room to check whether a slot has freed up in your friend's room anymore!
