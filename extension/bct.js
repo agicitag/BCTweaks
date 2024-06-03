@@ -1,10 +1,10 @@
-const BCT_VERSION = "B.0.7.5";
+const BCT_VERSION = "B.0.7.6";
 const BCT_Settings_Version = 18;
 const BCT_CHANGELOG = `${BCT_VERSION}
 - Show Room Slots added.
 - Online Friendlist would now have an extra column (Slots) showing the number of people in your friend's room and max capacity of the room.
 (Enabled by Default. Check "BCTweaks Settings > Tweaks > Enable Friendlist Slots" if you want to disable it.)
-This is an experimental feature. If you encounter any bugs, report on the github page (https://github.com/agicitag/BCTweaks) or BC / Scripting discord server.
+- Fixed Tailwag
 `
 
 const BCT_API = {
