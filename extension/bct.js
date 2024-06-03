@@ -1,8 +1,10 @@
-const BCT_VERSION = "0.6.3";
-const BCT_Settings_Version = 17;
+const BCT_VERSION = "0.6.6";
+const BCT_Settings_Version = 18;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- Fixed the error which made using any activities on others raised your arousal
-- Slowed down room name syncing for connection rate issues
+- Show Room Slots added.
+- Online Friendlist would now have an extra column (Slots) showing the number of people in your friend's room and max capacity of the room.
+(Enabled by Default. Check "BCTweaks Settings > Tweaks > Enable Friendlist Slots" if you want to disable it.)
+- Fixed Tailwag
 `
 
 const BCT_API = {
@@ -101,6 +103,7 @@ async function runBCT(){
 								// Add when you add someone as BF and vice versa
 
 	await bctSettingsLoad();
+	showRoomSlots();
 	splitOrgasmArousal();
 	commands();
 	settingsPage();
@@ -141,6 +144,7 @@ async function runBCT(){
 			allIconOnlyShowOnHover : false,
 			bctIconOnlyShowOnHover : true,
 			showChangelog: true,
+			friendlistSlotsEnabled: true,
 		};
 		
 		Player.BCT = {};
@@ -1021,6 +1025,10 @@ async function runBCT(){
 			addMenuCheckbox(64, 64, "Show Changelog on Update: ", "showChangelog",
 			"Show the newest changes in your chat the first time you join a room after an update. You can always show them by typing /bctweaks-changelog"
 			);
+			addMenuCheckbox(64, 64, "Enable Friendlist Slots: ", "friendlistSlotsEnabled",
+			`Enable showing free/max slots for rooms on your friendlist and makes the space for the roomname bigger`
+			);
+			
 		}
 
 		PreferenceSubscreenBCTTweaksRun = function () {
@@ -1735,17 +1743,21 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		function tailWag(){
 			for(var i = 0; i<Player.BCT.bctSettings.tailWaggingCount; i++){
 				setTimeout(function(){InventoryWear(
-					Player,
-					Player.BCT.bctSettings.tailWaggingTailTwoName,
-					"TailStraps",
-					Player.BCT.bctSettings.tailWaggingTailTwoColor
-					);},i * Player.BCT.bctSettings.tailWaggingDelay * 2);
+						Player,
+						Player.BCT.bctSettings.tailWaggingTailTwoName,
+						"TailStraps",
+						Player.BCT.bctSettings.tailWaggingTailTwoColor
+					);
+					ChatRoomCharacterItemUpdate(Player,"TailStraps");}
+					,i * Player.BCT.bctSettings.tailWaggingDelay * 2);
 				setTimeout(function(){InventoryWear(
-					Player,
-					Player.BCT.bctSettings.tailWaggingTailOneName,
-					"TailStraps",
-					Player.BCT.bctSettings.tailWaggingTailOneColor
-					);},i * Player.BCT.bctSettings.tailWaggingDelay * 2 + Player.BCT.bctSettings.tailWaggingDelay);
+						Player,
+						Player.BCT.bctSettings.tailWaggingTailOneName,
+						"TailStraps",
+						Player.BCT.bctSettings.tailWaggingTailOneColor
+					);
+					ChatRoomCharacterItemUpdate(Player,"TailStraps");}
+					,i * Player.BCT.bctSettings.tailWaggingDelay * 2 + Player.BCT.bctSettings.tailWaggingDelay);
 			  }
 		}
 		BCT_API.tailWag = tailWag;
@@ -2227,6 +2239,240 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 						}
 				}
 		}
+	}
+
+	function showRoomSlots(){
+		window.searchResult = {};
+		let previouslyFoundRooms = [];
+		window.timeout = false;
+		window.bctRoomSlotCallGeneral = 0;
+		window.bctRoomSlotCallNarrow = 0;
+		let delayCount = 0;
+
+		function getRoomSlotsQueue(query,space) {
+			delayCount += 1;
+			setTimeout(getRoomSlots(query,space), delayCount * 2000);
+		}
+
+		function getRoomSlots(query = "", space = "X"){
+			const SearchData = {Query: query.toUpperCase().trim(), Language: "", Space: space, Game: "", FullRooms: true};
+			
+			if(query == ""){
+				searchResult["bct-" + space] = [];
+				bctRoomSlotCallGeneral += 1;
+			}
+			else{
+				searchResult[query] = [];
+				bctRoomSlotCallNarrow += 1;
+			}
+			timeout = false;
+			ServerSend("ChatRoomSearch", SearchData);
+		}
+		
+		// returns roomName, roomSpace, isPrivateRoom parsed from friendlist. eg. "X -- Private Room - abcd"
+		function roomNameParser(roomName) {
+			let firstHyphenOccur = roomName.indexOf("-");
+			let lastHyphenOccur = roomName.lastIndexOf("-");
+			let isPrivateRoom = ((lastHyphenOccur !== -1) && (roomName.slice(0,lastHyphenOccur).includes("Private room")));
+
+			// roomSpace
+			let roomSpace = "";
+			if (firstHyphenOccur-1 > 0) roomSpace = roomName.slice(0,firstHyphenOccur-1);
+			// "-" or "- Private Room -"
+			if ((lastHyphenOccur !== -1) && (lastHyphenOccur+2 > roomName.length)) roomSpace = null;
+
+			// roomName
+			if((lastHyphenOccur !== -1) && (lastHyphenOccur+2 < roomName.length)) {
+				roomName = roomName.slice(lastHyphenOccur+2,roomName.length);
+			}else if (lastHyphenOccur !== -1) {
+				roomName = "";
+			}
+
+			return [roomName, roomSpace, isPrivateRoom];
+		}
+
+// Only interested in the actual list when we ask for it
+const replaceResponseBegin = `
+if(bctRoomSlotCallGeneral > 0){
+	if (Array.isArray(data) && data.length > 0) {
+		searchResult["bct-" + data[0].Space] = data;
+	}
+	bctRoomSlotCallGeneral -= 1;
+	timeout = true;
+}
+else if(bctRoomSlotCallNarrow > 0) {
+	if (Array.isArray(data) && data.length > 0) {
+		searchResult[data[0].Name] = data;
+	}
+	bctRoomSlotCallNarrow -= 1;
+	timeout = true;
+}
+else {
+	ChatSearchResult = ChatSearchParseResponse(data ?? []);`
+
+const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
+		
+		modAPI.patchFunction("ChatSearchResultResponse",{
+			"ChatSearchResult = ChatSearchParseResponse(data ?? []);": replaceResponseBegin,
+			"ChatSearchAutoJoinRoom();": replaceResponseEnd,
+		})
+
+		modAPI.hookFunction("FriendListRun", 2, (args,next) => {
+			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
+				const mode = FriendListMode[FriendListModeIndex];
+				var FriendListModeIndexBackup = FriendListModeIndex;
+				if (mode === "Friends") {
+					DrawText(TextGet("ListOnlineFriends"), 200, 35, "White", "Gray");
+					DrawText(TextGet("ChatRoomName"), 1110, 35, "White", "Gray");
+					DrawText("Slots", 1620, 35, "White", "Gray");
+
+					// Dont draw the above again in "FriendListRun" and move "Member number" to the left
+					FriendListModeIndex = -1;
+					MainCanvas.textAlign = "right";
+				}
+			}
+			next(args);
+			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
+				MainCanvas.textAlign = "center";
+				FriendListModeIndex = FriendListModeIndexBackup;
+			}
+		});
+
+		// update previouslyFoundRooms only if room name is new or room slots has changed
+		function foundRoomUpdate(newRoom) {
+			let foundRoomIndex = previouslyFoundRooms.findIndex(function(room){
+				return (room.Name === newRoom.Name) && (room.Space === newRoom.Space);
+			});
+			let foundRoom;
+			if (foundRoomIndex !== -1) foundRoom = previouslyFoundRooms[foundRoomIndex];
+			if (!foundRoom) {
+				const addRoom = {
+					"Name": newRoom.Name,
+					"Space": newRoom.Space,
+					"MemberCount": newRoom.MemberCount,
+					"MemberLimit": newRoom.MemberLimit,
+				}
+				previouslyFoundRooms.push(addRoom);
+			} else if(foundRoom && (foundRoom.MemberCount != newRoom.MemberCount || foundRoom.MemberLimit != newRoom.MemberLimit)) {
+				previouslyFoundRooms[foundRoomIndex].MemberCount = newRoom.MemberCount;
+				previouslyFoundRooms[foundRoomIndex].MemberLimit = newRoom.MemberLimit;
+			}
+		}
+
+		// update from a list
+		function foundRoomListUpdate(newRoomsList) {
+			for(const room of newRoomsList) {
+				foundRoomUpdate(room);
+			}
+		}
+
+		modAPI.hookFunction("FriendListLoadFriendList", 2, async (args,next) => {
+			next(args);
+			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
+				const mode = FriendListMode[FriendListModeIndex];
+				if (mode === "Friends") {
+					let listRoomSpaces = [];
+					// Set up the page layout
+					const rows = document.getElementsByClassName("FriendListRow");
+					for(const row of rows){
+						row.children[0].style.width = "20%";
+						row.children[1].style.width = "14%";
+						row.children[2].style.width = "44%";
+						row.children[3].style.width = "10%";
+						row.children[3].style["text-align"] = "right";
+						
+						const slotDiv = document.createElement("div");
+						slotDiv.classList.add("FriendListTextColumn");
+						slotDiv.style = "width: 8%";
+
+						// Initialize with old results
+						let foundRoom;
+						let [roomName,roomSpace,isPrivateRoom] = roomNameParser(row.children[2].innerText);
+						
+						if(!!roomName) {
+							foundRoom = previouslyFoundRooms.find(function(room){
+								return (room.Name === roomName) && (room.Space === roomSpace);
+							});
+						}
+						// which spaces should be queried for slots
+						if (roomSpace != null && !listRoomSpaces.includes(roomSpace)) {
+							listRoomSpaces.push(roomSpace);
+						}
+						let slotContent;
+						if(foundRoom) slotContent = document.createTextNode(foundRoom.MemberCount + "/" + foundRoom.MemberLimit);	
+						else slotContent = document.createTextNode("-");	
+						slotDiv.appendChild(slotContent);
+						row.insertBefore(slotDiv, row.children[3]);
+					}
+
+					let roomsWithFriends = [];
+					for(const space of listRoomSpaces) {
+						getRoomSlotsQueue("",space);
+						await waitFor(() => searchResult["bct-" + space] && (searchResult["bct-" + space].length > 0 || timeout));
+						for(room of searchResult["bct-" + space]){
+							if(room.Friends.length > 0) roomsWithFriends.push(room);
+						}
+					}
+					
+					foundRoomListUpdate(roomsWithFriends)
+					let privateRooms = [];
+
+					// Fill in the correct slots
+					for(const row of rows){
+						let maxSlots = 0;
+						let currentSlots = 0;
+						let [roomName,roomSpace,isPrivateRoom] = roomNameParser(row.children[2].innerText);
+						// Public rooms
+						if(!isPrivateRoom){
+							for(const room of previouslyFoundRooms){
+								if(room.Name === roomName && room.Space === roomSpace){
+									maxSlots = room.MemberLimit;
+									currentSlots = room.MemberCount;
+									break;
+								}
+							}
+						}
+						// Room name exists and Private Room
+						else if(!!roomName){
+							let foundRoom = privateRooms.find(function(room){
+								return (room.Name === roomName) && (room.Space === roomSpace);
+							});
+							// If not, search for it
+							if(!foundRoom){
+								getRoomSlotsQueue(roomName,roomSpace);
+								await waitFor(() => !!searchResult[roomName] && (searchResult[roomName].length > 0 || timeout));
+								// Retry one more time
+								if(searchResult[roomName].length == 0) {
+									getRoomSlotsQueue(roomName,roomSpace);
+									await waitFor(() => !!searchResult[roomName] && (searchResult[roomName].length > 0 || timeout));
+								}
+								if(searchResult[roomName].length > 0){
+									foundRoom = searchResult[roomName][0];
+									privateRooms.push(foundRoom);
+									foundRoomUpdate(foundRoom);
+								}
+							}
+							if(foundRoom){
+								maxSlots = foundRoom.MemberLimit;
+								currentSlots = foundRoom.MemberCount;
+							} else {
+								for(const room of previouslyFoundRooms){
+									if(room.Name === roomName && room.Space === roomSpace){
+										maxSlots = room.MemberLimit;
+										currentSlots = room.MemberCount;
+										break;
+									}
+								}
+							}
+						}
+						if(currentSlots > 0) row.children[3].innerText = currentSlots + "/" + maxSlots;
+						else row.children[3].innerText = "-";
+					}
+					searchResult = {};
+					delayCount = 0;
+				}
+			}
+		});
 	}
 
 	// --------Lock Features----------
