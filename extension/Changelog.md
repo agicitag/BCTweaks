@@ -2,6 +2,7 @@
 
 ## 0.7.6
 ### Bugfixes:
+- Update for R107Beta
 - Updated to Item permissions for R105 (By Rama)
 - Tailwag now works in ChatRooms
 
