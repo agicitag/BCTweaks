@@ -2084,8 +2084,8 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			next(args);
 			if ((Player.BCT.bctSettings.bestFriendsEnabled) && (mode === "AllFriends")) {
 				let htmlDoc = document.getElementById(FriendListIDs.friendList);
-				for (let i = 0; i < htmlDoc.getElementsByClassName("friend-list-row").length / 3; i++) {
-					let member = parseInt(htmlDoc.getElementsByClassName("friend-list-column MemberNumber")[i].innerHTML);
+				for (let i = 0; i < htmlDoc.getElementsByClassName("friend-list-row").length; i++) {
+					let member = parseInt(htmlDoc.getElementsByClassName("friend-list-column MemberNumber")[i].innerText);
 					if (Player.BCT.bctSettings.bestFriendsList.includes(member) 
 					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
 					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))) {
