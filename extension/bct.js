@@ -3,7 +3,6 @@ const BCT_Settings_Version = 18;
 const BCT_CHANGELOG = `${BCT_VERSION}
 - Show Room Slots added.
 - Online Friendlist would now have an extra column (Slots) showing the number of people in your friend's room and max capacity of the room.
-(Enabled by Default. Check "BCTweaks Settings > Tweaks > Enable Friendlist Slots" if you want to disable it.)
 - Fixed Tailwag
 `
 
@@ -1981,7 +1980,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			if (!bctOnlineCheck) {
 				if (Player.BCT.bctSettings.bestFriendsEnabled) {
 					const mode = FriendListMode[FriendListModeIndex];
-					if (mode === "Friends") {
+					if (mode === "Friends" || mode === "OnlineFriends") { //temp- mode changed from Friends to OnlineFriends
 						let sortedOSL = [];
 						let	bfList = [];
 						let normalfriends = [];
@@ -2054,6 +2053,66 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					else if (!(Player.Ownership != null && Player.Ownership.MemberNumber === member)
 					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))){
 							let NonBFelement = htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2];
+							NonBFelement.style.cursor = "pointer";
+							let forUndo = "";
+							let  onHoverBF = () => {
+								forUndo = NonBFelement.innerHTML;
+								NonBFelement.innerHTML = "Add as BF?";
+								NonBFelement.style.textDecoration = "underline";
+							}
+							let onOutBF = () => {
+								NonBFelement.innerHTML = forUndo;
+								NonBFelement.style.textDecoration = "";
+							}
+							let onClickBF = () => {
+								NonBFelement.innerHTML = "Added";
+								AddToBFList(member);
+								NonBFelement.removeEventListener("mouseover",onHoverBF);
+								NonBFelement.removeEventListener("mouseout",onOutBF);
+							}
+							NonBFelement.addEventListener("mouseover", onHoverBF);
+							NonBFelement.addEventListener("mouseout", onOutBF);
+							NonBFelement.addEventListener("click",onClickBF);
+					}
+				}
+			}
+		});
+		modAPI.hookFunction("FriendListLoadFriendList", 2, (args,next) => { //temp
+			const mode = FriendListMode[FriendListModeIndex];
+			// let ID = args[0];
+			// let Content = args[1];
+			next(args);
+			if ((Player.BCT.bctSettings.bestFriendsEnabled) && (mode === "AllFriends")) {
+				let htmlDoc = document.getElementById(FriendListIDs.friendList);
+				for (let i = 0; i < htmlDoc.getElementsByClassName("friend-list-row").length; i++) {
+					let member = parseInt(htmlDoc.getElementsByClassName("friend-list-column MemberNumber")[i].innerText);
+					if (Player.BCT.bctSettings.bestFriendsList.includes(member) 
+					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
+					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))) {
+							let BFelement = htmlDoc.getElementsByClassName("friend-list-column RelationType")[i];
+							BFelement.innerHTML = "Best Friend";
+							BFelement.style.cursor = "pointer";
+							BFelement.style.textDecoration = "underline";
+							BFelement.style.color = "lime";
+							let  onHoverBF = () => {
+								BFelement.innerHTML = "Delete BF?";
+							}
+							let onOutBF = () => {
+								BFelement.innerHTML = "Best Friend";
+							}
+							let onClickBF = () => {
+								BFelement.innerHTML = "Deleted";
+								RemoveFromBFList(member);
+								BFelement.removeEventListener("mouseover",onHoverBF);
+								BFelement.removeEventListener("mouseout",onOutBF);
+							}
+							BFelement.addEventListener("mouseover", onHoverBF);
+							BFelement.addEventListener("mouseout", onOutBF);
+							BFelement.addEventListener("click",onClickBF);
+					}
+					else if (!(Player.Ownership != null && Player.Ownership.MemberNumber === member)
+					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))){
+							let NonBFelement = htmlDoc.getElementsByClassName("friend-list-column RelationType")[i];
 							NonBFelement.style.cursor = "pointer";
 							let forUndo = "";
 							let  onHoverBF = () => {
@@ -2318,7 +2377,7 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 		})
 
 		modAPI.hookFunction("FriendListRun", 2, (args,next) => {
-			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
+			if(Player.BCT.bctSettings.friendlistSlotsEnabled && !GameVersion.includes("Beta")){ //temp
 				const mode = FriendListMode[FriendListModeIndex];
 				var FriendListModeIndexBackup = FriendListModeIndex;
 				if (mode === "Friends") {
@@ -2332,7 +2391,7 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 				}
 			}
 			next(args);
-			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
+			if(Player.BCT.bctSettings.friendlistSlotsEnabled && !GameVersion.includes("Beta")){
 				MainCanvas.textAlign = "center";
 				FriendListModeIndex = FriendListModeIndexBackup;
 			}
@@ -2872,104 +2931,49 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 		}
 	})
 
-	//InventoryTogglePermission < save if item is blocked/limited as server removes it
-	if (typeof InventorySetPermission === "undefined") {
-		// R104
-		modAPI.hookFunction("InventoryTogglePermission",2,(args,next) => {
-			let Item = args[0];
-			let Type = args[1];
-			let Worn = args[2];
-			if (Item.Asset.Name === BF_LOCK_NAME || Item.Asset.Name === BF_TIMER_LOCK_NAME){
-				const onExtreme = Player.GetDifficulty() >= 3;
-				const blockAllowed = !Worn && !onExtreme;
-				const limitedAllowed = !Worn && (!onExtreme || MainHallStrongLocks.includes(Item.Asset.Name));
-				if (InventoryIsPermissionBlocked(Player, Item.Asset.Name, Item.Asset.Group.Name, Type)) {
-					Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Limited";
-				} else if (InventoryIsPermissionLimited(Player, Item.Asset.Name, Item.Asset.Group.Name, Type)) {
-					Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Normal";
-				} else if (InventoryIsFavorite(Player, Item.Asset.Name, Item.Asset.Group.Name, Type)) {
-					if (blockAllowed){
-						Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Blocked";
-					}
-					else if (limitedAllowed){
-						Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Limited";
-					}
-				} else {
-					Player.BCT.bctSettings.ItemPerm[Item.Asset.Name] = "Fav";
-				}
-				// console.log(Player.BCT.bctSettings.ItemPerm);
-				bctSettingsSave(false);
+	modAPI.hookFunction("InventorySetPermission", 0, ([groupName, assetName, permissionType, ...args], next) => {
+		if (assetName === BF_LOCK_NAME || assetName === BF_TIMER_LOCK_NAME) {
+			switch (permissionType) {
+				case "Default":
+					Player.BCT.bctSettings.ItemPerm[assetName] = "Normal";
+					break;
+				case "Block":
+					Player.BCT.bctSettings.ItemPerm[assetName] = "Blocked";
+					break;
+				case "Limited":
+					Player.BCT.bctSettings.ItemPerm[assetName] = "Limited";
+					break;
+				case "Favorite":
+					Player.BCT.bctSettings.ItemPerm[assetName] = "Fav";
+					break;
 			}
-			next(args);
-		})
-	} else {
-		// R105
-		modAPI.hookFunction("InventorySetPermission", 0, ([groupName, assetName, permissionType, ...args], next) => {
-			if (assetName === BF_LOCK_NAME || assetName === BF_TIMER_LOCK_NAME) {
-				switch (permissionType) {
-					case "Default":
-						Player.BCT.bctSettings.ItemPerm[assetName] = "Normal";
-						break;
-					case "Block":
-						Player.BCT.bctSettings.ItemPerm[assetName] = "Blocked";
-						break;
-					case "Limited":
-						Player.BCT.bctSettings.ItemPerm[assetName] = "Limited";
-						break;
-					case "Favorite":
-						Player.BCT.bctSettings.ItemPerm[assetName] = "Fav";
-						break;
-				}
-				bctSettingsSave(false);
-			}
-			return next([groupName, assetName, permissionType, ...args]);
-		});
-	}
+			bctSettingsSave(false);
+		}
+		return next([groupName, assetName, permissionType, ...args]);
+	});
 
 	//Updating item permissions
 	function UpdateItemPermissions() {
-		if (typeof InventorySetPermission === "undefined") {
-			// R104
-			for(let itemName in Player.BCT.bctSettings.ItemPerm) {
-				let permissionItem = { Name: itemName, Group: "ItemMisc", Type: null};
-				if(Player.BCT.bctSettings.ItemPerm[itemName] === "Limited") Player.LimitedItems.push(permissionItem);
-				else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Blocked") Player.BlockItems.push(permissionItem);
-				else if(Player.BCT.bctSettings.ItemPerm[itemName] === "Fav") Player.FavoriteItems.push(permissionItem);
-				ServerPlayerBlockItemsSync();
+		for (const itemName in Player.BCT.bctSettings.ItemPerm) {
+			switch (Player.BCT.bctSettings.ItemPerm[itemName]) {
+				case "Limited":
+					InventorySetPermission("ItemMisc", itemName, "Limited");
+					break;
+				case "Blocked":
+					InventorySetPermission("ItemMisc", itemName, "Block");
+					break;
+				case "Fav":
+					InventorySetPermission("ItemMisc", itemName, "Favorite");
+					break;
 			}
-		} else {
-			// R105
-			for (const itemName in Player.BCT.bctSettings.ItemPerm) {
-				switch (Player.BCT.bctSettings.ItemPerm[itemName]) {
-					case "Limited":
-						InventorySetPermission("ItemMisc", itemName, "Limited");
-						break;
-					case "Blocked":
-						InventorySetPermission("ItemMisc", itemName, "Block");
-						break;
-					case "Fav":
-						InventorySetPermission("ItemMisc", itemName, "Favorite");
-						break;
-				}
-			}
-			ServerPlayerBlockItemsSync();
 		}
+		ServerPlayerBlockItemsSync();
 	}
 
 	//Filtering item permissions
 	function FilterItemPermissions() {
-		if (typeof InventorySetPermission === "undefined") {
-			// R104
-			for(let itemName in Player.BCT.bctSettings.ItemPerm) {
-				Player.LimitedItems = Player.LimitedItems.filter((item) => item.Name != itemName);
-				Player.BlockItems = Player.BlockItems.filter((item) => item.Name != itemName);
-				Player.FavoriteItems = Player.FavoriteItems.filter((item) => item.Name != itemName);
-			}
-		} else {
-			// R105
-			for (const itemName in Player.BCT.bctSettings.ItemPerm) {
-				delete Player.PermissionItems[`ItemMisc/${itemName}`];
-			}
+		for (const itemName in Player.BCT.bctSettings.ItemPerm) {
+			delete Player.PermissionItems[`ItemMisc/${itemName}`];
 		}
 	}
 
