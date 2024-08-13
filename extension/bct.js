@@ -2104,10 +2104,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							let onClickBF = () => {
 								BFelementText.textContent = "Deleted";
 								RemoveFromBFList(member);
-								BFelement.removeEventListener("mouseover",onHoverBF);
+								BFelement.removeEventListener("mouseenter",onHoverBF);
 								BFelement.removeEventListener("mouseleave",onOutBF);
 							}
-							BFelement.addEventListener("mouseover", onHoverBF);
+							BFelement.addEventListener("mouseenter", onHoverBF);
 							BFelement.addEventListener("mouseleave", onOutBF);
 							BFelement.addEventListener("click",onClickBF);
 					}
@@ -2129,10 +2129,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							let onClickBF = () => {
 								NonBFelementText.textContent = "Added";
 								AddToBFList(member);
-								NonBFelement.removeEventListener("mouseover",onHoverBF);
+								NonBFelement.removeEventListener("mouseenter",onHoverBF);
 								NonBFelement.removeEventListener("mouseleave",onOutBF);
 							}
-							NonBFelement.addEventListener("mouseover", onHoverBF);
+							NonBFelement.addEventListener("mouseenter", onHoverBF);
 							NonBFelement.addEventListener("mouseleave", onOutBF);
 							NonBFelement.addEventListener("click",onClickBF);
 					}
