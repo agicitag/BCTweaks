@@ -2105,10 +2105,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 								BFelementText.textContent = "Deleted";
 								RemoveFromBFList(member);
 								BFelement.removeEventListener("mouseover",onHoverBF);
-								BFelement.removeEventListener("mouseout",onOutBF);
+								BFelement.removeEventListener("mouseleave",onOutBF);
 							}
 							BFelement.addEventListener("mouseover", onHoverBF);
-							BFelement.addEventListener("mouseout", onOutBF);
+							BFelement.addEventListener("mouseleave", onOutBF);
 							BFelement.addEventListener("click",onClickBF);
 					}
 					else if (!(Player.Ownership != null && Player.Ownership.MemberNumber === member)
@@ -2130,10 +2130,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 								NonBFelementText.textContent = "Added";
 								AddToBFList(member);
 								NonBFelement.removeEventListener("mouseover",onHoverBF);
-								NonBFelement.removeEventListener("mouseout",onOutBF);
+								NonBFelement.removeEventListener("mouseleave",onOutBF);
 							}
 							NonBFelement.addEventListener("mouseover", onHoverBF);
-							NonBFelement.addEventListener("mouseout", onOutBF);
+							NonBFelement.addEventListener("mouseleave", onOutBF);
 							NonBFelement.addEventListener("click",onClickBF);
 					}
 				}
