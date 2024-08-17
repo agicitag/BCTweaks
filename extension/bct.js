@@ -2090,48 +2090,50 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
 					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))) {
 							let BFelement = htmlDoc.getElementsByClassName("friend-list-column RelationType")[i];
-							BFelement.innerHTML = "Best Friend";
+							const BFelementText = Array.from(BFelement.childNodes).find(e => e.nodeType === Node.TEXT_NODE);
+							BFelementText.textContent = "Best Friend";
 							BFelement.style.cursor = "pointer";
 							BFelement.style.textDecoration = "underline";
 							BFelement.style.color = "lime";
 							let  onHoverBF = () => {
-								BFelement.innerHTML = "Delete BF?";
+								BFelementText.textContent = "Delete BF?";
 							}
 							let onOutBF = () => {
-								BFelement.innerHTML = "Best Friend";
+								BFelementText.textContent = "Best Friend";
 							}
 							let onClickBF = () => {
-								BFelement.innerHTML = "Deleted";
+								BFelementText.textContent = "Deleted";
 								RemoveFromBFList(member);
-								BFelement.removeEventListener("mouseover",onHoverBF);
-								BFelement.removeEventListener("mouseout",onOutBF);
+								BFelement.removeEventListener("mouseenter",onHoverBF);
+								BFelement.removeEventListener("mouseleave",onOutBF);
 							}
-							BFelement.addEventListener("mouseover", onHoverBF);
-							BFelement.addEventListener("mouseout", onOutBF);
+							BFelement.addEventListener("mouseenter", onHoverBF);
+							BFelement.addEventListener("mouseleave", onOutBF);
 							BFelement.addEventListener("click",onClickBF);
 					}
 					else if (!(Player.Ownership != null && Player.Ownership.MemberNumber === member)
 					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))){
 							let NonBFelement = htmlDoc.getElementsByClassName("friend-list-column RelationType")[i];
+							const NonBFelementText = Array.from(NonBFelement.childNodes).find(e => e.nodeType === Node.TEXT_NODE);
 							NonBFelement.style.cursor = "pointer";
 							let forUndo = "";
 							let  onHoverBF = () => {
-								forUndo = NonBFelement.innerHTML;
-								NonBFelement.innerHTML = "Add as BF?";
+								forUndo = NonBFelementText.textContent;
+								NonBFelementText.textContent = "Add as BF?";
 								NonBFelement.style.textDecoration = "underline";
 							}
 							let onOutBF = () => {
-								NonBFelement.innerHTML = forUndo;
+								NonBFelementText.textContent = forUndo;
 								NonBFelement.style.textDecoration = "";
 							}
 							let onClickBF = () => {
-								NonBFelement.innerHTML = "Added";
+								NonBFelementText.textContent = "Added";
 								AddToBFList(member);
-								NonBFelement.removeEventListener("mouseover",onHoverBF);
-								NonBFelement.removeEventListener("mouseout",onOutBF);
+								NonBFelement.removeEventListener("mouseenter",onHoverBF);
+								NonBFelement.removeEventListener("mouseleave",onOutBF);
 							}
-							NonBFelement.addEventListener("mouseover", onHoverBF);
-							NonBFelement.addEventListener("mouseout", onOutBF);
+							NonBFelement.addEventListener("mouseenter", onHoverBF);
+							NonBFelement.addEventListener("mouseleave", onOutBF);
 							NonBFelement.addEventListener("click",onClickBF);
 					}
 				}
