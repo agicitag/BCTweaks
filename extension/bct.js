@@ -2332,12 +2332,13 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 			next(args);
 			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
 				const mode = FriendListMode[FriendListModeIndex];
-				if (mode === "OnlineFriends") {
+				if (mode === "OnlineFriends" && document.getElementById("friend-list")) {
 					let listRoomSpaces = [];
 					// Set up the page layout
-					// const rows = document.getElementsByClassName("FriendListRow");
+					const newSlot = document.createElement("span");
+
 					let BCTweaksID = "BCTweaksSlots";
-					if (!document.getElementById(BCTweaksID)) {
+					if (!document.getElementById(BCTweaksID) && document.getElementsByClassName("friend-list-row")) {
 						newSlot.id = BCTweaksID;
                         newSlot.classList.add("friend-list-column");
                         newSlot.classList.add("mode-specific-content");
@@ -2353,7 +2354,7 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 					}
 					const friendTable = document.getElementById("friend-list");
 
-					for(const row of friendTable){
+					for(const row of friendTable.children){
 						const slotSpan = document.createElement("span");
                         slotSpan.classList.add("friend-list-column");
 
@@ -2396,7 +2397,7 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 					let privateRooms = [];
 
 					// Fill in the correct slots
-					for(const row of rows){
+					for(const row of friendTable.children){
 						let maxSlots = 0;
 						let currentSlots = 0;
 						let friendNumber = parseInt(row.children[1].innerText);
