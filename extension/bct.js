@@ -1,9 +1,7 @@
 const BCT_VERSION = "B.0.7.6";
-const BCT_Settings_Version = 18;
+const BCT_Settings_Version = 19;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- Show Room Slots added.
-- Online Friendlist would now have an extra column (Slots) showing the number of people in your friend's room and max capacity of the room.
-- Fixed Tailwag
+- Show Room Slots Fixed
 `
 
 const BCT_API = {
@@ -1980,7 +1978,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			if (!bctOnlineCheck) {
 				if (Player.BCT.bctSettings.bestFriendsEnabled) {
 					const mode = FriendListMode[FriendListModeIndex];
-					if (mode === "Friends" || mode === "OnlineFriends") { //temp- mode changed from Friends to OnlineFriends
+					if (mode === "OnlineFriends") { 
 						let sortedOSL = [];
 						let	bfList = [];
 						let normalfriends = [];
@@ -2016,71 +2014,8 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			}
 		});
 
-		// shows Best Friends in BC's friend list and have the option to delete them
-		modAPI.hookFunction("ElementContent", 2, (args,next) => {
+		modAPI.hookFunction("FriendListLoadFriendList", 2, (args,next) => {
 			const mode = FriendListMode[FriendListModeIndex];
-			let ID = args[0];
-			let Content = args[1];
-			next(args);
-			if ((Player.BCT.bctSettings.bestFriendsEnabled) && (mode === "Delete") && (ID === "FriendList")) {
-				let htmlDoc = document.getElementById(ID);
-				for (let i = 0; i < htmlDoc.getElementsByClassName("FriendListTextColumn").length / 3; i++) {
-					let member = parseInt(htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 1].innerHTML);
-					if (Player.BCT.bctSettings.bestFriendsList.includes(member) 
-					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
-					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))) {
-							let BFelement = htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2];
-							BFelement.innerHTML = "Best Friend";
-							BFelement.style.cursor = "pointer";
-							BFelement.style.textDecoration = "underline";
-							BFelement.style.color = "lime";
-							let  onHoverBF = () => {
-								BFelement.innerHTML = "Delete BF?";
-							}
-							let onOutBF = () => {
-								BFelement.innerHTML = "Best Friend";
-							}
-							let onClickBF = () => {
-								BFelement.innerHTML = "Deleted";
-								RemoveFromBFList(member);
-								BFelement.removeEventListener("mouseover",onHoverBF);
-								BFelement.removeEventListener("mouseout",onOutBF);
-							}
-							BFelement.addEventListener("mouseover", onHoverBF);
-							BFelement.addEventListener("mouseout", onOutBF);
-							BFelement.addEventListener("click",onClickBF);
-					}
-					else if (!(Player.Ownership != null && Player.Ownership.MemberNumber === member)
-					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))){
-							let NonBFelement = htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2];
-							NonBFelement.style.cursor = "pointer";
-							let forUndo = "";
-							let  onHoverBF = () => {
-								forUndo = NonBFelement.innerHTML;
-								NonBFelement.innerHTML = "Add as BF?";
-								NonBFelement.style.textDecoration = "underline";
-							}
-							let onOutBF = () => {
-								NonBFelement.innerHTML = forUndo;
-								NonBFelement.style.textDecoration = "";
-							}
-							let onClickBF = () => {
-								NonBFelement.innerHTML = "Added";
-								AddToBFList(member);
-								NonBFelement.removeEventListener("mouseover",onHoverBF);
-								NonBFelement.removeEventListener("mouseout",onOutBF);
-							}
-							NonBFelement.addEventListener("mouseover", onHoverBF);
-							NonBFelement.addEventListener("mouseout", onOutBF);
-							NonBFelement.addEventListener("click",onClickBF);
-					}
-				}
-			}
-		});
-		modAPI.hookFunction("FriendListLoadFriendList", 2, (args,next) => { //temp
-			const mode = FriendListMode[FriendListModeIndex];
-			// let ID = args[0];
-			// let Content = args[1];
 			next(args);
 			if ((Player.BCT.bctSettings.bestFriendsEnabled) && (mode === "AllFriends")) {
 				let htmlDoc = document.getElementById(FriendListIDs.friendList);
