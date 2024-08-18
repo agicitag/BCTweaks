@@ -1,9 +1,7 @@
 const BCT_VERSION = "0.6.6";
-const BCT_Settings_Version = 18;
+const BCT_Settings_Version = 19;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- Show Room Slots added.
-- Online Friendlist would now have an extra column (Slots) showing the number of people in your friend's room and max capacity of the room.
-- Fixed Tailwag
+- Show Room Slots Fixed
 `
 
 const BCT_API = {
@@ -1980,7 +1978,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			if (!bctOnlineCheck) {
 				if (Player.BCT.bctSettings.bestFriendsEnabled) {
 					const mode = FriendListMode[FriendListModeIndex];
-					if (mode === "Friends" || mode === "OnlineFriends") { //temp- mode changed from Friends to OnlineFriends
+					if (mode === "OnlineFriends") { 
 						let sortedOSL = [];
 						let	bfList = [];
 						let normalfriends = [];
@@ -2016,71 +2014,8 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			}
 		});
 
-		// shows Best Friends in BC's friend list and have the option to delete them
-		modAPI.hookFunction("ElementContent", 2, (args,next) => {
+		modAPI.hookFunction("FriendListLoadFriendList", 2, (args,next) => {
 			const mode = FriendListMode[FriendListModeIndex];
-			let ID = args[0];
-			let Content = args[1];
-			next(args);
-			if ((Player.BCT.bctSettings.bestFriendsEnabled) && (mode === "Delete") && (ID === "FriendList")) {
-				let htmlDoc = document.getElementById(ID);
-				for (let i = 0; i < htmlDoc.getElementsByClassName("FriendListTextColumn").length / 3; i++) {
-					let member = parseInt(htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 1].innerHTML);
-					if (Player.BCT.bctSettings.bestFriendsList.includes(member) 
-					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
-					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))) {
-							let BFelement = htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2];
-							BFelement.innerHTML = "Best Friend";
-							BFelement.style.cursor = "pointer";
-							BFelement.style.textDecoration = "underline";
-							BFelement.style.color = "lime";
-							let  onHoverBF = () => {
-								BFelement.innerHTML = "Delete BF?";
-							}
-							let onOutBF = () => {
-								BFelement.innerHTML = "Best Friend";
-							}
-							let onClickBF = () => {
-								BFelement.innerHTML = "Deleted";
-								RemoveFromBFList(member);
-								BFelement.removeEventListener("mouseover",onHoverBF);
-								BFelement.removeEventListener("mouseout",onOutBF);
-							}
-							BFelement.addEventListener("mouseover", onHoverBF);
-							BFelement.addEventListener("mouseout", onOutBF);
-							BFelement.addEventListener("click",onClickBF);
-					}
-					else if (!(Player.Ownership != null && Player.Ownership.MemberNumber === member)
-					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))){
-							let NonBFelement = htmlDoc.getElementsByClassName("FriendListTextColumn")[i*3 + 2];
-							NonBFelement.style.cursor = "pointer";
-							let forUndo = "";
-							let  onHoverBF = () => {
-								forUndo = NonBFelement.innerHTML;
-								NonBFelement.innerHTML = "Add as BF?";
-								NonBFelement.style.textDecoration = "underline";
-							}
-							let onOutBF = () => {
-								NonBFelement.innerHTML = forUndo;
-								NonBFelement.style.textDecoration = "";
-							}
-							let onClickBF = () => {
-								NonBFelement.innerHTML = "Added";
-								AddToBFList(member);
-								NonBFelement.removeEventListener("mouseover",onHoverBF);
-								NonBFelement.removeEventListener("mouseout",onOutBF);
-							}
-							NonBFelement.addEventListener("mouseover", onHoverBF);
-							NonBFelement.addEventListener("mouseout", onOutBF);
-							NonBFelement.addEventListener("click",onClickBF);
-					}
-				}
-			}
-		});
-		modAPI.hookFunction("FriendListLoadFriendList", 2, (args,next) => { //temp
-			const mode = FriendListMode[FriendListModeIndex];
-			// let ID = args[0];
-			// let Content = args[1];
 			next(args);
 			if ((Player.BCT.bctSettings.bestFriendsEnabled) && (mode === "AllFriends")) {
 				let htmlDoc = document.getElementById(FriendListIDs.friendList);
@@ -2329,28 +2264,6 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			timeout = false;
 			ServerSend("ChatRoomSearch", SearchData);
 		}
-		
-		// returns roomName, roomSpace, isPrivateRoom parsed from friendlist. eg. "X -- Private Room - abcd"
-		function roomNameParser(roomName) {
-			let firstHyphenOccur = roomName.indexOf("-");
-			let lastHyphenOccur = roomName.lastIndexOf("-");
-			let isPrivateRoom = ((lastHyphenOccur !== -1) && (roomName.slice(0,lastHyphenOccur).includes("Private room")));
-
-			// roomSpace
-			let roomSpace = "";
-			if (firstHyphenOccur-1 > 0) roomSpace = roomName.slice(0,firstHyphenOccur-1);
-			// "-" or "- Private Room -"
-			if ((lastHyphenOccur !== -1) && (lastHyphenOccur+2 > roomName.length)) roomSpace = null;
-
-			// roomName
-			if((lastHyphenOccur !== -1) && (lastHyphenOccur+2 < roomName.length)) {
-				roomName = roomName.slice(lastHyphenOccur+2,roomName.length);
-			}else if (lastHyphenOccur !== -1) {
-				roomName = "";
-			}
-
-			return [roomName, roomSpace, isPrivateRoom];
-		}
 
 // Only interested in the actual list when we ask for it
 const replaceResponseBegin = `
@@ -2369,35 +2282,14 @@ else if(bctRoomSlotCallNarrow > 0) {
 	timeout = true;
 }
 else {
-	ChatSearchResult = ChatSearchParseResponse(data ?? []);`
+	ElementContent("InputSearch-datalist", "");`
 
 const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 		
 		modAPI.patchFunction("ChatSearchResultResponse",{
-			"ChatSearchResult = ChatSearchParseResponse(data ?? []);": replaceResponseBegin,
+			'ElementContent("InputSearch-datalist", "");': replaceResponseBegin,
 			"ChatSearchAutoJoinRoom();": replaceResponseEnd,
 		})
-
-		modAPI.hookFunction("FriendListRun", 2, (args,next) => {
-			if(Player.BCT.bctSettings.friendlistSlotsEnabled && !GameVersion.includes("Beta")){ //temp
-				const mode = FriendListMode[FriendListModeIndex];
-				var FriendListModeIndexBackup = FriendListModeIndex;
-				if (mode === "Friends") {
-					DrawText(TextGet("ListOnlineFriends"), 200, 35, "White", "Gray");
-					DrawText(TextGet("ChatRoomName"), 1110, 35, "White", "Gray");
-					DrawText("Slots", 1620, 35, "White", "Gray");
-
-					// Dont draw the above again in "FriendListRun" and move "Member number" to the left
-					FriendListModeIndex = -1;
-					MainCanvas.textAlign = "right";
-				}
-			}
-			next(args);
-			if(Player.BCT.bctSettings.friendlistSlotsEnabled && !GameVersion.includes("Beta")){
-				MainCanvas.textAlign = "center";
-				FriendListModeIndex = FriendListModeIndexBackup;
-			}
-		});
 
 		// update previouslyFoundRooms only if room name is new or room slots has changed
 		function foundRoomUpdate(newRoom) {
@@ -2427,28 +2319,50 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 			}
 		}
 
+		let friendListNumberToName = {};
+
 		modAPI.hookFunction("FriendListLoadFriendList", 2, async (args,next) => {
+			let friends = args[0];
+			for(const friend of friends) {
+				friendListNumberToName[friend.MemberNumber] = {};
+				friendListNumberToName[friend.MemberNumber]["ChatRoomName"] = friend.ChatRoomName;
+				friendListNumberToName[friend.MemberNumber]["ChatRoomSpace"] = friend.ChatRoomSpace;
+				friendListNumberToName[friend.MemberNumber]["IsPrivateRoom"] = friend.Private;
+			}
 			next(args);
 			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
 				const mode = FriendListMode[FriendListModeIndex];
-				if (mode === "Friends") {
+				if (mode === "OnlineFriends" && document.getElementById("friend-list")) {
 					let listRoomSpaces = [];
 					// Set up the page layout
-					const rows = document.getElementsByClassName("FriendListRow");
-					for(const row of rows){
-						row.children[0].style.width = "20%";
-						row.children[1].style.width = "14%";
-						row.children[2].style.width = "44%";
-						row.children[3].style.width = "10%";
-						row.children[3].style["text-align"] = "right";
-						
-						const slotDiv = document.createElement("div");
-						slotDiv.classList.add("FriendListTextColumn");
-						slotDiv.style = "width: 8%";
+					const newSlot = document.createElement("span");
+
+					let BCTweaksID = "BCTweaksSlots";
+					if (!document.getElementById(BCTweaksID) && document.getElementsByClassName("friend-list-row")) {
+						newSlot.id = BCTweaksID;
+                        newSlot.classList.add("friend-list-column");
+                        newSlot.classList.add("mode-specific-content");
+                        newSlot.classList.add("fl-online-friends-content");
+
+                        const getBeepEle = document.getElementsByClassName("friend-list-row");
+                        newSlot.innerText = "Slots";
+                        getBeepEle[0].insertBefore(newSlot,getBeepEle[0].children[4]);
+                        getBeepEle[0].children[1].style.width = "16%";
+                        getBeepEle[0].children[2].style.width = "25%";
+                        getBeepEle[0].children[4].style.width = "13%";
+                    	getBeepEle[0].children[5].style.width = "16%";
+					}
+					const friendTable = document.getElementById("friend-list");
+
+					for(const row of friendTable.children){
+						const slotSpan = document.createElement("span");
+                        slotSpan.classList.add("friend-list-column");
 
 						// Initialize with old results
 						let foundRoom;
-						let [roomName,roomSpace,isPrivateRoom] = roomNameParser(row.children[2].innerText);
+						let friendNumber = parseInt(row.children[1].innerText);
+                        let roomName = friendListNumberToName[friendNumber].ChatRoomName;
+                        let roomSpace = friendListNumberToName[friendNumber].ChatRoomSpace;
 						
 						if(!!roomName) {
 							foundRoom = previouslyFoundRooms.find(function(room){
@@ -2461,9 +2375,13 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 						}
 						let slotContent;
 						if(foundRoom) slotContent = document.createTextNode(foundRoom.MemberCount + "/" + foundRoom.MemberLimit);	
-						else slotContent = document.createTextNode("-");	
-						slotDiv.appendChild(slotContent);
-						row.insertBefore(slotDiv, row.children[3]);
+						else slotContent = document.createTextNode("-");
+						slotSpan.appendChild(slotContent);
+						row.insertBefore(slotSpan, row.children[2].nextSibling);
+                        row.children[1].style.width = "15%";
+                        row.children[2].style.width = "26%";
+                        row.children[3].style.width = "13%";
+                        row.children[4].style.width = "15%";
 					}
 
 					let roomsWithFriends = [];
@@ -2479,10 +2397,14 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 					let privateRooms = [];
 
 					// Fill in the correct slots
-					for(const row of rows){
+					for(const row of friendTable.children){
 						let maxSlots = 0;
 						let currentSlots = 0;
-						let [roomName,roomSpace,isPrivateRoom] = roomNameParser(row.children[2].innerText);
+						let friendNumber = parseInt(row.children[1].innerText);
+                        let roomName = friendListNumberToName[friendNumber].ChatRoomName;
+                        let roomSpace = friendListNumberToName[friendNumber].ChatRoomSpace;
+                        let isPrivateRoom = friendListNumberToName[friendNumber].IsPrivateRoom;
+
 						// Public rooms
 						if(!isPrivateRoom){
 							for(const room of previouslyFoundRooms){
