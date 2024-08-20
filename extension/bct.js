@@ -1659,9 +1659,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 									)
 								){
 									if(restoreValues[ChatRoomCharacter[C].ID] == null) restoreValues[ChatRoomCharacter[C].ID] = {};
-									restoreValues[ChatRoomCharacter[C].ID][Item.Asset.ArousalZone] = PreferenceGetZoneFactor(ChatRoomCharacter[C], Item.Asset.ArousalZone);
-									// here it gets disabled
-									PreferenceSetZoneFactor(ChatRoomCharacter[C], Item.Asset.ArousalZone, 1)
+									if(!(Item.Asset.ArousalZone in restoreValues[ChatRoomCharacter[C].ID])){
+										restoreValues[ChatRoomCharacter[C].ID][Item.Asset.ArousalZone] = PreferenceGetZoneFactor(ChatRoomCharacter[C], Item.Asset.ArousalZone);
+										// here it gets disabled
+										PreferenceSetZoneFactor(ChatRoomCharacter[C], Item.Asset.ArousalZone, 1);
+									}
 								}
 
 								// calculate Factor BC would calculate to apply orgasm progress multiplicators
@@ -2349,8 +2351,11 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
                         getBeepEle[0].insertBefore(newSlot,getBeepEle[0].children[4]);
                         getBeepEle[0].children[1].style.width = "16%";
                         getBeepEle[0].children[2].style.width = "25%";
+						getBeepEle[0].children[3].style.width = "24%";
+						getBeepEle[0].children[3].style.textAlign = "right";
                         getBeepEle[0].children[4].style.width = "13%";
                     	getBeepEle[0].children[5].style.width = "16%";
+						getBeepEle[0].children[6].style.textAlign = "right";
 					}
 					const friendTable = document.getElementById("friend-list");
 

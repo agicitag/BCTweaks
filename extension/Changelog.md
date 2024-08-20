@@ -2,6 +2,7 @@
 
 ## 0.6.6
 ### Bugfixes:
+- Fixes erroneous behaviour with nipple slots
 - Update for R107Beta
 - Updated to Item permissions for R105 (By Rama)
 - Tailwag now works in ChatRooms
