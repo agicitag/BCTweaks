@@ -1,7 +1,7 @@
-const BCT_VERSION = "B.0.7.6";
-const BCT_Settings_Version = 19;
+const BCT_VERSION = "B.0.7.7";
+const BCT_Settings_Version = 20;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- Show Room Slots Fixed
+- BCTweaks Settings migrated to Extensions
 `
 
 const BCT_API = {
@@ -448,7 +448,7 @@ async function runBCT(){
 
 	//Settings Page
 	async function settingsPage() {
-		await waitFor(() => !!PreferenceSubscreenList);
+		await waitFor(() => !!PreferenceRegisterExtensionSetting)
 
 		const bctSettingsCategories = [
 			"BCTArousal",
@@ -472,19 +472,7 @@ async function runBCT(){
 		let settingsHint = "";
 		let currentHint = 0;
 
-		// keep same position in menu
-		PreferenceSubscreenList.splice(16, 0 ,"BCTSettings");
-
-		modAPI.hookFunction("TextGet", 2, (args, next) => {
-			if(args[0] == "HomepageBCTSettings") return "BCTweaks Settings";
-			else return next(args);
-		});
-
-		modAPI.hookFunction("DrawButton", 2, (args, next) => {
-			// 7th argument is the image url
-			if(args[6] == "Icons/BCTSettings.png") args[6] = IMAGES.LOGO;
-			return next(args);
-		});
+		let BCTPreferenceSubscreen = "BCTSettings";
 
 				/**
 		 * Draws a word wrapped text in a rectangle
@@ -562,15 +550,15 @@ async function runBCT(){
 
 		function getNewYPos(){
 			let yPos = 200;
-			if (menuElements[PreferenceSubscreen].length > 0){
-				let lastElement = menuElements[PreferenceSubscreen][menuElements[PreferenceSubscreen].length - 1];
+			if (menuElements[BCTPreferenceSubscreen].length > 0){
+				let lastElement = menuElements[BCTPreferenceSubscreen][menuElements[BCTPreferenceSubscreen].length - 1];
 				yPos = lastElement.yPos + lastElement.yModifier + 75;
 			}
 			return yPos;
 		}
 
 		function addMenuCheckbox(width, height, text, setting, hint, grayedOutReference = "false", xModifier = 0, yModifier = 0, elementText = ""){
-			menuElements[PreferenceSubscreen].push({
+			menuElements[BCTPreferenceSubscreen].push({
 				type: "Checkbox",
 				yPos: getNewYPos(),
 				width: width,
@@ -585,7 +573,7 @@ async function runBCT(){
 			});
 		}
 		function addMenuButton(width, height, text, elementText, clickFunction, hint, xModifier = 0, yModifier = 0){
-			menuElements[PreferenceSubscreen].push({
+			menuElements[BCTPreferenceSubscreen].push({
 				type: "Button",
 				yPos: getNewYPos(),
 				width: width,
@@ -599,7 +587,7 @@ async function runBCT(){
 			});
 		}
 		function addMenuInput(width, text, setting, identifier, hint, xModifier = 0, yModifier = 0){
-			menuElements[PreferenceSubscreen].push({
+			menuElements[BCTPreferenceSubscreen].push({
 				type: "Input",
 				yPos: getNewYPos(),
 				width: width,
@@ -627,7 +615,7 @@ async function runBCT(){
 			}
 		}
 		function addMenuBackNext(width, height, text, setting, backNextOptions, hint, xModifier = 0, yModifier = 0){
-			menuElements[PreferenceSubscreen].push({
+			menuElements[BCTPreferenceSubscreen].push({
 				type: "BackNext",
 				yPos: getNewYPos(),
 				width: width,
@@ -650,14 +638,14 @@ async function runBCT(){
 			
 			MainCanvas.textAlign = "left";
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
-			DrawText("- " + bctSettingCategoryLabels[PreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
+			DrawText("- " + bctSettingCategoryLabels[BCTPreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
 			if(settingsHint != ""){
 				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, ForeColor = BCT_API.HintForeColor, BackColor = BCT_API.HintBackColor, BorderColor = BCT_API.HintBorderColor);
 			}
 
 			let currentElement;
-			for (i = 0; i < menuElements[PreferenceSubscreen].length; i++){
-				currentElement = menuElements[PreferenceSubscreen][i];
+			for (i = 0; i < menuElements[BCTPreferenceSubscreen].length; i++){
+				currentElement = menuElements[BCTPreferenceSubscreen][i];
 				MainCanvas.textAlign = "left";
 				let textColor = "Black";
 				if(eval(currentElement?.grayedOutReference) === true) textColor = "Gray";
@@ -716,13 +704,13 @@ async function runBCT(){
 		function handleMenuClicks(){
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)){
-				PreferenceExit();
+				CommonCallFunctionByName(`PreferenceSubscreen${BCTPreferenceSubscreen}Exit`)
 				return;
 			}
 			let currentElement;
 			let foundElement = false;
-			for (i = 0; i < menuElements[PreferenceSubscreen].length; i++){
-				currentElement = menuElements[PreferenceSubscreen][i];
+			for (i = 0; i < menuElements[BCTPreferenceSubscreen].length; i++){
+				currentElement = menuElements[BCTPreferenceSubscreen][i];
 				switch (currentElement.type) {
 					case "Checkbox":
 						if (eval(currentElement.grayedOutReference) === false){
@@ -757,16 +745,24 @@ async function runBCT(){
 					settingsHint = currentElement.hint;
 					currentHint = currentElement.yPos;
 				}
-				if (foundElement) i = menuElements[PreferenceSubscreen].length;
+				if (foundElement) i = menuElements[BCTPreferenceSubscreen].length;
 			}
 		}
 
 		function defaultExit(){
-			menuElements[PreferenceSubscreen] = [];
-			PreferenceSubscreen = "BCTSettings";
+			menuElements[BCTPreferenceSubscreen] = [];
+			BCTPreferenceSubscreen = "BCTSettings";
 			PreferenceMessage = "";
 			settingsHint = "";
 			currentHint = 0;
+			PreferenceExtensionsCurrent = {
+				Identifier: "BCTSettings",
+				click: PreferenceSubscreenBCTSettingsClick,
+				run: PreferenceSubscreenBCTSettingsRun,
+				exit: PreferenceSubscreenBCTSettingsExit,
+				load: PreferenceSubscreenBCTSettingsLoad,
+			}
+            PreferenceSubscreenBCTSettingsLoad();
 		}
 
 
@@ -806,8 +802,15 @@ async function runBCT(){
 		};
 
 		function resetSettings() {
-				CommonDynamicFunction("PreferenceSubscreenResetLoad()")
-				PreferenceSubscreen = "Reset";
+				CommonDynamicFunction("PreferenceSubscreenResetLoad()");
+				PreferenceExtensionsCurrent = {
+					Identifier: bctSettingsCategories[A],
+					click: () => CommonCallFunctionByName(`PreferenceSubscreenResetClick`),
+					run: () => CommonCallFunctionByName(`PreferenceSubscreenResetRun`),
+					exit: () => CommonCallFunctionByName(`PreferenceSubscreenResetExit`),
+					load: () => CommonCallFunctionByName(`PreferenceSubscreenResetLoad`),
+				}
+				BCTPreferenceSubscreen = "Reset";
 				PreferencePageCurrent = 1;
 		}
 		PreferenceSubscreenResetLoad = function () {
@@ -834,7 +837,7 @@ async function runBCT(){
 		PreferenceSubscreenBCTSettingsClick = function () {
 			
 			// Exit button
-			if (MouseIn(1815, 75, 90, 90)) PreferenceExit();
+			if (MouseIn(1815, 75, 90, 90)) PreferenceSubscreenBCTSettingsExit();
 			if (MouseIn(1450, 650, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/main/extension/Changelog.md", "_blank");
 			if (MouseIn(1450, 755, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/beta/extension/Changelog.md", "_blank");
 			if (MouseIn(1500, 860, 300, 90)) resetSettings();
@@ -843,7 +846,16 @@ async function runBCT(){
 				if (MouseIn(500 + 500 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90)) {
 					if (typeof window["PreferenceSubscreen" + bctSettingsCategories[A] + "Load"] === "function")
 					CommonDynamicFunction("PreferenceSubscreen" + bctSettingsCategories[A] + "Load()");
-					PreferenceSubscreen = bctSettingsCategories[A];
+					PreferenceExtensionsCurrent = {
+						Identifier: bctSettingsCategories[A],
+						// ButtonText: bctSettingCategoryLabels[bctSettingsCategories[A]],
+						click: () => CommonCallFunctionByName(`PreferenceSubscreen${bctSettingsCategories[A]}Click`),
+						run: () => CommonCallFunctionByName(`PreferenceSubscreen${bctSettingsCategories[A]}Run`),
+						exit: () => CommonCallFunctionByName(`PreferenceSubscreen${bctSettingsCategories[A]}Exit`),
+						load: () => CommonCallFunctionByName(`PreferenceSubscreen${bctSettingsCategories[A]}Load`),
+					}
+					BCTPreferenceSubscreen = bctSettingsCategories[A];
+
 					PreferencePageCurrent = 1;
 					break;
 				}
@@ -852,12 +864,13 @@ async function runBCT(){
 		
 		PreferenceSubscreenBCTSettingsExit = function () {
 			bctSettingsSave();
-			PreferenceSubscreen = "";
+			BCTPreferenceSubscreen = "";
 			PreferenceMessage = "";
+			PreferenceSubscreenExtensionsClear();
 		};
 
 		PreferenceSubscreenBCTArousalLoad = function () {
-			PreferenceSubscreen = "BCTArousal";
+			BCTPreferenceSubscreen = "BCTArousal";
 			addMenuInput(200, "Arousal Progress Multiplier:", "arousalProgressMultiplier", "InputArousalProgressMultiplier",
 			"Sets a multiplier for the arousal progress. E.g. if an activity would normally result in a progress of 10%, " +
 			"with a multiplier of 0.5 it only results in a progress of 5%. BC limits the progress for one action at 25%."
@@ -938,7 +951,7 @@ async function runBCT(){
 		let tailPreviewSecondary;
 
 		PreferenceSubscreenBCTTailwagLoad = function () {
-			PreferenceSubscreen = "BCTTailwag";
+			BCTPreferenceSubscreen = "BCTTailwag";
 			addMenuCheckbox(64, 64, "Enable Tail Wagging:", "tailWaggingEnable",
 			"Enables tail wagging upon sending emotes like \"*wags her tail\" or \"*'s tail is wagging\"."
 			);
@@ -1012,7 +1025,7 @@ async function runBCT(){
 		};
 
 		PreferenceSubscreenBCTTweaksLoad = function () {
-			PreferenceSubscreen = "BCTTweaks";
+			BCTPreferenceSubscreen = "BCTTweaks";
 			addMenuCheckbox(64, 64, "Show BCT Icon on hover: ", "bctIconOnlyShowOnHover",
 			"BCTweaks overlay icon (the ones that show above a character in chatroom) would only show when the mouse hovers above the character. Otherwise it will be hidden."
 			);
@@ -1041,7 +1054,7 @@ async function runBCT(){
 		};
 
 		PreferenceSubscreenBCTBestFriendsLoad = function () {
-			PreferenceSubscreen = "BCTBestFriends";
+			BCTPreferenceSubscreen = "BCTBestFriends";
 			addMenuCheckbox(64,64,"Enable Best Friends Feature:","bestFriendsEnabled",
 			`This feature allows you to add someone as a "Best Friend". 
 There will be a new option in the "Manage your Relationship" section to add someone as a best friend.
@@ -1100,6 +1113,29 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			}
 			else PreferenceMessage = "Member ID List is invalid";
 		};
+
+		function keyHandler(e) {
+			if (e.key === "Escape" && !!BCTPreferenceSubscreen && BCTPreferenceSubscreen !== "BCTSettings" ) {
+				CommonCallFunctionByName(`PreferenceSubscreen${BCTPreferenceSubscreen}Exit`);
+				e.stopPropagation();
+				e.preventDefault();
+			}
+		}
+	
+		document.addEventListener("keydown", keyHandler, true);
+		document.addEventListener("keypress", keyHandler, true);
+		
+		
+		PreferenceRegisterExtensionSetting(
+			{
+				Identifier: "BCTSettings",
+				ButtonText: "BCTweaks Settings",
+				Image: IMAGES.LOGO,
+				click: PreferenceSubscreenBCTSettingsClick,
+				run: PreferenceSubscreenBCTSettingsRun,
+				exit: PreferenceSubscreenBCTSettingsExit,
+				load: PreferenceSubscreenBCTSettingsLoad,
+			});
 	}
 
 	const BCT_AUTHORS = [80525,78366];

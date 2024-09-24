@@ -1,5 +1,9 @@
 # BCT Changelog
 
+## 0.7.7
+### Minor Change:
+- Updated Settings for R108
+
 ## 0.7.6
 ### Bugfixes:
 - Fixes erroneous behaviour with nipple slots
