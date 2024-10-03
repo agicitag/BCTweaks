@@ -804,7 +804,7 @@ async function runBCT(){
 		function resetSettings() {
 				CommonDynamicFunction("PreferenceSubscreenResetLoad()");
 				PreferenceExtensionsCurrent = {
-					Identifier: bctSettingsCategories[A],
+					Identifier: "Reset",
 					click: () => CommonCallFunctionByName(`PreferenceSubscreenResetClick`),
 					run: () => CommonCallFunctionByName(`PreferenceSubscreenResetRun`),
 					exit: () => CommonCallFunctionByName(`PreferenceSubscreenResetExit`),
