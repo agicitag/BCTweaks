@@ -1,4 +1,4 @@
-const BCT_VERSION = "B.0.7.7";
+const BCT_VERSION = "B.0.7.8";
 const BCT_Settings_Version = 20;
 const BCT_CHANGELOG = `${BCT_VERSION}
 - BCTweaks Settings migrated to Extensions
@@ -2663,21 +2663,42 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 			args[0] = IMAGES.BEST_FRIEND_TIMER_LOCK;
 		}
 		next(args);
-	})
+	});
 
-	// Preview Lock Icon for BF locks
-	{
-		const replace = `if (InventoryItemHasEffect(item, "Lock")) {`;
-		const replaceBy = `if (InventoryItemHasEffect(item, "Lock")) {
-			if (item.Property && item.Property.Name === "${BF_LOCK_NAME}") {
-				icons.push("${BF_LOCK_NAME}");
-				return icons; }
-			else if (item.Property && item.Property.Name === "${BF_TIMER_LOCK_NAME}") {
-				icons.push("${BF_TIMER_LOCK_NAME}");
-				return icons; }
-		`;
-		modAPI.patchFunction("DialogGetLockIcon",{[replace]:replaceBy});
+	function updateBctIconUrl(button) {
+		button.querySelectorAll("img.button-icon[src*='Best Friend']").forEach(img => {
+			if (img.src.includes(BF_TIMER_LOCK_NAME.replaceAll(" ", "%20"))) {
+				img.src = IMAGES.BEST_FRIEND_TIMER_LOCK;
+			} else if (img.src.includes(BF_LOCK_NAME.replaceAll(" ", "%20"))) {
+				img.src = IMAGES.BEST_FRIEND_LOCK;
+			}
+		});
+
+		button.querySelectorAll(".button-icon-tooltip-li[style*='Best Friend']").forEach(elem => {
+			if (elem.style.backgroundImage.includes(BF_TIMER_LOCK_NAME)) {
+				elem.style.backgroundImage = `url(${IMAGES.BEST_FRIEND_TIMER_LOCK})`;
+			} else if (elem.style.backgroundImage.includes(BF_LOCK_NAME)) {
+				elem.style.backgroundImage = `url(${IMAGES.BEST_FRIEND_LOCK})`;
+			}
+		});
 	}
+
+	modAPI.hookFunction("ElementButton.CreateForAsset", 0, (args, next) => {
+		args[4] ??= {};
+		const asset = "Asset" in args[1] ? args[1].Asset : args[1];
+		switch (asset.Name) {
+			case BF_LOCK_NAME:
+				args[4].image = IMAGES.BEST_FRIEND_LOCK;
+				break;
+			case BF_TIMER_LOCK_NAME:
+				args[4].image = IMAGES.BEST_FRIEND_TIMER_LOCK;
+				break;
+		}
+
+		const button = next(args);
+		updateBctIconUrl(button);
+		return button;
+	});
 
 	modAPI.hookFunction("DialogCanUnlock",2,(args,next) => {
 		let C = args[0];
