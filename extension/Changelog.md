@@ -1,5 +1,9 @@
 # BCT Changelog
 
+## 0.6.8
+### Minor Change:
+- Updated dialog item icon for locks
+
 ## 0.6.7
 ### Minor Change:
 - Updated Settings for R108
