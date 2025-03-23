@@ -109,6 +109,128 @@ async function runBCT(){
 	//send Initilization when started when already in a chatroom
 	sendBctInitilization(true);
 	
+	// async function bctSettingsLoad(reset = false) {
+	// 	await waitFor(() => !!Player?.AccountName);
+
+	// 	const BCT_DEFAULT_SETTINGS = {
+	// 		splitOrgasmArousal: true,
+	// 		arousalbarLocation: "Bottom",
+	// 		arousalProgressMultiplier: 1.0,
+	// 		arousalDecayMultiplier: 1.0,
+	// 		orgasmProgressMultiplier: 1.0,
+	// 		orgasmDecayMultiplier: 1.0,
+	// 		arousalAffectsOrgasmProgress: true,
+	// 		arousalAffectsErection: true,
+	// 		automaticErectionThreshold: 25,
+	// 		tailWaggingEnable: false,
+	// 		tailWaggingTailOneName: "PuppyTailStrap1",
+	// 		tailWaggingTailOneColor: "#431A12",
+	// 		tailWaggingTailTwoName: "WolfTailStrap3",
+	// 		tailWaggingTailTwoColor: "#310D0C",
+	// 		tailWaggingDelay: 500,
+	// 		tailWaggingCount: 3,
+	// 		bestFriendsEnabled: true,
+	// 		bestFriendsRoomShare: true,
+	// 		bestFriendsList: [],
+	// 		miscShareRoomList: [],
+	// 		hsToBFLockconvert: false,
+	// 		ItemPerm : {
+	// 			[BF_LOCK_NAME] : "Normal",
+	// 			[BF_TIMER_LOCK_NAME] : "Normal",
+	// 		},
+	// 		allIconOnlyShowOnHover : false,
+	// 		bctIconOnlyShowOnHover : true,
+	// 		showChangelog: true,
+	// 		friendlistSlotsEnabled: true,
+	// 	};
+		
+	// 	Player.BCT = {};
+	// 	Player.BCT.version = BCT_VERSION;
+	// 	Player.BCT.bctSettings = {};
+	// 	Player.BCT.bctSharedSettings = {};
+		
+	// 	Player.BCT.splitOrgasmArousal = {};
+	// 	Player.BCT.splitOrgasmArousal.arousalProgress = 0;
+	// 	Player.BCT.splitOrgasmArousal.arousalZoom = false;
+	// 	Player.BCT.splitOrgasmArousal.ProgressTimer = 0;
+	// 	Player.BCT.splitOrgasmArousal.vibrationLevel = 0;
+	// 	Player.BCT.splitOrgasmArousal.changeTime = 0;
+
+	// 	if (reset == true) {
+	// 		Player.OnlineSettings.BCT = null;
+	// 		localStorage.removeItem(bctSettingsKey());
+	// 		bctBeepNotify("BCTweaks Reset", "All your settings have been changed to default.");
+
+	// 	}
+
+	// 	//if settings are not already loaded
+	// 	if (!Object.keys(Player.BCT.bctSettings).length > 0){
+	// 		let settings = JSON.parse(localStorage.getItem(bctSettingsKey()));
+	// 		const bctOnlineSettings = JSON.parse(
+	// 			LZString.decompressFromBase64(Player.OnlineSettings.BCT) || null
+	// 		);
+	// 		//if online settings are not an older version then local ones, use them instead
+	// 		if (
+	// 			bctOnlineSettings?.version >= settings?.version ||
+	// 			(typeof settings?.version === "undefined" &&
+	// 				typeof bctOnlineSettings?.version !== "undefined")
+	// 		) {
+	// 			settings = bctOnlineSettings;
+	// 		}
+	// 		if(!settings) settings = {};
+
+	// 		// Reorganize old settings into the new structure
+	// 		for (const setting in settings){
+	// 			if(settings[setting].value) settings[setting] = settings[setting].value;
+	// 		}
+
+	// 		//fill up missing settings with the default ones
+	// 		for (const setting in BCT_DEFAULT_SETTINGS) {
+	// 			if (!Object.prototype.hasOwnProperty.call(BCT_DEFAULT_SETTINGS, setting)) {
+	// 				continue;
+	// 			}
+	// 			if (!(setting in settings)) {
+	// 				settings[setting] = BCT_DEFAULT_SETTINGS[setting];
+	// 			}
+	// 		}
+
+	// 		// remove lovers and non friends from Best Friends
+	// 		for(const friend of settings.bestFriendsList) {
+	// 			if((!Player.FriendList.includes(friend))
+	// 			&& (Player.Lovership.some(lover => lover.MemberNumber == friend))) {
+	// 				settings.bestFriendsList = settings.bestFriendsList.filter(member => member !== friend);
+	// 			}
+	// 		}
+
+	// 		//if the version of the current settings is newer then the loaded ones, beep that bct got an update
+	// 		if (
+	// 			(typeof settings.version === "undefined" ||
+	// 			settings.version < BCT_Settings_Version) &&
+	// 			(reset != true)
+	// 		) {
+	// 			beepChangelog();
+	// 		}
+			
+	// 		settings.version = BCT_Settings_Version;
+	// 		Player.BCT.bctSettings = settings;
+
+	// 		//shared settings
+	// 		for(const setting in settings){
+	// 			if(SHARED_SETTINGS.indexOf(setting) >= 0){
+	// 				Player.BCT.bctSharedSettings[setting] = settings[setting];
+	// 			}
+	// 		}
+	// 		bctSettingsSave();
+	// 	}
+	// }
+	function copyToExtensionSetting(previousSettings) {
+		if (previousSettings == null) {
+			Player.ExtensionSettings.BCT = null;
+			return;
+		}
+		Player.ExtensionSettings.BCT = JSON.parse(JSON.stringify(previousSettings));
+	}
+
 	async function bctSettingsLoad(reset = false) {
 		await waitFor(() => !!Player?.AccountName);
 
@@ -157,17 +279,22 @@ async function runBCT(){
 		Player.BCT.splitOrgasmArousal.changeTime = 0;
 
 		if (reset == true) {
-			Player.OnlineSettings.BCT = null;
+			Player.ExtensionSettings.BCT = null;
 			localStorage.removeItem(bctSettingsKey());
 			bctBeepNotify("BCTweaks Reset", "All your settings have been changed to default.");
+		}
 
+		//copy things over from Player.OnlineSettings.BCT
+		if (typeof Player.OnlineSettings.BCT != undefined) {
+			copyToExtensionSetting(Player.OnlineSettings.BCT);
+			delete Player.OnlineSettings.BCT;
 		}
 
 		//if settings are not already loaded
 		if (!Object.keys(Player.BCT.bctSettings).length > 0){
 			let settings = JSON.parse(localStorage.getItem(bctSettingsKey()));
 			const bctOnlineSettings = JSON.parse(
-				LZString.decompressFromBase64(Player.OnlineSettings.BCT) || null
+				LZString.decompressFromBase64(Player.ExtensionSettings.BCT) || null
 			);
 			//if online settings are not an older version then local ones, use them instead
 			if (
@@ -223,16 +350,14 @@ async function runBCT(){
 			bctSettingsSave();
 		}
 	}
-	
+
 	function bctSettingsSave(share = true) {
 		//local settings
 		localStorage.setItem(bctSettingsKey(),JSON.stringify(Player.BCT.bctSettings));
 
 		//online settings
-		Player.OnlineSettings.BCT = LZString.compressToBase64(JSON.stringify(Player.BCT.bctSettings));
-		ServerAccountUpdate.QueueData({
-			OnlineSettings: Player.OnlineSettings,
-		});
+		Player.ExtensionSettings.BCT = LZString.compressToBase64(JSON.stringify(Player.BCT.bctSettings));
+		ServerPlayerExtensionSettingsSync("BCT");
 
 		//shared settings
 		for(setting in Player.BCT.bctSettings){
@@ -261,6 +386,43 @@ async function runBCT(){
 			ServerSend("ChatRoomChat", bctSettingsMessage);
 		}
 	}
+	// function bctSettingsSave(share = true) {
+	// 	//local settings
+	// 	localStorage.setItem(bctSettingsKey(),JSON.stringify(Player.BCT.bctSettings));
+
+	// 	//online settings
+	// 	Player.OnlineSettings.BCT = LZString.compressToBase64(JSON.stringify(Player.BCT.bctSettings));
+	// 	ServerAccountUpdate.QueueData({
+	// 		OnlineSettings: Player.OnlineSettings,
+	// 	});
+
+	// 	//shared settings
+	// 	for(setting in Player.BCT.bctSettings){
+	// 		if(SHARED_SETTINGS.indexOf(setting) >= 0){
+	// 			Player.BCT.bctSharedSettings[setting] = Player.BCT.bctSettings[setting];
+	// 		}
+	// 	}
+	// 	if(share === true) {
+	// 		//send new shared Settings
+	// 		const bctSettingsMessage = {
+	// 			Type: HIDDEN,
+	// 			Content: BCT_MSG,
+	// 			Sender: Player.MemberNumber,
+	// 			Dictionary: [
+	// 				{
+	// 					message: {
+	// 						type: BCT_MSG_SETTINGS_SYNC,
+	// 						bctVersion: BCT_VERSION,
+	// 						bctSettings: Player.BCT.bctSharedSettings,
+	// 						target: null,
+	// 					},
+	// 				},
+	// 			],
+	// 		};
+			
+	// 		ServerSend("ChatRoomChat", bctSettingsMessage);
+	// 	}
+	// }
 
 	async function beepChangelog() {
 		await waitFor(() => !!Player?.AccountName);
