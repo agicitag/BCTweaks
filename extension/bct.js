@@ -1,7 +1,8 @@
-const BCT_VERSION = "B.0.7.8";
-const BCT_Settings_Version = 20;
+const BCT_VERSION = "B.0.7.9";
+const BCT_Settings_Version = 21;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- BCTweaks Settings migrated to Extensions
+- BCTweaks Settings migrated to ExtensionsSettings
+- Fixed BF locks
 `
 
 const BCT_API = {
@@ -2712,38 +2713,6 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 		next(args);
 	});
 
-	// function updateBctIconUrl(button) {
-	// 	button.querySelectorAll("img.button-icon[src*='Best Friend']").forEach(img => {
-	// 		if (img.src.includes(BF_TIMER_LOCK_NAME.replaceAll(" ", "%20"))) {
-	// 			img.src = IMAGES.BEST_FRIEND_TIMER_LOCK;
-	// 		} else if (img.src.includes(BF_LOCK_NAME.replaceAll(" ", "%20"))) {
-	// 			img.src = IMAGES.BEST_FRIEND_LOCK;
-	// 		}
-	// 	});
-
-	// 	button.querySelectorAll(".button-icon-tooltip-li[style*='Best Friend']").forEach(elem => {
-	// 		if (elem.style.backgroundImage.includes(BF_TIMER_LOCK_NAME)) {
-	// 			elem.style.backgroundImage = `url(${IMAGES.BEST_FRIEND_TIMER_LOCK})`;
-	// 		} else if (elem.style.backgroundImage.includes(BF_LOCK_NAME)) {
-	// 			elem.style.backgroundImage = `url(${IMAGES.BEST_FRIEND_LOCK})`;
-	// 		}
-	// 	});
-	// }
-	// function DialogGetLockIcon(item, isWorn) {
-	// 	/** @type {InventoryIcon[]} */
-	// 	const icons = [];
-	// 	if (InventoryItemHasEffect(item, "Lock")) {
-	// 		if (item.Property && item.Property.LockedBy)
-	// 			icons.push(item.Property.LockedBy);
-	// 		else
-	// 			// One of the default-locked items
-	// 			icons.push(isWorn ? "Locked" : "Unlocked");
-	// 	} else if (item.Craft && item.Craft.Lock) {
-	// 		if (!isWorn || InventoryItemHasEffect(item, "Lock"))
-	// 			icons.push(item.Craft.Lock);
-	// 	}
-	// 	return icons;
-
 	modAPI.hookFunction("DialogGetLockIcon", 2, (args,next) => {
 		let icons = [];
 		let item = args[0];
@@ -2956,24 +2925,6 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 	}
 	// Handle inspect best friend lock: END
 
-	//Lock Interaction
-	// modAPI.hookFunction("CommonDynamicFunction",11,(args,next) => {
-	// 	const checkBFLock = args[0].includes(BF_LOCK_NAME)
-	// 	const checkBFTimerLock = args[0].includes(BF_TIMER_LOCK_NAME);
-	// 	if (checkBFLock) {
-	// 		if(args[0].includes("Draw")) InventoryItemMiscBestFriendPadlockDraw();
-	// 		if(args[0].includes("Click")) InventoryItemMiscBestFriendPadlockClick();
-	// 		if(args[0].includes("Load")) InventoryItemMiscBestFriendPadlockLoad();
-	// 	}
-	// 	else if (checkBFTimerLock) {
-	// 		if(args[0].includes("Draw")) InventoryItemMiscBestFriendTimerPadlockDraw();
-	// 		if(args[0].includes("Click")) InventoryItemMiscBestFriendTimerPadlockClick();
-	// 		if(args[0].includes("Load")) InventoryItemMiscBestFriendTimerPadlockLoad();
-	// 	}
-	// 	else {
-	// 		next(args);
-	// 	}
-	// });
 
 	modAPI.hookFunction("InventoryItemMiscHighSecurityPadlockLoad",11,(args,next) => {
 		if(DialogFocusSourceItem.Property.Name === BF_TIMER_LOCK_NAME) {
