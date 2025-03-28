@@ -2656,25 +2656,7 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 		CharacterRefresh(C);
 		ChatRoomCharacterItemUpdate(C, group);
 	}
-
-	// modAPI.hookFunction("DialogItemClick",2, (args,next) => {
-	// 	let ClickedCharBF = CharacterGetCurrent();
-	// 	let CharFocusGroup = undefined;
-	// 	let CurrentItemBF = undefined;
-	// 	let LockType = undefined;
-	// 	if((args[0].Asset.Name === BF_LOCK_NAME || args[0].Asset.Name === BF_TIMER_LOCK_NAME) && !DialogItemPermissionMode && !InventoryBlockedOrLimited(ClickedCharBF, args[0])) {
-	// 		// console.log("yes");
-	// 		LockType = args[0].Asset.Name;
-	// 		CharFocusGroup = ClickedCharBF.FocusGroup.Name
-	// 		CurrentItemBF = InventoryGet(ClickedCharBF, CharFocusGroup);
-	// 		args[0].Asset = AssetGet(Player.AssetFamily,"ItemMisc","HighSecurityPadlock");
-	// 	}
-	// 	next(args);
-	// 	if(!!CurrentItemBF) {
-	// 		if(LockType === BF_LOCK_NAME) convertHStoBF(ClickedCharBF,CurrentItemBF,CharFocusGroup);
-	// 		else if(LockType === BF_TIMER_LOCK_NAME) convertHStoBFTimer(ClickedCharBF,CurrentItemBF,CharFocusGroup);
-	// 	}
-	// })
+	
 	const parseIconReplaceBy = `if(icon === "Best Friend Padlock") {src = "${IMAGES.BEST_FRIEND_LOCK}"; }
 				else if(icon === "Best Friend Timer Padlock") {src = "${IMAGES.BEST_FRIEND_TIMER_LOCK}"; }
 				else {src = \`./Assets/Female3DCG/ItemMisc/Preview/\${icon}.png\`;}
@@ -2723,7 +2705,7 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 				return icons;
 			}
 		}
-		next(args);
+		return next(args);
 	})
 
 	modAPI.hookFunction("ElementButton.CreateForAsset", 0, (args, next) => {
