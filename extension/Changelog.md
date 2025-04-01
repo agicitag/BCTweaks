@@ -1,5 +1,10 @@
 # BCT Changelog
 
+## 0.6.9
+### Minor Change
+- Changed saved settings location
+- Fixed BF Locks to work again
+
 ## 0.6.8
 ### Minor Change:
 - Updated dialog item icon for locks
