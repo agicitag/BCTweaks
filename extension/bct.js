@@ -183,7 +183,7 @@ async function runBCT(){
 		}
 
 		//copy things over from Player.OnlineSettings.BCT
-		if (typeof Player.OnlineSettings.BCT != undefined) {
+		if (Player.OnlineSettings.BCT != undefined) {
 			copyToExtensionSetting(Player.OnlineSettings.BCT);
 			delete Player.OnlineSettings.BCT;
 		}
@@ -194,7 +194,6 @@ async function runBCT(){
 			const bctOnlineSettings = JSON.parse(
 				LZString.decompressFromBase64(Player.ExtensionSettings.BCT) || null
 			);
-			console.log(settings,bctOnlineSettings)
 			//if online settings are not an older version then local ones, use them instead
 			if (
 				bctOnlineSettings?.version >= settings?.version ||
@@ -234,7 +233,6 @@ async function runBCT(){
 				settings.version < BCT_Settings_Version) &&
 				(reset != true)
 			) {
-				console.log(settings.version);
 				beepChangelog();
 			}
 			
@@ -252,7 +250,6 @@ async function runBCT(){
 	}
 
 	function bctSettingsSave(share = true) {
-		console.log("BCT settings save")
 		//local settings
 		localStorage.setItem(bctSettingsKey(),JSON.stringify(Player.BCT.bctSettings));
 
