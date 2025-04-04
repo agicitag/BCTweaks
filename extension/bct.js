@@ -245,8 +245,8 @@ async function runBCT(){
 					Player.BCT.bctSharedSettings[setting] = settings[setting];
 				}
 			}
-			bctSettingsSave();
 		}
+		bctSettingsSave();
 	}
 
 	function bctSettingsSave(share = true) {
