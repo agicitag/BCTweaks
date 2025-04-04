@@ -183,7 +183,7 @@ async function runBCT(){
 		}
 
 		//copy things over from Player.OnlineSettings.BCT
-		if (typeof Player.OnlineSettings.BCT != undefined) {
+		if (Player.OnlineSettings.BCT != undefined) {
 			copyToExtensionSetting(Player.OnlineSettings.BCT);
 			delete Player.OnlineSettings.BCT;
 		}
@@ -245,8 +245,8 @@ async function runBCT(){
 					Player.BCT.bctSharedSettings[setting] = settings[setting];
 				}
 			}
-			bctSettingsSave();
 		}
+		bctSettingsSave();
 	}
 
 	function bctSettingsSave(share = true) {
