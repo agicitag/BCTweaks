@@ -1721,7 +1721,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 									if(!(Item.Asset.ArousalZone in restoreValues[ChatRoomCharacter[C].ID])){
 										restoreValues[ChatRoomCharacter[C].ID][Item.Asset.ArousalZone] = PreferenceGetZoneFactor(ChatRoomCharacter[C], Item.Asset.ArousalZone);
 										// here it gets disabled
-										PreferenceSetZoneFactor(ChatRoomCharacter[C], Item.Asset.ArousalZone, 1);
+										PreferenceSetArousalZone(ChatRoomCharacter[C], Item.Asset.ArousalZone, 1);
 									}
 								}
 
@@ -1769,7 +1769,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 						return char.ID == value;
 					});
 					for (zone in restoreValues[value]){
-						PreferenceSetZoneFactor(char, zone, restoreValues[value][zone]);
+						PreferenceSetArousalZone(char, zone, restoreValues[value][zone]);
 					}
 				}
 			}
