@@ -2672,7 +2672,7 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 		let CurrentItem = args[2];
 		let CharFocusGroup = undefined;
 		let LockType = undefined;
-		if((args[0].Asset.Name === BF_LOCK_NAME || args[0].Asset.Name === BF_TIMER_LOCK_NAME) && !DialogItemPermissionMode && !InventoryBlockedOrLimited(C, ClickedLock)) {
+		if((args[0].Asset.Name === BF_LOCK_NAME || args[0].Asset.Name === BF_TIMER_LOCK_NAME) && DialogMenuMode !== "permissions" && !InventoryBlockedOrLimited(C, ClickedLock)) {
 			// console.log("yes");
 			LockType = ClickedLock.Asset.Name;
 			CharFocusGroup = C.FocusGroup.Name
@@ -2743,7 +2743,7 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 	//DialogInventoryAdd to stop the item from being shown in the list
 	//args[0] = C, args[1] = item
 	modAPI.hookFunction("DialogInventoryAdd",11,(args,next) => {
-		if(!DialogItemPermissionMode) {
+		if(DialogMenuMode !== "permissions") {
 			let asset = args[1].Asset;
 			//dont add bf locks if (not self and asset = bflock and not a bct user and not a bf)
 			if((args[0].ID != 0) && (asset.Name === BF_LOCK_NAME || asset.Name === BF_TIMER_LOCK_NAME) && !(checkBForAbove(args[0]))) {
