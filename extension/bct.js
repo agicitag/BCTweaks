@@ -2396,7 +2396,8 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 				if (mode === "OnlineFriends" && document.getElementById("friend-list")) {
 					let listRoomSpaces = [];
 					// Set up the page layout
-					const newSlot = document.createElement("span");
+					const newSlot = document.createElement("th");
+					newSlot.style.setProperty("width", "10%");
 
 					let BCTweaksID = "BCTweaksSlots";
 					if (!document.getElementById(BCTweaksID) && document.getElementsByClassName("friend-list-row")) {
@@ -2405,22 +2406,17 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
                         newSlot.classList.add("mode-specific-content");
                         newSlot.classList.add("fl-online-friends-content");
 
-                        const getBeepEle = document.getElementsByClassName("friend-list-row");
+                        const getBeepEle = document.querySelector("tr");
                         newSlot.innerText = "Slots";
-                        getBeepEle[0].insertBefore(newSlot,getBeepEle[0].children[4]);
-                        getBeepEle[0].children[1].style.width = "16%";
-                        getBeepEle[0].children[2].style.width = "25%";
-						getBeepEle[0].children[3].style.width = "24%";
-						getBeepEle[0].children[3].style.textAlign = "right";
-                        getBeepEle[0].children[4].style.width = "13%";
-                    	getBeepEle[0].children[5].style.width = "16%";
-						getBeepEle[0].children[6].style.textAlign = "right";
+                        getBeepEle?.insertBefore(newSlot, getBeepEle.children[5]);
 					}
 					const friendTable = document.getElementById("friend-list");
 
 					for(const row of friendTable.children){
-						const slotSpan = document.createElement("span");
-                        slotSpan.classList.add("friend-list-column");
+						const slotSpan = document.createElement("td");
+						slotSpan.style.setProperty("user-select", "none");
+                        slotSpan.classList.add("friend-list-column", "bctweaks-slots");
+						slotSpan.style.setProperty("width", "10%");
 
 						// Initialize with old results
 						let foundRoom;
@@ -2441,11 +2437,7 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 						if(foundRoom) slotContent = document.createTextNode(foundRoom.MemberCount + "/" + foundRoom.MemberLimit);	
 						else slotContent = document.createTextNode("-");
 						slotSpan.appendChild(slotContent);
-						row.insertBefore(slotSpan, row.children[2].nextSibling);
-                        row.children[1].style.width = "15%";
-                        row.children[2].style.width = "26%";
-                        row.children[3].style.width = "13%";
-                        row.children[4].style.width = "15%";
+						row.insertBefore(slotSpan, row.children[4]);
 					}
 
 					let roomsWithFriends = [];
@@ -2512,8 +2504,13 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 								}
 							}
 						}
-						if(currentSlots > 0) row.children[3].innerText = currentSlots + "/" + maxSlots;
-						else row.children[3].innerText = "-";
+
+						const slotsElem = row.querySelector(".bctweaks-slots");
+						if (!slotsElem) {
+							continue;
+						}
+						if(currentSlots > 0) slotsElem.innerText = currentSlots + "/" + maxSlots;
+						else slotsElem.innerText = "-";
 					}
 					searchResult = {};
 					delayCount = 0;
