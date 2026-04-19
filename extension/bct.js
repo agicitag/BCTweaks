@@ -2220,7 +2220,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				&& (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) 
 				{
 					if (((data.Content === "ServerUpdateRoom") || (data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) 
-					&& (ChatRoomData.Private) && (ChatRoomData.Name !== CurrentChatRoomName)) {
+					&& ChatRoomData && (ChatRoomData.Private) && (ChatRoomData.Name !== CurrentChatRoomName)) {
 							CurrentChatRoomName = ChatRoomData.Name;
 							CheckAndSendRoomName();
 							SendRoomNameToMisc();
@@ -2262,7 +2262,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 								case BCT_BEEP_ACK_FRIEND_MSG:
 									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber)) {
 										if (( Player.BCT.bctSettings.bestFriendsRoomShare 
-										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private)) {
+										&& CurrentScreen === "ChatRoom" && ChatRoomData && ChatRoomData.Private)) {
 											SendRoomName(beep.MemberNumber);
 										}
 										SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_BFLOCK_ACCESS,true);
@@ -2274,7 +2274,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 										if ((Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
 											IsBestFriend(beep.MemberNumber);
 										} else if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber) && Player.BCT.bctSettings.bestFriendsRoomShare 
-										&& CurrentScreen === "ChatRoom" && ChatRoomData.Private) {
+										&& CurrentScreen === "ChatRoom" && ChatRoomData && ChatRoomData.Private) {
 											SendRoomName(beep.MemberNumber);
 										}
 									}
