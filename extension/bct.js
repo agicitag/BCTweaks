@@ -2298,60 +2298,61 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		}
 	}
 
-	function showRoomSlots(){
-		window.searchResult = {};
+	function showRoomSlots() {
+
+		const roomSearchQueue = [];
+		let isProcessingQueue = false;
+
+		async function processRoomSearchQueue() {
+			if (isProcessingQueue) return;
+
+			isProcessingQueue = true;
+
+			while (roomSearchQueue.length > 0) {
+				const job = roomSearchQueue.shift();
+				let retry = 3;
+				let success = false;
+				while (retry-- > 0) {
+					console.log(`BCTweaks: ${job.query}, retries left: ${retry}`);
+					const results = await ServerRoomSearch(
+						job.query,
+						{
+							Language: "",
+							Space: job.space,
+							Game: "",
+							FullRooms: true
+						}
+					);
+
+					if (results.err) {
+						console.log(`BCTweaks: ${job.query}, errored, sleeping`, results.error);
+						await sleep(2000);
+						continue;
+					} else {
+						console.log(`BCTweaks: ${job.query}, succeeded`);
+						success = true;
+						job.resolve(results.value);
+						break;
+					}
+				}
+				if (!success) {
+					job.resolve([]);
+				}
+			}
+
+			isProcessingQueue = false;
+		}
+
+		async function roomSearchQuery(query, space) {
+			return new Promise((resolve) => {
+
+				roomSearchQueue.push({ query, space, resolve });
+
+				processRoomSearchQueue();
+			});
+		}
+
 		let previouslyFoundRooms = [];
-		window.timeout = false;
-		window.bctRoomSlotCallGeneral = 0;
-		window.bctRoomSlotCallNarrow = 0;
-		let delayCount = 0;
-
-		function getRoomSlotsQueue(query,space) {
-			delayCount += 1;
-			setTimeout(getRoomSlots(query,space), delayCount * 2000);
-		}
-
-		function getRoomSlots(query = "", space = "X"){
-			const SearchData = {Query: query.toUpperCase().trim(), Language: "", Space: space, Game: "", FullRooms: true};
-			
-			if(query == ""){
-				searchResult["bct-" + space] = [];
-				bctRoomSlotCallGeneral += 1;
-			}
-			else{
-				searchResult[query] = [];
-				bctRoomSlotCallNarrow += 1;
-			}
-			timeout = false;
-			ServerSend("ChatRoomSearch", SearchData);
-		}
-
-// Only interested in the actual list when we ask for it
-const replaceResponseBegin = `
-if(bctRoomSlotCallGeneral > 0){
-	if (Array.isArray(data) && data.length > 0) {
-		searchResult["bct-" + data[0].Space] = data;
-	}
-	bctRoomSlotCallGeneral -= 1;
-	timeout = true;
-}
-else if(bctRoomSlotCallNarrow > 0) {
-	if (Array.isArray(data) && data.length > 0) {
-		searchResult[data[0].Name] = data;
-	}
-	bctRoomSlotCallNarrow -= 1;
-	timeout = true;
-}
-else {
-	ElementContent("InputSearch-datalist", "");`
-
-const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
-		
-		modAPI.patchFunction("ChatSearchResultResponse",{
-			'ElementContent("InputSearch-datalist", "");': replaceResponseBegin,
-			"ChatSearchAutoJoinRoom();": replaceResponseEnd,
-		})
-
 		// update previouslyFoundRooms only if room name is new or room slots has changed
 		function foundRoomUpdate(newRoom) {
 			let foundRoomIndex = previouslyFoundRooms.findIndex(function(room){
@@ -2442,9 +2443,8 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 
 					let roomsWithFriends = [];
 					for(const space of listRoomSpaces) {
-						getRoomSlotsQueue("",space);
-						await waitFor(() => searchResult["bct-" + space] && (searchResult["bct-" + space].length > 0 || timeout));
-						for(room of searchResult["bct-" + space]){
+						const results = await roomSearchQuery("", space);
+						for(let room of results){
 							if(room.Friends.length > 0) roomsWithFriends.push(room);
 						}
 					}
@@ -2478,15 +2478,9 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 							});
 							// If not, search for it
 							if(!foundRoom){
-								getRoomSlotsQueue(roomName,roomSpace);
-								await waitFor(() => !!searchResult[roomName] && (searchResult[roomName].length > 0 || timeout));
-								// Retry one more time
-								if(searchResult[roomName].length == 0) {
-									getRoomSlotsQueue(roomName,roomSpace);
-									await waitFor(() => !!searchResult[roomName] && (searchResult[roomName].length > 0 || timeout));
-								}
-								if(searchResult[roomName].length > 0){
-									foundRoom = searchResult[roomName][0];
+								const results = roomSearchQuery(roomName,roomSpace);
+								if(results[roomName].length > 0){
+									foundRoom = results[roomName][0];
 									privateRooms.push(foundRoom);
 									foundRoomUpdate(foundRoom);
 								}
@@ -2512,8 +2506,6 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 						if(currentSlots > 0) slotsElem.innerText = currentSlots + "/" + maxSlots;
 						else slotsElem.innerText = "-";
 					}
-					searchResult = {};
-					delayCount = 0;
 				}
 			}
 		});
