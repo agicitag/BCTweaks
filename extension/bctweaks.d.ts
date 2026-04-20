@@ -102,3 +102,7 @@ interface BCT_API {
     getOrgasmProgressMultiplier(Character: C): number;
     tailWag(): void;
 };
+
+interface Window {
+    BCT_API: BCT_API;
+}
