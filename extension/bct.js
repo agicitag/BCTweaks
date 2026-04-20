@@ -2479,7 +2479,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							// If not, search for it
 							if(!foundRoom){
 								const results = roomSearchQuery(roomName,roomSpace);
-								if(results[roomName].length > 0){
+								if(!!results[roomName] && results[roomName].length > 0){
 									foundRoom = results[roomName][0];
 									privateRooms.push(foundRoom);
 									foundRoomUpdate(foundRoom);
