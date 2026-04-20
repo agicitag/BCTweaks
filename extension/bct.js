@@ -5,6 +5,8 @@ const BCT_CHANGELOG = `${BCT_VERSION}
 - Fixed BF locks
 `
 
+/** @type {BCT_API} */
+// @ts-expect-error completed later
 const BCT_API = {
 	HintForeColor : "Black",
 	HintBackColor : "Yellow",
@@ -28,7 +30,8 @@ async function runBCT(){
 
 	// Bondage Club Mod Development Kit (1.2.0)
 	// For more info see: https://github.com/Jomshir98/bondage-club-mod-sdk
-	/** @type {ModSDKGlobalAPI} */
+	/** @type {import("bondage-club-mod-sdk").ModSDKGlobalAPI} */
+	// @ts-expect-error
 	var bcModSdk=function(){"use strict";const o="1.2.0";function e(o){alert("Mod ERROR:\n"+o);const e=new Error(o);throw console.error(e),e}const t=new TextEncoder;function n(o){return!!o&&"object"==typeof o&&!Array.isArray(o)}function r(o){const e=new Set;return o.filter((o=>!e.has(o)&&e.add(o)))}const i=new Map,a=new Set;function c(o){a.has(o)||(a.add(o),console.warn(o))}function s(o){const e=[],t=new Map,n=new Set;for(const r of f.values()){const i=r.patching.get(o.name);if(i){e.push(...i.hooks);for(const[e,a]of i.patches.entries())t.has(e)&&t.get(e)!==a&&c(`ModSDK: Mod '${r.name}' is patching function ${o.name} with same pattern that is already applied by different mod, but with different pattern:\nPattern:\n${e}\nPatch1:\n${t.get(e)||""}\nPatch2:\n${a}`),t.set(e,a),n.add(r.name)}}e.sort(((o,e)=>e.priority-o.priority));const r=function(o,e){if(0===e.size)return o;let t=o.toString().replaceAll("\r\n","\n");for(const[n,r]of e.entries())t.includes(n)||c(`ModSDK: Patching ${o.name}: Patch ${n} not applied`),t=t.replaceAll(n,r);return(0,eval)(`(${t})`)}(o.original,t);let i=function(e){var t,i;const a=null===(i=(t=m.errorReporterHooks).hookChainExit)||void 0===i?void 0:i.call(t,o.name,n),c=r.apply(this,e);return null==a||a(),c};for(let t=e.length-1;t>=0;t--){const n=e[t],r=i;i=function(e){var t,i;const a=null===(i=(t=m.errorReporterHooks).hookEnter)||void 0===i?void 0:i.call(t,o.name,n.mod),c=n.hook.apply(this,[e,o=>{if(1!==arguments.length||!Array.isArray(e))throw new Error(`Mod ${n.mod} failed to call next hook: Expected args to be array, got ${typeof o}`);return r.call(this,o)}]);return null==a||a(),c}}return{hooks:e,patches:t,patchesSources:n,enter:i,final:r}}function l(o,e=!1){let r=i.get(o);if(r)e&&(r.precomputed=s(r));else{let e=window;const a=o.split(".");for(let t=0;t<a.length-1;t++)if(e=e[a[t]],!n(e))throw new Error(`ModSDK: Function ${o} to be patched not found; ${a.slice(0,t+1).join(".")} is not object`);const c=e[a[a.length-1]];if("function"!=typeof c)throw new Error(`ModSDK: Function ${o} to be patched not found`);const l=function(o){let e=-1;for(const n of t.encode(o)){let o=255&(e^n);for(let e=0;e<8;e++)o=1&o?-306674912^o>>>1:o>>>1;e=e>>>8^o}return((-1^e)>>>0).toString(16).padStart(8,"0").toUpperCase()}(c.toString().replaceAll("\r\n","\n")),d={name:o,original:c,originalHash:l};r=Object.assign(Object.assign({},d),{precomputed:s(d),router:()=>{},context:e,contextProperty:a[a.length-1]}),r.router=function(o){return function(...e){return o.precomputed.enter.apply(this,[e])}}(r),i.set(o,r),e[r.contextProperty]=r.router}return r}function d(){for(const o of i.values())o.precomputed=s(o)}function p(){const o=new Map;for(const[e,t]of i)o.set(e,{name:e,original:t.original,originalHash:t.originalHash,sdkEntrypoint:t.router,currentEntrypoint:t.context[t.contextProperty],hookedByMods:r(t.precomputed.hooks.map((o=>o.mod))),patchedByMods:Array.from(t.precomputed.patchesSources)});return o}const f=new Map;function u(o){f.get(o.name)!==o&&e(`Failed to unload mod '${o.name}': Not registered`),f.delete(o.name),o.loaded=!1,d()}function g(o,t){o&&"object"==typeof o||e("Failed to register mod: Expected info object, got "+typeof o),"string"==typeof o.name&&o.name||e("Failed to register mod: Expected name to be non-empty string, got "+typeof o.name);let r=`'${o.name}'`;"string"==typeof o.fullName&&o.fullName||e(`Failed to register mod ${r}: Expected fullName to be non-empty string, got ${typeof o.fullName}`),r=`'${o.fullName} (${o.name})'`,"string"!=typeof o.version&&e(`Failed to register mod ${r}: Expected version to be string, got ${typeof o.version}`),o.repository||(o.repository=void 0),void 0!==o.repository&&"string"!=typeof o.repository&&e(`Failed to register mod ${r}: Expected repository to be undefined or string, got ${typeof o.version}`),null==t&&(t={}),t&&"object"==typeof t||e(`Failed to register mod ${r}: Expected options to be undefined or object, got ${typeof t}`);const i=!0===t.allowReplace,a=f.get(o.name);a&&(a.allowReplace&&i||e(`Refusing to load mod ${r}: it is already loaded and doesn't allow being replaced.\nWas the mod loaded multiple times?`),u(a));const c=o=>{let e=g.patching.get(o.name);return e||(e={hooks:[],patches:new Map},g.patching.set(o.name,e)),e},s=(o,t)=>(...n)=>{var i,a;const c=null===(a=(i=m.errorReporterHooks).apiEndpointEnter)||void 0===a?void 0:a.call(i,o,g.name);g.loaded||e(`Mod ${r} attempted to call SDK function after being unloaded`);const s=t(...n);return null==c||c(),s},p={unload:s("unload",(()=>u(g))),hookFunction:s("hookFunction",((o,t,n)=>{"string"==typeof o&&o||e(`Mod ${r} failed to patch a function: Expected function name string, got ${typeof o}`);const i=l(o),a=c(i);"number"!=typeof t&&e(`Mod ${r} failed to hook function '${o}': Expected priority number, got ${typeof t}`),"function"!=typeof n&&e(`Mod ${r} failed to hook function '${o}': Expected hook function, got ${typeof n}`);const s={mod:g.name,priority:t,hook:n};return a.hooks.push(s),d(),()=>{const o=a.hooks.indexOf(s);o>=0&&(a.hooks.splice(o,1),d())}})),patchFunction:s("patchFunction",((o,t)=>{"string"==typeof o&&o||e(`Mod ${r} failed to patch a function: Expected function name string, got ${typeof o}`);const i=l(o),a=c(i);n(t)||e(`Mod ${r} failed to patch function '${o}': Expected patches object, got ${typeof t}`);for(const[n,i]of Object.entries(t))"string"==typeof i?a.patches.set(n,i):null===i?a.patches.delete(n):e(`Mod ${r} failed to patch function '${o}': Invalid format of patch '${n}'`);d()})),removePatches:s("removePatches",(o=>{"string"==typeof o&&o||e(`Mod ${r} failed to patch a function: Expected function name string, got ${typeof o}`);const t=l(o);c(t).patches.clear(),d()})),callOriginal:s("callOriginal",((o,t,n)=>{"string"==typeof o&&o||e(`Mod ${r} failed to call a function: Expected function name string, got ${typeof o}`);const i=l(o);return Array.isArray(t)||e(`Mod ${r} failed to call a function: Expected args array, got ${typeof t}`),i.original.apply(null!=n?n:globalThis,t)})),getOriginalHash:s("getOriginalHash",(o=>{"string"==typeof o&&o||e(`Mod ${r} failed to get hash: Expected function name string, got ${typeof o}`);return l(o).originalHash}))},g={name:o.name,fullName:o.fullName,version:o.version,repository:o.repository,allowReplace:i,api:p,loaded:!0,patching:new Map};return f.set(o.name,g),Object.freeze(p)}function h(){const o=[];for(const e of f.values())o.push({name:e.name,fullName:e.fullName,version:e.version,repository:e.repository});return o}let m;const y=void 0===window.bcModSdk?window.bcModSdk=function(){const e={version:o,apiVersion:1,registerMod:g,getModsInfo:h,getPatchingInfo:p,errorReporterHooks:Object.seal({apiEndpointEnter:null,hookEnter:null,hookChainExit:null})};return m=e,Object.freeze(e)}():(n(window.bcModSdk)||e("Failed to init Mod SDK: Name already in use"),1!==window.bcModSdk.apiVersion&&e(`Failed to init Mod SDK: Different version already loaded ('1.2.0' vs '${window.bcModSdk.version}')`),window.bcModSdk.version!==o&&alert(`Mod SDK warning: Loading different but compatible versions ('1.2.0' vs '${window.bcModSdk.version}')\nOne of mods you are using is using an old version of SDK. It will work for now but please inform author to update`),window.bcModSdk);return"undefined"!=typeof exports&&(Object.defineProperty(exports,"__esModule",{value:!0}),exports.default=y),y}();
 
 
@@ -73,7 +76,13 @@ async function runBCT(){
 
 	const bctSettingsKey = () => `bctSettings.${Player?.AccountName}`;
 
+	/** @type {[type: keyof ServerToClientEvents, cb: (data: any) => void][]} */
 	const listeners = [];
+	/**
+	 *
+	 * @param {keyof ServerToClientEvents} event
+	 * @param {(data: any) => void} listener
+	 */
 	function registerSocketListener(event, listener) {
 		if (!listeners.some((l) => l[1] === listener)) {
 			listeners.push([event, listener]);
@@ -87,7 +96,7 @@ async function runBCT(){
 		parseMessage(data);
 	});
 
-	const SHARED_SETTINGS = [
+	const SHARED_SETTINGS = new Set([
 		"splitOrgasmArousal",
 		"arousalProgressMultiplier",
 		"arousalDecayMultiplier",
@@ -95,7 +104,7 @@ async function runBCT(){
 		"orgasmDecayMultiplier",
 		"arousalAffectsOrgasmProgress",
 		"bestFriendsEnabled",
-	];
+	]);
 
 	let addBFDialog = {Function: "ChatRoomListManage(\"Add\", \"BestFriend\")",
 						Option: "(Add as Best Friend.)",
@@ -121,6 +130,10 @@ async function runBCT(){
 	//send Initilization when started when already in a chatroom
 	sendBctInitilization(true);
 
+	/**
+	 * @param {any} previousSettings
+	 * @returns
+	 */
 	function copyToExtensionSetting(previousSettings) {
 		if (previousSettings == null) {
 			Player.ExtensionSettings.BCT = null;
@@ -164,17 +177,23 @@ async function runBCT(){
 			friendlistSlotsEnabled: true,
 		};
 
-		Player.BCT = {};
-		Player.BCT.version = BCT_VERSION;
-		Player.BCT.bctSettings = {};
-		Player.BCT.bctSharedSettings = {};
+		/** @type {BCTConfiguration} */
+		const config = {
+			version: BCT_VERSION,
+			// @ts-expect-error not sure what goes in there yet
+			bctSettings: {},
+			// @ts-expect-error not sure what goes in there yet
+			bctSharedSettings: {},
+			splitOrgasmArousal: {
+				arousalProgress: 0,
+				arousalZoom: false,
+				ProgressTimer: 0,
+				vibrationLevel: 0,
+				changeTime: 0,
+			}
+		}
 
-		Player.BCT.splitOrgasmArousal = {};
-		Player.BCT.splitOrgasmArousal.arousalProgress = 0;
-		Player.BCT.splitOrgasmArousal.arousalZoom = false;
-		Player.BCT.splitOrgasmArousal.ProgressTimer = 0;
-		Player.BCT.splitOrgasmArousal.vibrationLevel = 0;
-		Player.BCT.splitOrgasmArousal.changeTime = 0;
+		Player.BCT = config;
 
 		if (reset == true) {
 			Player.ExtensionSettings.BCT = null;
@@ -183,17 +202,21 @@ async function runBCT(){
 		}
 
 		//copy things over from Player.OnlineSettings.BCT
+		// @ts-expect-error backward compat
 		if (Player.OnlineSettings.BCT != undefined) {
+			// @ts-expect-error backward compat
 			copyToExtensionSetting(Player.OnlineSettings.BCT);
+			// @ts-expect-error backward compat
 			delete Player.OnlineSettings.BCT;
 		}
 
 		//if settings are not already loaded
-		if (!Object.keys(Player.BCT.bctSettings).length > 0){
-			let settings = JSON.parse(localStorage.getItem(bctSettingsKey()));
-			const bctOnlineSettings = JSON.parse(
-				LZString.decompressFromBase64(Player.ExtensionSettings.BCT) || null
-			);
+		if (!(Object.keys(Player.BCT.bctSettings).length > 0)) {
+
+			let settings = /** @type {BCTSettings} */ (JSON.parse(localStorage.getItem(bctSettingsKey()) ?? "{}"));
+			const bctOnlineSettings = /** @type {BCTSettings} */ (JSON.parse(
+				LZString.decompressFromBase64(Player.ExtensionSettings.BCT ?? "") ?? "{}"
+			));
 			//if online settings are not an older version then local ones, use them instead
 			if (
 				bctOnlineSettings?.version >= settings?.version ||
@@ -202,10 +225,11 @@ async function runBCT(){
 			) {
 				settings = bctOnlineSettings;
 			}
+			// @ts-expect-error
 			if(!settings) settings = {};
 
 			// Reorganize old settings into the new structure
-			for (const setting in settings){
+			for (const setting in settings) {
 				if(settings[setting].value) settings[setting] = settings[setting].value;
 			}
 
@@ -241,7 +265,7 @@ async function runBCT(){
 
 			//shared settings
 			for(const setting in settings){
-				if(SHARED_SETTINGS.indexOf(setting) >= 0){
+				if (SHARED_SETTINGS.has(setting)) {
 					Player.BCT.bctSharedSettings[setting] = settings[setting];
 				}
 			}
@@ -258,8 +282,8 @@ async function runBCT(){
 		ServerPlayerExtensionSettingsSync("BCT");
 
 		//shared settings
-		for(setting in Player.BCT.bctSettings){
-			if(SHARED_SETTINGS.indexOf(setting) >= 0){
+		for (let setting in Player.BCT.bctSettings){
+			if (SHARED_SETTINGS.has(setting)) {
 				Player.BCT.bctSharedSettings[setting] = Player.BCT.bctSettings[setting];
 			}
 		}
@@ -281,6 +305,7 @@ async function runBCT(){
 				],
 			};
 
+			// @ts-expect-error mod-specific message
 			ServerSend("ChatRoomChat", bctSettingsMessage);
 		}
 	}
@@ -293,6 +318,9 @@ async function runBCT(){
 		if(Player.BCT.bctSettings.showChangelog) bctChatNotify(`BCTweaks got updated. Changelog (/bctweaks-changelog):\n${BCT_CHANGELOG}`);
 	}
 
+	/**
+	 * @param {string | string[] | Node | Node[]} node
+	 */
 	function bctChatNotify(node) {
 		const div = document.createElement("div");
 		div.setAttribute("class", "ChatMessage ChatMessageChat");
@@ -311,6 +339,10 @@ async function runBCT(){
 		ChatRoomAppendChat(div);
 	};
 
+	/**
+	 * @param {string} title
+	 * @param {string} text
+	 */
 	function bctBeepNotify (title, text){
 		modAPI.callOriginal("ServerAccountBeep", [
 			{
@@ -320,11 +352,16 @@ async function runBCT(){
 				Private: true,
 				Message: text,
 				ChatRoomSpace: "",
+				BeepType: "",
 			},
 		]);
 	}
 
-	function sendBctInitilization(requestReply){
+	/**
+	 *
+	 * @param {boolean} requestReply
+	 */
+	function sendBctInitilization(requestReply) {
 		const bctInitilizationMessage = {
 			Type: HIDDEN,
 			Content: BCT_MSG,
@@ -344,9 +381,15 @@ async function runBCT(){
 			],
 		};
 
+		// @ts-expect-error mod-specific message
 		ServerSend("ChatRoomChat", bctInitilizationMessage);
 	}
 
+	/**
+	 *
+	 * @param {ServerChatRoomMessage} data
+	 * @returns
+	 */
 	async function parseMessage(data) {
 		await waitFor(() => ServerSocket && ServerIsConnected);
 		if (data.Type === HIDDEN && data.Content === BCT_MSG) {
@@ -355,14 +398,18 @@ async function runBCT(){
 				return;
 			}
 			if(sender.ID != 0){
+				// @ts-expect-error mod-specific message
 				if (data.Dictionary[0].message) {
+					// @ts-expect-error mod-specific message
 					let message = data.Dictionary[0].message;
 					try {
 						switch(message.type){
 							case BCT_MSG_INITILIZATION_SYNC:
+								// @ts-expect-error
 								sender.BCT = {};
 								sender.BCT.version = message.bctVersion;
 								sender.BCT.bctSettings = message.bctSettings;
+								// @ts-expect-error
 								sender.BCT.splitOrgasmArousal = {};
 								sender.BCT.splitOrgasmArousal.arousalProgress = message.bctArousalProgress;
 								sender.BCT.splitOrgasmArousal.ProgressTimer = message.bctProgressTimer;
@@ -401,7 +448,12 @@ async function runBCT(){
 		}
 	}
 
-
+	/**
+	 *
+	 * @param {() => boolean} func
+	 * @param {() => boolean} cancelFunc
+	 * @returns
+	 */
 	async function waitFor(func, cancelFunc = () => false) {
 		while (!func()) {
 			if (cancelFunc()) {
@@ -411,17 +463,23 @@ async function runBCT(){
 		}
 		return true;
 	}
+
+	/**
+	 * @param {number} ms
+	 * @returns {Promise<void>}
+	 */
 	function sleep(ms) {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
 	async function commands() {
 		await waitFor(() => !!Commands);
+		/** @type {ICommand[]} */
 		const BCT_COMMANDS = [
 			{
 				Tag:"send-money",
 				Description:"[MemberNumber] [Amount] Sends the target player the specified amount of money.",
-				Action:(x,y,args) => {
+				Action: (x, y, args) => {
 					let pattern = /^\d+$/;
 					let MemberNumber;
 					let Amount;
@@ -477,13 +535,15 @@ async function runBCT(){
 		};
 		const MENU_ELEMENT_X_OFFSET = 1050;
 
+		/** @type {Record<string, any[]>} */
 		let menuElements = {};
-		for (category of bctSettingsCategories){
+		for (let category of bctSettingsCategories){
 			menuElements[category] = [];
 		}
 
 		let settingsHint = "";
 		let currentHint = 0;
+		let currentPageNumber = 0;
 
 		let BCTPreferenceSubscreen = "BCTSettings";
 
@@ -552,6 +612,14 @@ async function runBCT(){
 
 		}
 
+		/**
+		 * @param {number} Left
+		 * @param {number} Top
+		 * @param {number} Width
+		 * @param {number} Height
+		 * @param {string[]} List
+		 * @param {number} Index
+		 */
 		function BCTPreferenceDrawBackNextButton(Left, Top, Width, Height, List, Index) {
 			DrawBackNextButton(Left, Top, Width, Height, List[Index], "White", "",
 				() => List[PreferenceGetPreviousIndex(List, Index)],
@@ -568,6 +636,17 @@ async function runBCT(){
 			return yPos;
 		}
 
+		/**
+		 * @param {number} width
+		 * @param {number} height
+		 * @param {string} text
+		 * @param {*} setting
+		 * @param {string} hint
+		 * @param {string} grayedOutReference
+		 * @param {number} xModifier
+		 * @param {number} yModifier
+		 * @param {string} elementText
+		 */
 		function addMenuCheckbox(width, height, text, setting, hint, grayedOutReference = "false", xModifier = 0, yModifier = 0, elementText = ""){
 			menuElements[BCTPreferenceSubscreen].push({
 				type: "Checkbox",
@@ -655,7 +734,7 @@ async function runBCT(){
 			}
 
 			let currentElement;
-			for (i = 0; i < menuElements[BCTPreferenceSubscreen].length; i++){
+			for (let i = 0; i < menuElements[BCTPreferenceSubscreen].length; i++){
 				currentElement = menuElements[BCTPreferenceSubscreen][i];
 				MainCanvas.textAlign = "left";
 				let textColor = "Black";
@@ -720,7 +799,7 @@ async function runBCT(){
 			}
 			let currentElement;
 			let foundElement = false;
-			for (i = 0; i < menuElements[BCTPreferenceSubscreen].length; i++){
+			for (let i = 0; i < menuElements[BCTPreferenceSubscreen].length; i++){
 				currentElement = menuElements[BCTPreferenceSubscreen][i];
 				switch (currentElement.type) {
 					case "Checkbox":
@@ -768,6 +847,7 @@ async function runBCT(){
 			currentHint = 0;
 			PreferenceExtensionsCurrent = {
 				Identifier: "BCTSettings",
+				ButtonText: "BCTSettings",
 				click: PreferenceSubscreenBCTSettingsClick,
 				run: PreferenceSubscreenBCTSettingsRun,
 				exit: PreferenceSubscreenBCTSettingsExit,
@@ -777,11 +857,11 @@ async function runBCT(){
 		}
 
 
-		PreferenceSubscreenBCTSettingsLoad = function () {
+		function PreferenceSubscreenBCTSettingsLoad() {
 			currentPageNumber = 0;
 		};
 
-		PreferenceSubscreenBCTSettingsRun = function () {
+		function PreferenceSubscreenBCTSettingsRun() {
 
 			// Draw the player & controls
 			DrawCharacter(Player, 50, 50, 0.9);
@@ -809,26 +889,27 @@ async function runBCT(){
 		};
 
 		function resetSettings() {
-				CommonDynamicFunction("PreferenceSubscreenResetLoad()");
+				PreferenceSubscreenResetLoad();
 				PreferenceExtensionsCurrent = {
 					Identifier: "Reset",
-					click: () => CommonCallFunctionByName(`PreferenceSubscreenResetClick`),
-					run: () => CommonCallFunctionByName(`PreferenceSubscreenResetRun`),
-					exit: () => CommonCallFunctionByName(`PreferenceSubscreenResetExit`),
-					load: () => CommonCallFunctionByName(`PreferenceSubscreenResetLoad`),
+					ButtonText: "Reset",
+					click: PreferenceSubscreenResetClick,
+					run: PreferenceSubscreenResetRun,
+					exit: PreferenceSubscreenResetExit,
+					load: PreferenceSubscreenResetLoad,
 				}
 				BCTPreferenceSubscreen = "Reset";
 				PreferencePageCurrent = 1;
 		}
-		PreferenceSubscreenResetLoad = function () {
+		function PreferenceSubscreenResetLoad() {
 			currentPageNumber = 1;
 		}
-		PreferenceSubscreenResetRun = function () {
+		function PreferenceSubscreenResetRun() {
 			DrawTextWrapGood("Do you want to reset all settings to Defaults?",1000, 200, 800, 100, BCT_API.HintForeColor);
 			DrawButton(400, 650, 300, 100, "Confirm", "Red","","Confirm Reset and Exit");
 			DrawButton(1300, 650, 300, 100, "Cancel","White","","Cancel Reset");
 		}
-		PreferenceSubscreenResetClick = function () {
+		function PreferenceSubscreenResetClick() {
 			if (MouseIn(400, 650, 300, 100)) {
 				bctSettingsLoad(true);
 				defaultExit();
@@ -837,11 +918,12 @@ async function runBCT(){
 				defaultExit();
 			}
 		}
-		PreferenceSubscreenResetExit = function () {
+		function PreferenceSubscreenResetExit() {
 			defaultExit();
+			return true;
 		}
 
-		PreferenceSubscreenBCTSettingsClick = function () {
+		function PreferenceSubscreenBCTSettingsClick() {
 
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)) PreferenceSubscreenBCTSettingsExit();
@@ -855,7 +937,7 @@ async function runBCT(){
 					CommonDynamicFunction("PreferenceSubscreen" + bctSettingsCategories[A] + "Load()");
 					PreferenceExtensionsCurrent = {
 						Identifier: bctSettingsCategories[A],
-						// ButtonText: bctSettingCategoryLabels[bctSettingsCategories[A]],
+						ButtonText: bctSettingCategoryLabels[bctSettingsCategories[A]],
 						click: () => CommonCallFunctionByName(`PreferenceSubscreen${bctSettingsCategories[A]}Click`),
 						run: () => CommonCallFunctionByName(`PreferenceSubscreen${bctSettingsCategories[A]}Run`),
 						exit: () => CommonCallFunctionByName(`PreferenceSubscreen${bctSettingsCategories[A]}Exit`),
@@ -869,14 +951,15 @@ async function runBCT(){
 			}
 		}
 
-		PreferenceSubscreenBCTSettingsExit = function () {
+		function PreferenceSubscreenBCTSettingsExit() {
 			bctSettingsSave();
 			BCTPreferenceSubscreen = "";
 			PreferenceMessage = "";
 			PreferenceSubscreenExtensionsClear();
+			return true;
 		};
 
-		PreferenceSubscreenBCTArousalLoad = function () {
+		window.PreferenceSubscreenBCTArousalLoad = function() {
 			BCTPreferenceSubscreen = "BCTArousal";
 			addMenuInput(200, "Arousal Progress Multiplier:", "arousalProgressMultiplier", "InputArousalProgressMultiplier",
 			"Sets a multiplier for the arousal progress. E.g. if an activity would normally result in a progress of 10%, " +
@@ -917,25 +1000,25 @@ async function runBCT(){
 			);
 		}
 
-		PreferenceSubscreenBCTArousalRun = function () {
+		window.PreferenceSubscreenBCTArousalRun = function () {
 			drawMenuElements();
 		}
 
-		PreferenceSubscreenBCTArousalClick = function () {
+		window.PreferenceSubscreenBCTArousalClick = function () {
 			handleMenuClicks();
 		}
 
-		PreferenceSubscreenBCTArousalExit = function () {
+		window.PreferenceSubscreenBCTArousalExit = function () {
 			if(CommonIsNumeric(ElementValue("InputArousalProgressMultiplier"))
 				&& CommonIsNumeric(ElementValue("InputOrgasmProgressMultiplier"))
 				&& CommonIsNumeric(ElementValue("InputArousalDecayMultiplier"))
 				&& CommonIsNumeric(ElementValue("InputAutomaticErectionThreshold"))
 				&& CommonIsNumeric(ElementValue("InputOrgasmDecayMultiplier"))){
-				Player.BCT.bctSettings.arousalProgressMultiplier = ElementValue("InputArousalProgressMultiplier");
-				Player.BCT.bctSettings.orgasmProgressMultiplier = ElementValue("InputOrgasmProgressMultiplier");
-				Player.BCT.bctSettings.arousalDecayMultiplier = ElementValue("InputArousalDecayMultiplier");
-				Player.BCT.bctSettings.automaticErectionThreshold = ElementValue("InputAutomaticErectionThreshold");
-				Player.BCT.bctSettings.orgasmDecayMultiplier = ElementValue("InputOrgasmDecayMultiplier");
+				Player.BCT.bctSettings.arousalProgressMultiplier = Number(ElementValue("InputArousalProgressMultiplier"));
+				Player.BCT.bctSettings.orgasmProgressMultiplier = Number(ElementValue("InputOrgasmProgressMultiplier"));
+				Player.BCT.bctSettings.arousalDecayMultiplier = Number(ElementValue("InputArousalDecayMultiplier"));
+				Player.BCT.bctSettings.automaticErectionThreshold = Number(ElementValue("InputAutomaticErectionThreshold"));
+				Player.BCT.bctSettings.orgasmDecayMultiplier = Number(ElementValue("InputOrgasmDecayMultiplier"));
 				ElementRemove("InputArousalProgressMultiplier");
 				ElementRemove("InputOrgasmProgressMultiplier");
 				ElementRemove("InputArousalDecayMultiplier");
@@ -948,7 +1031,7 @@ async function runBCT(){
 			// Unzoom all arousal bars on changing to setting the arousal bar to "Bottom", to prevent both bars being zoomed
 			// and thus none of the bars being shown
 			if (Player.BCT.bctSettings.arousalbarLocation === "Bottom"){
-				for (char of Character){
+				for (let char of Character){
 					if(char.BCT?.splitOrgasmArousal?.arousalZoom) char.BCT.splitOrgasmArousal.arousalZoom = false;
 				}
 			}
@@ -957,7 +1040,7 @@ async function runBCT(){
 		let tailPreviewMain;
 		let tailPreviewSecondary;
 
-		PreferenceSubscreenBCTTailwagLoad = function () {
+		window.PreferenceSubscreenBCTTailwagLoad = function () {
 			BCTPreferenceSubscreen = "BCTTailwag";
 			addMenuCheckbox(64, 64, "Enable Tail Wagging:", "tailWaggingEnable",
 			"Enables tail wagging upon sending emotes like \"*wags her tail\" or \"*'s tail is wagging\"."
@@ -1006,7 +1089,7 @@ async function runBCT(){
 			CharacterRefresh(tailPreviewSecondary);
 		}
 
-		PreferenceSubscreenBCTTailwagRun = function () {
+		window.PreferenceSubscreenBCTTailwagRun = function () {
 			drawMenuElements();
 			MainCanvas.textAlign = "center";
 			DrawTextWrapGood("Main Tail:", 550, 750, 100, 80, BCT_API.HintForeColor);
@@ -1015,11 +1098,11 @@ async function runBCT(){
 			DrawCharacter(tailPreviewSecondary, 1100, 600, 0.5, false);
 		}
 
-		PreferenceSubscreenBCTTailwagClick = function () {
+		window.PreferenceSubscreenBCTTailwagClick = function () {
 			handleMenuClicks();
 		}
 
-		PreferenceSubscreenBCTTailwagExit = function () {
+		window.PreferenceSubscreenBCTTailwagExit = function () {
 			if(CommonIsNumeric(ElementValue("InputTailWaggingCount"))
 				&& CommonIsNumeric(ElementValue("InputTailWaggingDelay"))){
 				Player.BCT.bctSettings.tailWaggingCount = parseInt(ElementValue("InputTailWaggingCount"));
@@ -1031,7 +1114,7 @@ async function runBCT(){
 			else PreferenceMessage = "Put a valid number"
 		};
 
-		PreferenceSubscreenBCTTweaksLoad = function () {
+		window.PreferenceSubscreenBCTTweaksLoad = function () {
 			BCTPreferenceSubscreen = "BCTTweaks";
 			addMenuCheckbox(64, 64, "Show BCT Icon on hover: ", "bctIconOnlyShowOnHover",
 			"BCTweaks overlay icon (the ones that show above a character in chatroom) would only show when the mouse hovers above the character. Otherwise it will be hidden."
@@ -1048,19 +1131,19 @@ async function runBCT(){
 
 		}
 
-		PreferenceSubscreenBCTTweaksRun = function () {
+		window.PreferenceSubscreenBCTTweaksRun = function () {
 			drawMenuElements();
 		}
 
-		PreferenceSubscreenBCTTweaksClick = function () {
+		window.PreferenceSubscreenBCTTweaksClick = function () {
 			handleMenuClicks();
 		}
 
-		PreferenceSubscreenBCTTweaksExit = function () {
+		window.PreferenceSubscreenBCTTweaksExit = function () {
 			defaultExit();
 		};
 
-		PreferenceSubscreenBCTBestFriendsLoad = function () {
+		window.PreferenceSubscreenBCTBestFriendsLoad = function () {
 			BCTPreferenceSubscreen = "BCTBestFriends";
 			addMenuCheckbox(64,64,"Enable Best Friends Feature:","bestFriendsEnabled",
 			`This feature allows you to add someone as a "Best Friend".
@@ -1088,13 +1171,13 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			"Use this instead of regular item permissions."
 			);
 		}
-		PreferenceSubscreenBCTBestFriendsRun = function () {
+		window.PreferenceSubscreenBCTBestFriendsRun = function () {
 			drawMenuElements();
 		}
-		PreferenceSubscreenBCTBestFriendsClick = function () {
+		window.PreferenceSubscreenBCTBestFriendsClick = function () {
 			handleMenuClicks();
 		}
-		PreferenceSubscreenBCTBestFriendsExit = function () {
+		window.PreferenceSubscreenBCTBestFriendsExit = function () {
 			//Filter for item permissions of locks
 			FilterItemPermissions();
 			//Add perms
@@ -1105,6 +1188,9 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				}
 			}
 			let ShareList = ElementValue("InputMiscShareRoomList").split(",");
+			/**
+			 * @param {string} ele
+			 */
 			let memberCheck = (ele) => {
 				if (CommonIsNumeric(ele) && Number.isInteger(parseFloat(ele))) return true;
 			}
@@ -1204,6 +1290,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					],
 				};
 
+				// @ts-expect-error mod-specific message
 				ServerSend("ChatRoomChat", message);
 			}
 		}
@@ -1464,7 +1551,6 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					let Zoom = args[3];
 					let ClickX = args[4];
 					let ClickY = args[5];
-					let Pos = args[6];
 					// Handle clicks on the BCT arousal bar only if the BC arousal bar is not zoomed or its set to "Right"
 					if(!C.ArousalZoom || Player.BCT.bctSettings.arousalbarLocation === "Right"){
 						// If the arousal meter is shown for that character, we can interact with it
@@ -1680,8 +1766,9 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					}
 				}
 			}
+			/** @type {Record<number, {[group in AssetGroupName]?: number}>} */
+			let restoreValues = {};
 			if(runNext){
-				let restoreValues = {};
 				for (let C = 0; C < ChatRoomCharacter.length; C++) {
 					try {
 						if((ChatRoomCharacter[C].BCT != null && ChatRoomCharacter[C]?.BCT?.bctSettings?.splitOrgasmArousal === true)
@@ -1746,18 +1833,17 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 						console.error("Error setting zone factor for character: " + ChatRoomCharacter[C].Name + ".");
 					}
 				}
-				next(args);
+			}
+			next(args);
+			if (runNext) {
 				// restore Values
-				for (value in restoreValues){
-					let char = ChatRoomCharacter.find(function(char){
-						return char.ID == value;
-					});
-					for (zone in restoreValues[value]){
-						PreferenceSetArousalZone(char, zone, restoreValues[value][zone]);
+				for (let value in restoreValues) {
+					let char = ChatRoomCharacter.find(char =>  char.ID == Number(value));
+					for (let zone in restoreValues[value]) {
+						PreferenceSetArousalZone(char, /** @type {AssetGroupItemName} */ (zone), restoreValues[value][zone]);
 					}
 				}
 			}
-			next(args);
 		});
 
 	}
@@ -1859,6 +1945,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			],
 			Target: TargetNumber,
 		};
+		// @ts-expect-error mod-specific message
 		ServerSend("ChatRoomChat", message);
 	}
 	// Send if player accepted or rejected the money
@@ -1895,6 +1982,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			],
 			Target: SenderNumber,
 		};
+		// @ts-expect-error mod-specific message
 		ServerSend("ChatRoomChat", message);
 	}
 
@@ -1913,11 +2001,14 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		moneyInTransaction.splice(remIdx,1);
 		bctChatNotify(`${SenderName} accepted the offered money ${Amount}$.`);
 	}
+	/**
+	 * @param {string} html
+	 */
 	function htmlToElement(html) {
 		var template = document.createElement('template');
 		html = html.trim();
 		template.innerHTML = html;
-		return template.content.firstChild;
+		return /** @type {HTMLElement} */ (template.content.firstChild);
 	}
 	//Show a button on screen to accept or reject money from sender
 	function MoneyAcceptorDeclineButton(Sender, Amount) {
@@ -1937,13 +2028,13 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 
 	// Best Friend Feature start
 
-	ChatRoomCanAddAsBF = () => {
+	window.ChatRoomCanAddAsBF = () => {
 		return (CurrentCharacter && CurrentCharacter.MemberNumber && Player.FriendList.includes(CurrentCharacter.MemberNumber)
 			&& !(Player.Lovership.some(lover => lover.MemberNumber == CurrentCharacter.MemberNumber))
 			&& Player.BCT.bctSettings.bestFriendsEnabled && !Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber));
 	};
 
-	ChatRoomCanRemoveAsBF = () => {
+	window.ChatRoomCanRemoveAsBF = () => {
 		return (CurrentCharacter && CurrentCharacter.MemberNumber
 			&& Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber));
 	};
@@ -2004,6 +2095,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		modAPI.hookFunction("ChatRoomListManage", 3, (args,next) => {
 			let Operation = args[0];
 			let ListType = args[1];
+			// @ts-expect-error We have a special ListType
 			if (CurrentCharacter && CurrentCharacter.MemberNumber && ListType === "BestFriend") {
 				if (Operation === "Add") {
 					AddToBFList(CurrentCharacter.MemberNumber);
@@ -2065,11 +2157,12 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			if ((Player.BCT.bctSettings.bestFriendsEnabled) && (mode === "AllFriends")) {
 				let htmlDoc = document.getElementById(FriendListIDs.friendList);
 				for (let i = 0; i < htmlDoc.getElementsByClassName("friend-list-row").length; i++) {
-					let member = parseInt(htmlDoc.getElementsByClassName("friend-list-column MemberNumber")[i].innerText);
+					const colNumber = /** @type {HTMLCollectionOf<HTMLElement>} */ (htmlDoc.getElementsByClassName("friend-list-column MemberNumber"))[i];
+					let member = parseInt(colNumber.innerText);
 					if (Player.BCT.bctSettings.bestFriendsList.includes(member)
 					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
 					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))) {
-							let BFelement = htmlDoc.getElementsByClassName("friend-list-column RelationType")[i];
+							let BFelement = /** @type {HTMLElement} */ (htmlDoc.getElementsByClassName("friend-list-column RelationType")[i]);
 							const BFelementText = Array.from(BFelement.childNodes).find(e => e.nodeType === Node.TEXT_NODE);
 							BFelementText.textContent = "Best Friend";
 							BFelement.style.cursor = "pointer";
@@ -2093,7 +2186,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					}
 					else if (!(Player.Ownership != null && Player.Ownership.MemberNumber === member)
 					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))){
-							let NonBFelement = htmlDoc.getElementsByClassName("friend-list-column RelationType")[i];
+							let NonBFelement = /** @type {HTMLElement} */ (htmlDoc.getElementsByClassName("friend-list-column RelationType")[i]);
 							const NonBFelementText = Array.from(NonBFelement.childNodes).find(e => e.nodeType === Node.TEXT_NODE);
 							NonBFelement.style.cursor = "pointer";
 							let forUndo = "";
@@ -2284,9 +2377,16 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 
 	function showRoomSlots() {
 
+		/**
+		 * Shared queue state
+		 * @type {{ query: string, space: ServerChatRoomSpace, resolve(results: ServerChatRoomSearchResultResponse) }[]}
+		 */
 		const roomSearchQueue = [];
 		let isProcessingQueue = false;
 
+		/**
+		 * Processes the queue one request at a time
+		 */
 		async function processRoomSearchQueue() {
 			if (isProcessingQueue) return;
 
@@ -2327,6 +2427,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			isProcessingQueue = false;
 		}
 
+		/**
+		 * @param {string} query
+		 * @param {ServerChatRoomSpace} space
+		 */
 		async function roomSearchQuery(query, space) {
 			return new Promise((resolve) => {
 
@@ -2365,20 +2469,23 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			}
 		}
 
+		/** @type {Record<number, { ChatRoomName: string, ChatRoomSpace: ServerChatRoomSpace, IsPrivateRoom: boolean }>} */
 		let friendListNumberToName = {};
 
 		modAPI.hookFunction("FriendListLoadFriendList", 2, async (args,next) => {
 			let friends = args[0];
 			for(const friend of friends) {
-				friendListNumberToName[friend.MemberNumber] = {};
-				friendListNumberToName[friend.MemberNumber]["ChatRoomName"] = friend.ChatRoomName;
-				friendListNumberToName[friend.MemberNumber]["ChatRoomSpace"] = friend.ChatRoomSpace;
-				friendListNumberToName[friend.MemberNumber]["IsPrivateRoom"] = friend.Private;
+				friendListNumberToName[friend.MemberNumber] = {
+					ChatRoomName: friend.ChatRoomName,
+					ChatRoomSpace: friend.ChatRoomSpace,
+					IsPrivateRoom: friend.Private,
+				};
 			}
 			next(args);
 			if(Player.BCT.bctSettings.friendlistSlotsEnabled){
 				const mode = FriendListMode[FriendListModeIndex];
 				if (mode === "OnlineFriends" && document.getElementById("friend-list")) {
+					/** @type {ServerChatRoomSpace[]} */
 					let listRoomSpaces = [];
 					// Set up the page layout
 					const newSlot = document.createElement("th");
@@ -2387,27 +2494,28 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					let BCTweaksID = "BCTweaksSlots";
 					if (!document.getElementById(BCTweaksID) && document.getElementsByClassName("friend-list-row")) {
 						newSlot.id = BCTweaksID;
-                        newSlot.classList.add("friend-list-column");
-                        newSlot.classList.add("mode-specific-content");
-                        newSlot.classList.add("fl-online-friends-content");
+					                        newSlot.classList.add("friend-list-column");
+					                        newSlot.classList.add("mode-specific-content");
+					                        newSlot.classList.add("fl-online-friends-content");
 
-                        const getBeepEle = document.querySelector("tr");
-                        newSlot.innerText = "Slots";
-                        getBeepEle?.insertBefore(newSlot, getBeepEle.children[5]);
+					                        const getBeepEle = document.querySelector("tr");
+					                        newSlot.innerText = "Slots";
+					                        getBeepEle?.insertBefore(newSlot, getBeepEle.children[5]);
 					}
 					const friendTable = document.getElementById("friend-list");
 
 					for(const row of friendTable.children){
 						const slotSpan = document.createElement("td");
 						slotSpan.style.setProperty("user-select", "none");
-                        slotSpan.classList.add("friend-list-column", "bctweaks-slots");
+					                        slotSpan.classList.add("friend-list-column", "bctweaks-slots");
 						slotSpan.style.setProperty("width", "10%");
 
 						// Initialize with old results
 						let foundRoom;
-						let friendNumber = parseInt(row.children[1].innerText);
-                        let roomName = friendListNumberToName[friendNumber].ChatRoomName;
-                        let roomSpace = friendListNumberToName[friendNumber].ChatRoomSpace;
+						const children = /** @type {HTMLCollectionOf<HTMLElement>} */ (row.children)
+						let friendNumber = parseInt(children[1].innerText);
+	                        let roomName = friendListNumberToName[friendNumber].ChatRoomName;
+	                        let roomSpace = friendListNumberToName[friendNumber].ChatRoomSpace;
 
 						if(!!roomName) {
 							foundRoom = previouslyFoundRooms.find(function(room){
@@ -2440,10 +2548,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					for(const row of friendTable.children){
 						let maxSlots = 0;
 						let currentSlots = 0;
-						let friendNumber = parseInt(row.children[1].innerText);
-                        let roomName = friendListNumberToName[friendNumber].ChatRoomName;
-                        let roomSpace = friendListNumberToName[friendNumber].ChatRoomSpace;
-                        let isPrivateRoom = friendListNumberToName[friendNumber].IsPrivateRoom;
+						const children = /** @type {HTMLCollectionOf<HTMLElement>} */ (row.children);
+						let friendNumber = parseInt(children[1].innerText);
+	                        let roomName = friendListNumberToName[friendNumber].ChatRoomName;
+	                        let roomSpace = friendListNumberToName[friendNumber].ChatRoomSpace;
+	                        let isPrivateRoom = friendListNumberToName[friendNumber].IsPrivateRoom;
 
 						// Public rooms
 						if(!isPrivateRoom){
@@ -2483,7 +2592,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							}
 						}
 
-						const slotsElem = row.querySelector(".bctweaks-slots");
+						const slotsElem = /** @type {HTMLElement} */ (row.querySelector(".bctweaks-slots"));
 						if (!slotsElem) {
 							continue;
 						}
@@ -2665,17 +2774,17 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		}else if(args[0] === "Assets/Female3DCG/ItemMisc/Preview/"+BF_TIMER_LOCK_NAME+".png") {
 			args[0] = IMAGES.BEST_FRIEND_TIMER_LOCK;
 		}
-		next(args);
+		return next(args);
 	});
 
-	modAPI.hookFunction("DialogGetLockIcon", 2, (args,next) => {
+	modAPI.hookFunction("DialogGetLockIcon", 2, (args, next) => {
 		let icons = [];
 		let item = args[0];
 		if (InventoryItemHasEffect(item, "Lock")) {
 			if (item.Property && item.Property.LockedBy &&
 				(item.Property.Name === BF_TIMER_LOCK_NAME || item.Property.Name === BF_LOCK_NAME)) {
 				icons.push(item.Property.Name);
-				return icons;
+				return /** @type {InventoryIcon[]} */ (icons);
 			}
 		}
 		return next(args);
@@ -2889,7 +2998,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			InventoryItemMiscBestFriendPadlockLoad();
 		}
 		else {
-			next(args);
+			return next(args);
 		}
 	})
 	modAPI.hookFunction("InventoryItemMiscHighSecurityPadlockDraw",11,(args,next) => {
@@ -2901,7 +3010,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			InventoryItemMiscBestFriendPadlockDraw();
 		}
 		else {
-			next(args);
+			return next(args);
 		}
 	})
 	modAPI.hookFunction("InventoryItemMiscHighSecurityPadlockClick",11,(args,next) => {
@@ -2912,7 +3021,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			InventoryItemMiscBestFriendPadlockClick();
 		}
 		else {
-			next(args);
+			return next(args);
 		}
 	})
 
