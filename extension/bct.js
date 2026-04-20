@@ -415,16 +415,6 @@ async function runBCT(){
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
-	function controllerIsActive() {
-		if (typeof ControllerIsActive === "function") { // R92
-			return ControllerIsActive();
-		} else if (typeof ControllerActive === "boolean") { // R91
-			return ControllerActive;
-		} else {
-			return false;
-		}
-	}
-	
 	async function commands() {
 		await waitFor(() => !!Commands);
 		const BCT_COMMANDS = [
@@ -509,10 +499,8 @@ async function runBCT(){
 		 * @param {number} [MaxLine] - Maximum of lines the word can wrap for
 		 * @returns {void} - Nothing
 		 */
-		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor = "Black", BackColor = null, BorderColor = "Black", MaxLine = null) {
-			if (controllerIsActive()) {
-				setButton(X, Y);
-			}
+		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor = "Black", BackColor = undefined, BorderColor = "Black", MaxLine = undefined) {
+			ControllerAddActiveArea(X, Y);
 			// Draw the rectangle if we need too
 			if (BackColor != null) {
 				MainCanvas.beginPath();
@@ -813,14 +801,10 @@ async function runBCT(){
 			
 			// Draw all the buttons to access the submenus
 			for (let A = 0; A < bctSettingsCategories.length; A++) {
-				ControllerIgnoreButton = true;
 				//DrawButton(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90, "", "White", "Icons/" + bctSettingsCategories[A] + ".png");
 				DrawButton(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90, "", "White", "Icons/Arcade.png");
-				ControllerIgnoreButton = false;
 				DrawTextFit(bctSettingCategoryLabels[bctSettingsCategories[A]], 745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7), 310, "Black");
-				if (controllerIsActive()) {
-					setButton(745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7));
-				}
+				ControllerAddActiveArea(745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7));
 			}
 		};
 
