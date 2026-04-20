@@ -23,9 +23,9 @@ const IMAGES = {
 ValidationAllLockProperties.push("Name","RemovalTime", "MaxTime");
 
 async function runBCT(){
-	
+
 	await waitFor(() => ServerSocket && ServerIsConnected);
-	
+
 	// Bondage Club Mod Development Kit (1.2.0)
 	// For more info see: https://github.com/Jomshir98/bondage-club-mod-sdk
 	/** @type {ModSDKGlobalAPI} */
@@ -38,7 +38,7 @@ async function runBCT(){
 		version: BCT_VERSION,
 		repository: 'https://github.com/agicitag/BCTweaks'
 	});
-	
+
 	const BCT_MSG = "bctMsg",
 	BCT_BEEP = "bctBeep",
 	HIDDEN = "Hidden", // Needs to be capital 'H' !
@@ -59,7 +59,7 @@ async function runBCT(){
 	BCT_BEEP_REMOVE_LOCK_ACCESS= "BFRemoveLockAcc";
 
 	const BF_LOCK_NAME = "Best Friend Padlock";
-	
+
 	const BF_TIMER_LOCK_NAME = "Best Friend Timer Padlock";
 
 	const BCT_TIPS = [
@@ -79,7 +79,7 @@ async function runBCT(){
 			listeners.push([event, listener]);
 			ServerSocket.on(event, listener);
 		}
-	}	
+	}
 	registerSocketListener("ChatRoomSync", () => {
 		sendBctInitilization(true);
 	});
@@ -107,7 +107,7 @@ async function runBCT(){
 							Prerequisite: "CanRemoveAsBF()",
 							Result: "(This member is no longer considered to be a best friend by you.)",
 							Stage: "10"};
-	
+
 	let BFLockAccessOn = new Set();	// BFs currently online. (Needed for BF lock)
 								// Add when you add someone as BF and vice versa
 
@@ -120,7 +120,7 @@ async function runBCT(){
 	bctBestFriend();
 	//send Initilization when started when already in a chatroom
 	sendBctInitilization(true);
-	
+
 	function copyToExtensionSetting(previousSettings) {
 		if (previousSettings == null) {
 			Player.ExtensionSettings.BCT = null;
@@ -163,12 +163,12 @@ async function runBCT(){
 			showChangelog: true,
 			friendlistSlotsEnabled: true,
 		};
-		
+
 		Player.BCT = {};
 		Player.BCT.version = BCT_VERSION;
 		Player.BCT.bctSettings = {};
 		Player.BCT.bctSharedSettings = {};
-		
+
 		Player.BCT.splitOrgasmArousal = {};
 		Player.BCT.splitOrgasmArousal.arousalProgress = 0;
 		Player.BCT.splitOrgasmArousal.arousalZoom = false;
@@ -235,7 +235,7 @@ async function runBCT(){
 			) {
 				beepChangelog();
 			}
-			
+
 			settings.version = BCT_Settings_Version;
 			Player.BCT.bctSettings = settings;
 
@@ -280,7 +280,7 @@ async function runBCT(){
 					},
 				],
 			};
-			
+
 			ServerSend("ChatRoomChat", bctSettingsMessage);
 		}
 	}
@@ -343,10 +343,10 @@ async function runBCT(){
 				},
 			],
 		};
-		
+
 		ServerSend("ChatRoomChat", bctInitilizationMessage);
 	}
-	
+
 	async function parseMessage(data) {
 		await waitFor(() => ServerSocket && ServerIsConnected);
 		if (data.Type === HIDDEN && data.Content === BCT_MSG) {
@@ -386,22 +386,22 @@ async function runBCT(){
 							case BCT_MSG_MONEY_TAKEN:
 								if(message.bctMoneyTaken) AcceptedMoneyHandler(CharacterNickname(sender), data.Sender, message.bctAmount);
 								else DeclinedMoneyHandler(CharacterNickname(sender), data.Sender,message.bctAmount);
-								break;	
+								break;
 							default:
 								console.log("Unidentified BCT message:");
 								console.log(message);
 						}
-		
+
 					} catch (error) {
 						console.error("Error parsing BCT Message from: "  + sender.Name + ".");
 						console.log(error);
 					}
 				}
 			}
-		}    
+		}
 	}
 
-	
+
 	async function waitFor(func, cancelFunc = () => false) {
 		while (!func()) {
 			if (cancelFunc()) {
@@ -476,7 +476,7 @@ async function runBCT(){
 			BCTBestFriends: "Best Friends"
 		};
 		const MENU_ELEMENT_X_OFFSET = 1050;
-		
+
 		let menuElements = {};
 		for (category of bctSettingsCategories){
 			menuElements[category] = [];
@@ -646,7 +646,7 @@ async function runBCT(){
 			// Draw the player & controls
 			DrawCharacter(Player, 50, 50, 0.9);
 			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
-			
+
 			MainCanvas.textAlign = "left";
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
 			DrawText("- " + bctSettingCategoryLabels[BCTPreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
@@ -782,7 +782,7 @@ async function runBCT(){
 		};
 
 		PreferenceSubscreenBCTSettingsRun = function () {
-			
+
 			// Draw the player & controls
 			DrawCharacter(Player, 50, 50, 0.9);
 			DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
@@ -796,9 +796,9 @@ async function runBCT(){
 			DrawButton(1450, 650, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
 			DrawButton(1450, 755, 400, 90, "Open Beta Changelog", "White", "", "Open Beta Changelog on Github");
 			DrawButton(1500, 860, 300, 90, "Reset", "Red", "Icons/Reset.png", "Reset ALL Settings (including best friends list).")
-			
+
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 865, 125, "Red", "Black");
-			
+
 			// Draw all the buttons to access the submenus
 			for (let A = 0; A < bctSettingsCategories.length; A++) {
 				//DrawButton(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90, "", "White", "Icons/" + bctSettingsCategories[A] + ".png");
@@ -840,9 +840,9 @@ async function runBCT(){
 		PreferenceSubscreenResetExit = function () {
 			defaultExit();
 		}
-		
+
 		PreferenceSubscreenBCTSettingsClick = function () {
-			
+
 			// Exit button
 			if (MouseIn(1815, 75, 90, 90)) PreferenceSubscreenBCTSettingsExit();
 			if (MouseIn(1450, 650, 400, 90)) window.open("https://github.com/agicitag/BCTweaks/blob/main/extension/Changelog.md", "_blank");
@@ -868,7 +868,7 @@ async function runBCT(){
 				}
 			}
 		}
-		
+
 		PreferenceSubscreenBCTSettingsExit = function () {
 			bctSettingsSave();
 			BCTPreferenceSubscreen = "";
@@ -901,7 +901,7 @@ async function runBCT(){
 			"as the normal BC one, but cant make you orgasm."
 			);
 			addMenuCheckbox(64, 64, "Arousal Affects Orgasm Progress:", "arousalAffectsOrgasmProgress",
-			"Let your arousal affect the orgasm progress speed. With this option enabled at 0% arousal the orgasm progress gets " + 
+			"Let your arousal affect the orgasm progress speed. With this option enabled at 0% arousal the orgasm progress gets " +
 			"a 0.5x multiplier, at 50% a 1x multiplier and at 100% a 2x multiplier.",
 			"!Player.BCT.bctSettings.splitOrgasmArousal"
 			);
@@ -973,7 +973,7 @@ async function runBCT(){
 					InventoryWear(tailPreviewMain, Player.BCT.bctSettings.tailWaggingTailOneName, "TailStraps", Player.BCT.bctSettings.tailWaggingTailOneColor);
 					CharacterRefresh(tailPreviewMain);
 				}
-			}, 
+			},
 			"Updates the tail that is gonna stay after wagging to the currently worn one."
 			);
 			addMenuButton(150, 64, "Update Secondary Tail:", "Update", function(){
@@ -1045,7 +1045,7 @@ async function runBCT(){
 			addMenuCheckbox(64, 64, "Enable Friendlist Slots: ", "friendlistSlotsEnabled",
 			`Enable showing free/max slots for rooms on your friendlist and makes the space for the roomname bigger`
 			);
-			
+
 		}
 
 		PreferenceSubscreenBCTTweaksRun = function () {
@@ -1063,7 +1063,7 @@ async function runBCT(){
 		PreferenceSubscreenBCTBestFriendsLoad = function () {
 			BCTPreferenceSubscreen = "BCTBestFriends";
 			addMenuCheckbox(64,64,"Enable Best Friends Feature:","bestFriendsEnabled",
-			`This feature allows you to add someone as a "Best Friend". 
+			`This feature allows you to add someone as a "Best Friend".
 There will be a new option in the "Manage your Relationship" section to add someone as a best friend.
 Lovers can't be added as best friends and only friends can be added.
 For example they are sorted between lovers and normal friends in the online friends list.
@@ -1128,11 +1128,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				e.preventDefault();
 			}
 		}
-	
+
 		document.addEventListener("keydown", keyHandler, true);
 		document.addEventListener("keypress", keyHandler, true);
-		
-		
+
+
 		PreferenceRegisterExtensionSetting(
 			{
 				Identifier: "BCTSettings",
@@ -1166,7 +1166,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		"if (ChatRoomHideIconState == 0)":
 		"if (ChatRoomHideIconState == 0 && (!Player.BCT.bctSettings.allIconOnlyShowOnHover || MouseHovering(CharX,CharY,500*Zoom,70*Zoom)))"
 	});
-	modAPI.hookFunction("ChatRoomCharacterViewDrawOverlay", 2, (args,next) => {		
+	modAPI.hookFunction("ChatRoomCharacterViewDrawOverlay", 2, (args,next) => {
 		const [C, CharX, CharY, Zoom] = args;
 		// if (!allIconOnlyShowOnHover && !MouseHovering(CharX,CharY,500*Zoom,70*Zoom)) return;
 		if (C.BCT && ChatRoomHideIconState == 0 && (!Player.BCT.bctSettings.bctIconOnlyShowOnHover || MouseHovering(CharX,CharY,500*Zoom,70*Zoom))) {
@@ -1335,7 +1335,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			let arousalInfluence = 1;
 			// < 95 to prevent the screen flickering near orgasm
 			if(C.ArousalSettings.Progress < 95){
-				if(C.BCT.bctSettings.splitOrgasmArousal === true && 
+				if(C.BCT.bctSettings.splitOrgasmArousal === true &&
 				C.BCT.bctSettings.arousalAffectsOrgasmProgress === true){
 					let arousalProgress = C.BCT.splitOrgasmArousal.arousalProgress / 100;
 					// 0.5x at 0%, 1x at 50%, 2x at 100%
@@ -1352,7 +1352,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				if(C?.BCT?.bctSettings?.splitOrgasmArousal === true){
 					//Arousal Progress Multiplier
 					Progress = Progress * C.BCT.bctSettings.arousalProgressMultiplier;
-					
+
 					// If there's already a progress timer running, we add it's value but divide it by 2 to lessen the impact, the progress must be between -25 and 25
 					if ((C.BCT.splitOrgasmArousal.ProgressTimer == null) || (typeof C.BCT.splitOrgasmArousal.ProgressTimer !== "number") || isNaN(C.BCT.splitOrgasmArousal.ProgressTimer)) C.BCT.splitOrgasmArousal.ProgressTimer = 0;
 					Progress = Math.round((C.BCT.splitOrgasmArousal.ProgressTimer / 2) + Progress);
@@ -1369,7 +1369,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 						C.BCT.splitOrgasmArousal.ProgressTimer = Progress;
 						ActivityChatRoomBCTArousalSync(C);
 					}
-				}	
+				}
 			} catch (error) {
 				console.error("Error setting arousal timer for character: " + C.Name + ".");
 			}
@@ -1387,7 +1387,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							ActivityChatRoomBCTArousalSync(C);
 						}
 					}
-				}				
+				}
 			} catch (error) {
 				console.error("Error handling orgasm for character: " + C.Name + ".");
 				// console.log(error);
@@ -1417,7 +1417,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				// Converts from activity name to the activity object
 				if ((Amount == null) || (typeof Amount != "number")) return;
 				if ((Count == null) || (Count == undefined) || (Count == 0)) Count = 1;
-	
+
 				// Calculates the next progress factor
 				var Factor = Amount; // Check how much the character likes the activity, from -10 to +10
 				Factor = Factor + (PreferenceGetZoneFactor(C, Zone) * 5) - 10; // The zone used also adds from -10 to +10
@@ -1485,7 +1485,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 								// The arousal meter can be maximized or minimized by clicking on it
 								if (MouseIn(CharX + 60 * Zoom + arousalMeterXMovement, CharY + 400 * Zoom + arousalMeterYMovement, 80 * Zoom, 100 * Zoom) && !C.BCT.splitOrgasmArousal.arousalZoom) { C.BCT.splitOrgasmArousal.arousalZoom = true; return; }
 								if (MouseIn(CharX + 50 * Zoom + arousalMeterXMovement, CharY + 615 * Zoom + arousalMeterYMovement, 100 * Zoom, 85 * Zoom) && C.BCT.splitOrgasmArousal.arousalZoom) { C.BCT.splitOrgasmArousal.arousalZoom = false; return; }
-	
+
 								// If the player can manually control her arousal, we set the progress manual
 								if (C.ID === 0 && MouseIn(CharX + 50 * Zoom + arousalMeterXMovement, CharY + 200 * Zoom + arousalMeterYMovement, 100 * Zoom, 500 * Zoom) && C.BCT.splitOrgasmArousal.arousalZoom) {
 									if (PreferenceArousalAtLeast(Player, "Manual") && !PreferenceArousalAtLeast(Player, "Automatic")) {
@@ -1494,13 +1494,13 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 									}
 									return;
 								}
-	
+
 								// Don't do anything if the thermometer is clicked without access to it
 								if (MouseIn(CharX + 50 * Zoom + arousalMeterXMovement, CharY + 200 * Zoom + arousalMeterYMovement, 100 * Zoom, 415 * Zoom) && C.BCT.splitOrgasmArousal.arousalZoom) return;
 							}
 						}
 					}
-				}			
+				}
 			} catch (error) {
 				console.error("Error handling character click for character: " + C.Name);
 				// console.log(error);
@@ -1545,7 +1545,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					BCTTimerLastArousalProgress = CurrentTime;
 					BCTTimerLastArousalProgressCount++;
 					runNext = true;
-					for (let C = 0; C < Character.length; C++) {				
+					for (let C = 0; C < Character.length; C++) {
 						try {
 							if(Character[C].BCT != null){
 								// Depending on the character settings, we progress the arousal meter
@@ -1554,23 +1554,23 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 									if (Character[C].BCT.bctSettings.splitOrgasmArousal === true
 										&& (Character[C].BCT.splitOrgasmArousal.ProgressTimer != null)
 										&& (typeof Character[C].BCT.splitOrgasmArousal.ProgressTimer === "number")
-										&& !isNaN(Character[C].BCT.splitOrgasmArousal.ProgressTimer) 
+										&& !isNaN(Character[C].BCT.splitOrgasmArousal.ProgressTimer)
 										&& (Character[C].BCT.splitOrgasmArousal.ProgressTimer != 0)
 									){
 										if (Character[C].BCT.splitOrgasmArousal.ProgressTimer < 0) {
 											Character[C].BCT.splitOrgasmArousal.ProgressTimer = 0;
-											
+
 											BCTActivityTimerProgress(Character[C], -1);
-											BCTActivityVibratorLevel(Character[C], 0);																
+											BCTActivityVibratorLevel(Character[C], 0);
 										}
 										else {
 											Character[C].BCT.splitOrgasmArousal.ProgressTimer--;
-											
-											BCTActivityTimerProgress(Character[C], 1);								
+
+											BCTActivityTimerProgress(Character[C], 1);
 											BCTActivityVibratorLevel(Character[C], 4);
 										}
 									} else if (Character[C].IsEgged()) {
-	
+
 										// If the character is egged, we find the highest intensity factor and affect the progress, low and medium vibrations have a cap
 										let Factor = -1;
 										for (let A = 0; A < Character[C].Appearance.length; A++) {
@@ -1580,14 +1580,14 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 												Factor = Item.Property.Intensity + ZoneFactor;
 											}
 										}
-	
+
 										// Adds the fetish value to the factor
 										if (Factor >= 0) {
 											var Fetish = ActivityFetishFactor(Character[C]);
 											if (Fetish > 0) Factor = Factor + Math.ceil(Fetish / 3);
 											if (Fetish < 0) Factor = Factor + Math.floor(Fetish / 3);
 										}
-	
+
 										// Kicks the arousal timer faster from personal arousal
 										if (Factor >= 4) {
 											BCTActivityVibratorLevel(Character[C], 4);
@@ -1622,7 +1622,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 										if (Factor == -1) {
 											BCTActivityVibratorLevel(Character[C], 0);
 										}
-	
+
 									}
 								} else {
 									BCTActivityVibratorLevel(Character[C], 0);
@@ -1631,7 +1631,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 						} catch (error) {
 							console.error("Error handling timer tick for character: " + Character[C].Name + ".");
 							// console.log(error);
-						}		
+						}
 					}
 				}
 
@@ -1672,7 +1672,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 										}
 									}
 								}
-							}				
+							}
 						} catch (error) {
 							console.error("Error handling timer decay tick for character: " + Character[C].Name + ".");
 							// console.log(error);
@@ -1724,7 +1724,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 								if (Fetish > 0) Factor = Factor + Math.ceil(Fetish / 3);
 								if (Fetish < 0) Factor = Factor + Math.floor(Fetish / 3);
 							}
-							
+
 							// Subtract arousal to match the set multiplier for orgasm progress
 							if ((Factor >= 4) && TimerLastArousalProgressCount % 2 == 0) {
 								subtractOrgasmProgress(ChatRoomCharacter[C], (1 - getOrgasmProgressMultiplier(ChatRoomCharacter[C])));
@@ -1898,7 +1898,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		ServerSend("ChatRoomChat", message);
 	}
 
-	//Handle Declined money message 
+	//Handle Declined money message
 	function DeclinedMoneyHandler(SenderName, SenderNumber, Amount) {
 		//show some message that the sent money got rejected
 		let remIdx = moneyInTransaction.findIndex((ele) => SenderNumber === ele.MemberNumber && Amount === ele.Amount);
@@ -1934,7 +1934,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		decbtn.addEventListener("click", (args => () => SendMoneyAcceptAck(...args))([Sender,MoneySendCount,Amount,false]));
 		MoneySendCount += 1;
 	}
-	
+
 	// Best Friend Feature start
 
 	ChatRoomCanAddAsBF = () => {
@@ -1944,10 +1944,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	};
 
 	ChatRoomCanRemoveAsBF = () => {
-		return (CurrentCharacter && CurrentCharacter.MemberNumber 
+		return (CurrentCharacter && CurrentCharacter.MemberNumber
 			&& Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.includes(CurrentCharacter.MemberNumber));
 	};
-	
+
 	// Adding the dialog option in Manage your relationshp
 	function AddRelationDialog(character) {
 		let pos = character.Dialog.findIndex((ele) => ele.Option === "(Remove from friendlist.)");
@@ -1981,7 +1981,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		let onlineFriends = new Set();
 		// true if bct has made the request for online friends
 		let bctOnlineCheck = false;
-		
+
 		registerSocketListener("ChatRoomMessage", (data) => SendRoomNameOnChatRoomOnEntryUpdate(data));
 		registerSocketListener("AccountBeep", (data) => parseBeeps(data));
 		registerSocketListener("ChatRoomCreateResponse", (data) => SendRoomNameOnCreateChat(data));
@@ -2023,12 +2023,12 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			if (!bctOnlineCheck) {
 				if (Player.BCT.bctSettings.bestFriendsEnabled) {
 					const mode = FriendListMode[FriendListModeIndex];
-					if (mode === "OnlineFriends") { 
+					if (mode === "OnlineFriends") {
 						let sortedOSL = [];
 						let	bfList = [];
 						let normalfriends = [];
 						// In Friend List mode, the online friends are shown
-						for (const friend of data) { 
+						for (const friend of data) {
 							if (Player.BCT.bctSettings.bestFriendsList.includes(friend.MemberNumber)) {
 								bfList.push(friend);
 							}
@@ -2066,7 +2066,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				let htmlDoc = document.getElementById(FriendListIDs.friendList);
 				for (let i = 0; i < htmlDoc.getElementsByClassName("friend-list-row").length; i++) {
 					let member = parseInt(htmlDoc.getElementsByClassName("friend-list-column MemberNumber")[i].innerText);
-					if (Player.BCT.bctSettings.bestFriendsList.includes(member) 
+					if (Player.BCT.bctSettings.bestFriendsList.includes(member)
 					&& !(Player.Ownership != null && Player.Ownership.MemberNumber === member)
 					&& !(Player.Lovership.some(lover => lover.MemberNumber == member))) {
 							let BFelement = htmlDoc.getElementsByClassName("friend-list-column RelationType")[i];
@@ -2158,7 +2158,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			await waitFor(() => !!onlineFriends);
 			return onlineFriends;
 		}
-		
+
 		// Ask best friends room name on quick relog or first entry
 		// For complete load it should work directly
 		async function RequestRoomName() {
@@ -2197,13 +2197,13 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 
 		// send player room name when they enter a chatroom or update the room
 		let CurrentChatRoomName = "";
-		async function SendRoomNameOnChatRoomOnEntryUpdate(data) 
+		async function SendRoomNameOnChatRoomOnEntryUpdate(data)
 		{
 			if (Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare) {
 				if ((data != null) && (typeof data === "object") && (data.Content != null) && (typeof data.Content === "string")
-				&& (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) 
+				&& (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number"))
 				{
-					if (((data.Content === "ServerUpdateRoom") || (data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) 
+					if (((data.Content === "ServerUpdateRoom") || (data.Content === "ServerEnter" && Player.MemberNumber === data.Sender))
 					&& ChatRoomData && (ChatRoomDataIsPrivate(ChatRoomData) && (ChatRoomData.Name !== CurrentChatRoomName))) {
 							CurrentChatRoomName = ChatRoomData.Name;
 							CheckAndSendRoomName();
@@ -2214,7 +2214,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		}
 
 		// send player room name when they create room
-		async function SendRoomNameOnCreateChat(data) 
+		async function SendRoomNameOnCreateChat(data)
 		{
 			if (Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsRoomShare) {
 				if ((data != null) && (typeof data === "string") && (data === "ChatRoomCreated")) {
@@ -2223,12 +2223,12 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				}
 			}
 		}
-		
-		// parse Beep for Room Name 
+
+		// parse Beep for Room Name
 		function parseBeeps(data) {
-			if ((data != null) && (typeof data === "object") && !Array.isArray(data) && (data.MemberNumber != null) && 
+			if ((data != null) && (typeof data === "object") && !Array.isArray(data) && (data.MemberNumber != null) &&
 					(typeof data.MemberNumber === "number") && (data.MemberName != null) && (typeof data.MemberName === "string"))	{
-						
+
 						if(data.BeepType === BCT_BEEP){
 							// console.log("BEEP Type : ",data);
 							let beep = data;
@@ -2245,7 +2245,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 									break;
 								case BCT_BEEP_ACK_FRIEND_MSG:
 									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber)) {
-										if ((  Player.BCT.bctSettings.bestFriendsRoomShare 
+										if ((  Player.BCT.bctSettings.bestFriendsRoomShare
 										&& CurrentScreen === "ChatRoom" && ChatRoomDataIsPrivate(ChatRoomData))) {
 											SendRoomName(beep.MemberNumber);
 										}
@@ -2257,7 +2257,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 									if(Player.BCT.bctSettings.bestFriendsEnabled) {
 										if ((Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
 											IsBestFriend(beep.MemberNumber);
-										} else if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber) && Player.BCT.bctSettings.bestFriendsRoomShare 
+										} else if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber) && Player.BCT.bctSettings.bestFriendsRoomShare
 										&& CurrentScreen === "ChatRoom" && ChatRoomDataIsPrivate(ChatRoomData)) {
 											SendRoomName(beep.MemberNumber);
 										}
@@ -2408,7 +2408,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 						let friendNumber = parseInt(row.children[1].innerText);
                         let roomName = friendListNumberToName[friendNumber].ChatRoomName;
                         let roomSpace = friendListNumberToName[friendNumber].ChatRoomSpace;
-						
+
 						if(!!roomName) {
 							foundRoom = previouslyFoundRooms.find(function(room){
 								return (room.Name === roomName) && (room.Space === roomSpace);
@@ -2419,7 +2419,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							listRoomSpaces.push(roomSpace);
 						}
 						let slotContent;
-						if(foundRoom) slotContent = document.createTextNode(foundRoom.MemberCount + "/" + foundRoom.MemberLimit);	
+						if(foundRoom) slotContent = document.createTextNode(foundRoom.MemberCount + "/" + foundRoom.MemberLimit);
 						else slotContent = document.createTextNode("-");
 						slotSpan.appendChild(slotContent);
 						row.insertBefore(slotSpan, row.children[4]);
@@ -2432,7 +2432,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							if(room.Friends.length > 0) roomsWithFriends.push(room);
 						}
 					}
-					
+
 					foundRoomListUpdate(roomsWithFriends)
 					let privateRooms = [];
 
@@ -2567,7 +2567,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		}
 	}
 
-	modAPI.hookFunction('TimerProcess', 2, (args, next) => { 
+	modAPI.hookFunction('TimerProcess', 2, (args, next) => {
 		bctTimerLocksRemove();
 		next(args);
 	})
@@ -2629,7 +2629,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		CharacterRefresh(C);
 		ChatRoomCharacterItemUpdate(C, group);
 	}
-	
+
 	const parseIconReplaceBy = `if(icon === "Best Friend Padlock") {src = "${IMAGES.BEST_FRIEND_LOCK}"; }
 				else if(icon === "Best Friend Timer Padlock") {src = "${IMAGES.BEST_FRIEND_TIMER_LOCK}"; }
 				else {src = \`./Assets/Female3DCG/ItemMisc/Preview/\${icon}.png\`;}
@@ -2672,7 +2672,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		let icons = [];
 		let item = args[0];
 		if (InventoryItemHasEffect(item, "Lock")) {
-			if (item.Property && item.Property.LockedBy && 
+			if (item.Property && item.Property.LockedBy &&
 				(item.Property.Name === BF_TIMER_LOCK_NAME || item.Property.Name === BF_LOCK_NAME)) {
 				icons.push(item.Property.Name);
 				return icons;
@@ -2702,13 +2702,13 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		let C = args[0];
 		let Item = args[1];
 		if ((C.ID != 0) && !Player.CanInteract()) return false;
-		if ((Item != null) && (Item.Property != null) && 
+		if ((Item != null) && (Item.Property != null) &&
 		(Item.Property.Name === BF_LOCK_NAME || Item.Property.Name === BF_TIMER_LOCK_NAME) && BFLockAccessOn.has(C.MemberNumber)) return true;
-		
+
 		return next(args);
 	})
 
-	// returns true if lover / owner / best friend 
+	// returns true if lover / owner / best friend
 	function checkBForAbove(C) {
 		return (C.IsLoverOfPlayer() || C.IsOwnedByPlayer() || BFLockAccessOn.has(C.MemberNumber));
 	}
@@ -2733,7 +2733,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.RemoveItem == null)) DialogFocusSourceItem.Property.RemoveItem = false;
 		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.ShowTimer == null)) DialogFocusSourceItem.Property.ShowTimer = true;
 		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.EnableRandomInput == null)) DialogFocusSourceItem.Property.EnableRandomInput = false;
-		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.MemberNumberList == null)) DialogFocusSourceItem.Property.MemberNumberList = [];	
+		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.MemberNumberList == null)) DialogFocusSourceItem.Property.MemberNumberList = [];
 	}
 	const BestFriendTimerChooseList = [1, 2, 4, 8, 16, 24, 48, 72, 96, 120, 144, 168, -144, -72, -48, -24, -8, -4, -1];
 	let BestFriendTimerChooseIndex = 0;
@@ -2747,7 +2747,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		//changed Asset to draw
 		DrawAssetPreview(1387, 225, AssetGet("Female3DCG","ItemMisc",BF_TIMER_LOCK_NAME));//AssetGet("Female3DCG","ItemMisc","LoversTimerPadlock"));
 		DrawText(BF_LOCK_QUOTE, 1500, 600, "white", "gray");
-	
+
 		// Draw the settings
 		if (Player.CanInteract() && checkBForAbove(C)) {
 			MainCanvas.textAlign = "left";
@@ -2761,15 +2761,15 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		} else {
 			if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.LockMemberNumber != null))
 				DrawText(InterfaceTextGet("LockMemberNumber") + " " + DialogFocusSourceItem.Property.LockMemberNumber.toString(), 1500, 700, "white", "gray");
-	
+
 			let msg = "Can only be unlocked or extended by Best Friends and above";//DialogFindPlayer(DialogFocusItem.Asset.Group.Name + DialogFocusItem.Asset.Name + "Detail");
 			// const subst = ChatRoomPronounSubstitutions(CurrentCharacter, "TargetPronoun", false);
 			// msg = CommonStringSubstitute(msg, subst);
 			DrawText(msg, 1500, 800, "white", "gray");
-	
+
 			DrawText(InterfaceTextGet((DialogFocusSourceItem.Property.RemoveItem) ? "WillRemoveItemWithTimer" : "WontRemoveItemWithTimer"), 1500, 868, "white", "gray");
 		}
-	
+
 		// Draw buttons to add/remove time if available
 		if (Player.CanInteract() && checkBForAbove(C)) {
 			DrawButton(1100, 910, 250, 70, InterfaceTextGet("AddTimerTime"), "White");
@@ -2791,7 +2791,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		if ((MouseX >= 1885) && (MouseX <= 1975) && (MouseY >= 25) && (MouseY <= 110)) DialogLeaveFocusItem();
 		if (!Player.CanInteract()) return;
 		const C = CharacterGetCurrent();
-	
+
 		if (checkBForAbove(C)) {
 			if ((MouseX >= 1100) && (MouseX <= 1164)) {
 				if ((MouseY >= 666) && (MouseY <= 730)) { DialogFocusSourceItem.Property.RemoveItem = !(DialogFocusSourceItem.Property.RemoveItem); }
@@ -2800,7 +2800,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				if (CurrentScreen == "ChatRoom") ChatRoomCharacterItemUpdate(CharacterGetCurrent());
 			}
 		}
-	
+
 		if ((MouseY >= 910) && (MouseY <= 975)) {
 			if (checkBForAbove(C)) {
 				if ((MouseX >= 1100) && (MouseX < 1350)) InventoryItemMiscBestFriendTimerPadlockAdd(BestFriendTimerChooseList[BestFriendTimerChooseIndex] * 3600);
@@ -2824,7 +2824,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		const C = CharacterGetCurrent();
 		const property = DialogFocusSourceItem.Property;
 		const TimerBefore = property.RemovalTime;
-	
+
 		if (PlayerMemberNumberToList) {
 			property.MemberNumberList.push(Player.MemberNumber);
 		}
@@ -2837,7 +2837,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			if (property.ShowTimer) {
 				msg = timeAdded < 0 ? "TimerRemoveTime" : "TimerAddTime";
 			}
-	
+
 			const dictionary = new DictionaryBuilder()
 				.sourceCharacter(Player)
 				.destinationCharacter(C)
@@ -2847,12 +2847,12 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					.textLookup("TimerUnit", "Hours")
 				.endif()
 				.build();
-	
+
 			ChatRoomPublishCustomAction(msg, true, dictionary);
-		} 
+		}
 		else {DialogLeaveFocusItem();}
 	}
-	
+
 	function InventoryItemMiscBestFriendTimerPadlockExit() {
 		// DialogFocusItem = null;
 		// if (DialogInventory != null) DialogMenuButtonBuild(CharacterGetCurrent());
@@ -2868,7 +2868,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		DrawText(BF_LOCK_QUOTE, 1500, 600, "white", "gray");
 		if ((DialogFocusSourceItem != null) && (DialogFocusSourceItem.Property != null) && (DialogFocusSourceItem.Property.LockMemberNumber != null))
 			DrawText(InterfaceTextGet("LockMemberNumber") + " " + DialogFocusSourceItem.Property.LockMemberNumber.toString(), 1500, 700, "white", "gray");
-	
+
 		let msg = "Can only be unlocked by Best Friends and above";//DialogFindPlayer(DialogFocusItem.Asset.Group.Name + DialogFocusItem.Asset.Name + "Detail");
 		// const subst = ChatRoomPronounSubstitutions(CurrentCharacter, "TargetPronoun", false);
 		// msg = CommonStringSubstitute(msg, subst);
@@ -2966,17 +2966,17 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	UpdateItemPermissions();
 
 	// Convert HighSec Lock to BF lock if the setting is true and your best friend is adding the lock
-	
+
 	async function ConvertToBFLockOnUpdateSet(data) {
-		if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.hsToBFLockconvert && data.Content === "ActionAddLock" 
+		if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.hsToBFLockconvert && data.Content === "ActionAddLock"
 		&& data.Dictionary.some((asset) => (asset.Tag === "TargetCharacter" && asset.MemberNumber === Player.MemberNumber))
 		&& data.Dictionary.some((asset) => asset.AssetName === "HighSecurityPadlock")
 		&& Player.BCT.bctSettings.bestFriendsList.includes(data.Sender)) {
 			let reqAsset = data.Dictionary.find((asset) => asset.Tag === "PrevAsset");
 			await waitFor(() => InventoryGet(Player,reqAsset.GroupName).Property.LockedBy === "HighSecurityPadlock");
 			convertHStoBF(Player,InventoryGet(Player,reqAsset.GroupName),reqAsset.GroupName);
-			InventoryGet(Player,reqAsset.GroupName).Property.MemberNumberListKeys = 
-			InventoryGet(Player,reqAsset.GroupName).Property.MemberNumberListKeys 
+			InventoryGet(Player,reqAsset.GroupName).Property.MemberNumberListKeys =
+			InventoryGet(Player,reqAsset.GroupName).Property.MemberNumberListKeys
 			+ Player.BCT.bctSettings.bestFriendsList.join(",");
 			ChatRoomCharacterItemUpdate(Player,reqAsset.GroupName);
 		}
