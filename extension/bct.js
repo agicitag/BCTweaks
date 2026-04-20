@@ -415,16 +415,6 @@ async function runBCT(){
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
-	function controllerIsActive() {
-		if (typeof ControllerIsActive === "function") { // R92
-			return ControllerIsActive();
-		} else if (typeof ControllerActive === "boolean") { // R91
-			return ControllerActive;
-		} else {
-			return false;
-		}
-	}
-	
 	async function commands() {
 		await waitFor(() => !!Commands);
 		const BCT_COMMANDS = [
@@ -509,10 +499,8 @@ async function runBCT(){
 		 * @param {number} [MaxLine] - Maximum of lines the word can wrap for
 		 * @returns {void} - Nothing
 		 */
-		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor = "Black", BackColor = null, BorderColor = "Black", MaxLine = null) {
-			if (controllerIsActive()) {
-				setButton(X, Y);
-			}
+		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor = "Black", BackColor = undefined, BorderColor = "Black", MaxLine = undefined) {
+			ControllerAddActiveArea(X, Y);
 			// Draw the rectangle if we need too
 			if (BackColor != null) {
 				MainCanvas.beginPath();
@@ -663,7 +651,7 @@ async function runBCT(){
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
 			DrawText("- " + bctSettingCategoryLabels[BCTPreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
 			if(settingsHint != ""){
-				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, ForeColor = BCT_API.HintForeColor, BackColor = BCT_API.HintBackColor, BorderColor = BCT_API.HintBorderColor);
+				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, BCT_API.HintForeColor, BCT_API.HintBackColor, BCT_API.HintBorderColor);
 			}
 
 			let currentElement;
@@ -802,7 +790,7 @@ async function runBCT(){
 			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 			//Show tips every 10 secs
-			DrawTextWrapGood(BCT_TIPS[Math.floor(((TimerGetTime()%100000)/100000)*(BCT_TIPS.length))], 1650, 400, 400, 100, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood(BCT_TIPS[Math.floor(((TimerGetTime()%100000)/100000)*(BCT_TIPS.length))], 1650, 400, 400, 100, BCT_API.HintForeColor);
 
 			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 625, "Black", "Gray");
 			DrawButton(1450, 650, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
@@ -813,14 +801,10 @@ async function runBCT(){
 			
 			// Draw all the buttons to access the submenus
 			for (let A = 0; A < bctSettingsCategories.length; A++) {
-				ControllerIgnoreButton = true;
 				//DrawButton(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90, "", "White", "Icons/" + bctSettingsCategories[A] + ".png");
 				DrawButton(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90, "", "White", "Icons/Arcade.png");
-				ControllerIgnoreButton = false;
 				DrawTextFit(bctSettingCategoryLabels[bctSettingsCategories[A]], 745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7), 310, "Black");
-				if (controllerIsActive()) {
-					setButton(745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7));
-				}
+				ControllerAddActiveArea(745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7));
 			}
 		};
 
@@ -840,13 +824,13 @@ async function runBCT(){
 			currentPageNumber = 1;
 		}
 		PreferenceSubscreenResetRun = function () {
-			DrawTextWrapGood("Do you want to reset all settings to Defaults?",1000, 200, 800, 100, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood("Do you want to reset all settings to Defaults?",1000, 200, 800, 100, BCT_API.HintForeColor);
 			DrawButton(400, 650, 300, 100, "Confirm", "Red","","Confirm Reset and Exit");
 			DrawButton(1300, 650, 300, 100, "Cancel","White","","Cancel Reset");
 		}
 		PreferenceSubscreenResetClick = function () {
 			if (MouseIn(400, 650, 300, 100)) {
-				bctSettingsLoad(reset = true);
+				bctSettingsLoad(true);
 				defaultExit();
 			}
 			if (MouseIn(1300, 650, 300, 100)) {
@@ -1025,9 +1009,9 @@ async function runBCT(){
 		PreferenceSubscreenBCTTailwagRun = function () {
 			drawMenuElements();
 			MainCanvas.textAlign = "center";
-			DrawTextWrapGood("Main Tail:", 550, 750, 100, 80, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood("Main Tail:", 550, 750, 100, 80, BCT_API.HintForeColor);
 			DrawCharacter(tailPreviewMain, 600, 600, 0.5, false);
-			DrawTextWrapGood("Secondary Tail:", 1000, 750, 200, 80, Forecolor = BCT_API.HintForeColor);
+			DrawTextWrapGood("Secondary Tail:", 1000, 750, 200, 80, BCT_API.HintForeColor);
 			DrawCharacter(tailPreviewSecondary, 1100, 600, 0.5, false);
 		}
 
@@ -2220,7 +2204,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				&& (data.Content != "") && (data.Sender != null) && (typeof data.Sender === "number")) 
 				{
 					if (((data.Content === "ServerUpdateRoom") || (data.Content === "ServerEnter" && Player.MemberNumber === data.Sender)) 
-					&& ChatRoomData && (ChatRoomData.Private) && (ChatRoomData.Name !== CurrentChatRoomName)) {
+					&& ChatRoomData && (ChatRoomDataIsPrivate(ChatRoomData) && (ChatRoomData.Name !== CurrentChatRoomName))) {
 							CurrentChatRoomName = ChatRoomData.Name;
 							CheckAndSendRoomName();
 							SendRoomNameToMisc();
@@ -2261,8 +2245,8 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 									break;
 								case BCT_BEEP_ACK_FRIEND_MSG:
 									if(Player.BCT.bctSettings.bestFriendsEnabled && Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber)) {
-										if (( Player.BCT.bctSettings.bestFriendsRoomShare 
-										&& CurrentScreen === "ChatRoom" && ChatRoomData && ChatRoomData.Private)) {
+										if ((  Player.BCT.bctSettings.bestFriendsRoomShare 
+										&& CurrentScreen === "ChatRoom" && ChatRoomDataIsPrivate(ChatRoomData))) {
 											SendRoomName(beep.MemberNumber);
 										}
 										SendBeep(beep.MemberNumber,BCT_BEEP,BCT_BEEP_BFLOCK_ACCESS,true);
@@ -2274,7 +2258,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 										if ((Player.BCT.bctSettings.bestFriendsList.includes(beep.MemberNumber))) {
 											IsBestFriend(beep.MemberNumber);
 										} else if(Player.BCT.bctSettings.miscShareRoomList.includes(beep.MemberNumber) && Player.BCT.bctSettings.bestFriendsRoomShare 
-										&& CurrentScreen === "ChatRoom" && ChatRoomData && ChatRoomData.Private) {
+										&& CurrentScreen === "ChatRoom" && ChatRoomDataIsPrivate(ChatRoomData)) {
 											SendRoomName(beep.MemberNumber);
 										}
 									}
@@ -2298,60 +2282,61 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 		}
 	}
 
-	function showRoomSlots(){
-		window.searchResult = {};
+	function showRoomSlots() {
+
+		const roomSearchQueue = [];
+		let isProcessingQueue = false;
+
+		async function processRoomSearchQueue() {
+			if (isProcessingQueue) return;
+
+			isProcessingQueue = true;
+
+			while (roomSearchQueue.length > 0) {
+				const job = roomSearchQueue.shift();
+				let retry = 3;
+				let success = false;
+				while (retry-- > 0) {
+					console.log(`BCTweaks: ${job.query}, retries left: ${retry}`);
+					const results = await ServerRoomSearch(
+						job.query,
+						{
+							Language: "",
+							Space: job.space,
+							Game: "",
+							FullRooms: true
+						}
+					);
+
+					if (results.err) {
+						console.log(`BCTweaks: ${job.query}, errored, sleeping`, results.error);
+						await sleep(2000);
+						continue;
+					} else {
+						console.log(`BCTweaks: ${job.query}, succeeded`);
+						success = true;
+						job.resolve(results.value);
+						break;
+					}
+				}
+				if (!success) {
+					job.resolve([]);
+				}
+			}
+
+			isProcessingQueue = false;
+		}
+
+		async function roomSearchQuery(query, space) {
+			return new Promise((resolve) => {
+
+				roomSearchQueue.push({ query, space, resolve });
+
+				processRoomSearchQueue();
+			});
+		}
+
 		let previouslyFoundRooms = [];
-		window.timeout = false;
-		window.bctRoomSlotCallGeneral = 0;
-		window.bctRoomSlotCallNarrow = 0;
-		let delayCount = 0;
-
-		function getRoomSlotsQueue(query,space) {
-			delayCount += 1;
-			setTimeout(getRoomSlots(query,space), delayCount * 2000);
-		}
-
-		function getRoomSlots(query = "", space = "X"){
-			const SearchData = {Query: query.toUpperCase().trim(), Language: "", Space: space, Game: "", FullRooms: true};
-			
-			if(query == ""){
-				searchResult["bct-" + space] = [];
-				bctRoomSlotCallGeneral += 1;
-			}
-			else{
-				searchResult[query] = [];
-				bctRoomSlotCallNarrow += 1;
-			}
-			timeout = false;
-			ServerSend("ChatRoomSearch", SearchData);
-		}
-
-// Only interested in the actual list when we ask for it
-const replaceResponseBegin = `
-if(bctRoomSlotCallGeneral > 0){
-	if (Array.isArray(data) && data.length > 0) {
-		searchResult["bct-" + data[0].Space] = data;
-	}
-	bctRoomSlotCallGeneral -= 1;
-	timeout = true;
-}
-else if(bctRoomSlotCallNarrow > 0) {
-	if (Array.isArray(data) && data.length > 0) {
-		searchResult[data[0].Name] = data;
-	}
-	bctRoomSlotCallNarrow -= 1;
-	timeout = true;
-}
-else {
-	ElementContent("InputSearch-datalist", "");`
-
-const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
-		
-		modAPI.patchFunction("ChatSearchResultResponse",{
-			'ElementContent("InputSearch-datalist", "");': replaceResponseBegin,
-			"ChatSearchAutoJoinRoom();": replaceResponseEnd,
-		})
-
 		// update previouslyFoundRooms only if room name is new or room slots has changed
 		function foundRoomUpdate(newRoom) {
 			let foundRoomIndex = previouslyFoundRooms.findIndex(function(room){
@@ -2442,9 +2427,8 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 
 					let roomsWithFriends = [];
 					for(const space of listRoomSpaces) {
-						getRoomSlotsQueue("",space);
-						await waitFor(() => searchResult["bct-" + space] && (searchResult["bct-" + space].length > 0 || timeout));
-						for(room of searchResult["bct-" + space]){
+						const results = await roomSearchQuery("", space);
+						for(let room of results){
 							if(room.Friends.length > 0) roomsWithFriends.push(room);
 						}
 					}
@@ -2478,15 +2462,9 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 							});
 							// If not, search for it
 							if(!foundRoom){
-								getRoomSlotsQueue(roomName,roomSpace);
-								await waitFor(() => !!searchResult[roomName] && (searchResult[roomName].length > 0 || timeout));
-								// Retry one more time
-								if(searchResult[roomName].length == 0) {
-									getRoomSlotsQueue(roomName,roomSpace);
-									await waitFor(() => !!searchResult[roomName] && (searchResult[roomName].length > 0 || timeout));
-								}
-								if(searchResult[roomName].length > 0){
-									foundRoom = searchResult[roomName][0];
+								const results = roomSearchQuery(roomName,roomSpace);
+								if(!!results[roomName] && results[roomName].length > 0){
+									foundRoom = results[roomName][0];
 									privateRooms.push(foundRoom);
 									foundRoomUpdate(foundRoom);
 								}
@@ -2512,8 +2490,6 @@ const replaceResponseEnd = `ChatSearchAutoJoinRoom(); }`
 						if(currentSlots > 0) slotsElem.innerText = currentSlots + "/" + maxSlots;
 						else slotsElem.innerText = "-";
 					}
-					searchResult = {};
-					delayCount = 0;
 				}
 			}
 		});
