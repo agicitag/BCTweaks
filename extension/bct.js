@@ -651,7 +651,7 @@ async function runBCT(){
 			if (PreferenceMessage != "") DrawText(PreferenceMessage, 900, 125, "Red", "Black");
 			DrawText("- " + bctSettingCategoryLabels[BCTPreferenceSubscreen] + " Settings -", 500, 125, "Black", "Gray");
 			if(settingsHint != ""){
-				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, ForeColor = BCT_API.HintForeColor, BackColor = BCT_API.HintBackColor, BorderColor = BCT_API.HintBorderColor);
+				DrawTextWrapGood(settingsHint, 1350, 200, 555, 725, BCT_API.HintForeColor, BCT_API.HintBackColor, BCT_API.HintBorderColor);
 			}
 
 			let currentElement;
@@ -790,7 +790,7 @@ async function runBCT(){
 			DrawText("- Bondage Club Tweaks Settings -",	500, 125, "Black", "Gray");
 			MainCanvas.textAlign = "center";
 			//Show tips every 10 secs
-			DrawTextWrapGood(BCT_TIPS[Math.floor(((TimerGetTime()%100000)/100000)*(BCT_TIPS.length))], 1650, 400, 400, 100, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood(BCT_TIPS[Math.floor(((TimerGetTime()%100000)/100000)*(BCT_TIPS.length))], 1650, 400, 400, 100, BCT_API.HintForeColor);
 
 			DrawText("Your BCTweaks version: " + BCT_VERSION, 1450+400/2, 625, "Black", "Gray");
 			DrawButton(1450, 650, 400, 90, "Open Changelog", "White", "", "Open Changelog on Github");
@@ -824,13 +824,13 @@ async function runBCT(){
 			currentPageNumber = 1;
 		}
 		PreferenceSubscreenResetRun = function () {
-			DrawTextWrapGood("Do you want to reset all settings to Defaults?",1000, 200, 800, 100, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood("Do you want to reset all settings to Defaults?",1000, 200, 800, 100, BCT_API.HintForeColor);
 			DrawButton(400, 650, 300, 100, "Confirm", "Red","","Confirm Reset and Exit");
 			DrawButton(1300, 650, 300, 100, "Cancel","White","","Cancel Reset");
 		}
 		PreferenceSubscreenResetClick = function () {
 			if (MouseIn(400, 650, 300, 100)) {
-				bctSettingsLoad(reset = true);
+				bctSettingsLoad(true);
 				defaultExit();
 			}
 			if (MouseIn(1300, 650, 300, 100)) {
@@ -1009,9 +1009,9 @@ async function runBCT(){
 		PreferenceSubscreenBCTTailwagRun = function () {
 			drawMenuElements();
 			MainCanvas.textAlign = "center";
-			DrawTextWrapGood("Main Tail:", 550, 750, 100, 80, ForeColor = BCT_API.HintForeColor);
+			DrawTextWrapGood("Main Tail:", 550, 750, 100, 80, BCT_API.HintForeColor);
 			DrawCharacter(tailPreviewMain, 600, 600, 0.5, false);
-			DrawTextWrapGood("Secondary Tail:", 1000, 750, 200, 80, Forecolor = BCT_API.HintForeColor);
+			DrawTextWrapGood("Secondary Tail:", 1000, 750, 200, 80, BCT_API.HintForeColor);
 			DrawCharacter(tailPreviewSecondary, 1100, 600, 0.5, false);
 		}
 
