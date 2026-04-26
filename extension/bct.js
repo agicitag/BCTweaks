@@ -2573,17 +2573,17 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	})
 
 	function createBFlocks() {
-		AssetFemale3DCG.forEach(ele => {
-			if(ele.Group == "ItemMisc") {
-				// console.log(ele);
-				ele.Asset.push(bftimerlock);
-				ele.Asset.push(bflock);
-			}
-		})
+		const miscGroup = AssetFemale3DCG.find((g) => g.Group === "ItemMisc");
+		if (!miscGroup) {
+			console.error('BCTweaks: unable to find ItemMisc group');
+			return;
+		}
+		miscGroup.Asset.push(bftimerlock);
+		miscGroup.Asset.push(bflock);
 
 		const G = AssetGroupGet("Female3DCG","ItemMisc");
-		AssetAdd(G,bflock, AssetFemale3DCGExtended);
-		AssetAdd(G,bftimerlock, AssetFemale3DCGExtended);
+		AssetAdd(G, bflock, AssetFemale3DCGExtended, miscGroup);
+		AssetAdd(G, bftimerlock, AssetFemale3DCGExtended, miscGroup);
 		InventoryAdd(Player,BF_LOCK_NAME,"ItemMisc");
 		InventoryAdd(Player,BF_TIMER_LOCK_NAME,"ItemMisc");
 	}
