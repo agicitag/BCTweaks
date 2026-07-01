@@ -1,8 +1,7 @@
-const BCT_VERSION = "B.0.7.9";
-const BCT_Settings_Version = 21;
+const BCT_VERSION = "B.0.7.10";
+const BCT_Settings_Version = 22;
 const BCT_CHANGELOG = `${BCT_VERSION}
-- BCTweaks Settings migrated to ExtensionsSettings
-- Fixed BF locks
+- Fixed Room slots for private rooms
 `
 
 const BCT_API = {
@@ -1177,6 +1176,9 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 			if (BCT_AUTHORS.includes(C.MemberNumber)) {
 				DrawTextFit("Author",CharX + 130 * Zoom, CharY + 75 * Zoom, 40 * Zoom, rainbowcolors[countchange%rainbowcolors.length]);
 			}
+			else if(C.MemberNumber === 91747) {
+				DrawTextFit(":3",CharX + 130 * Zoom, CharY + 75 * Zoom, 15 * Zoom, rainbowcolors[countchange%rainbowcolors.length]);
+			}
 		}
 		next(args);
 	});
@@ -2040,7 +2042,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							else {
 								normalfriends.push(friend);
 							}
-							if ((friend.Private) && (friend.ChatRoomName === null) && (friend.MemberNumber in currentFriendsRoom)) {
+							if ((friend.Private) && (!friend.ChatRoomName) && (friend.MemberNumber in currentFriendsRoom)) {
 									friend.ChatRoomName = currentFriendsRoom[friend.MemberNumber].ChatRoomName;
 									friend.ChatRoomSpace = currentFriendsRoom[friend.MemberNumber].ChatRoomSpace;
 							}
@@ -2304,7 +2306,8 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							Language: "",
 							Space: job.space,
 							Game: "",
-							FullRooms: true
+							FullRooms: true,
+							ShowLocked: true,
 						}
 					);
 
@@ -2380,29 +2383,9 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				const mode = FriendListMode[FriendListModeIndex];
 				if (mode === "OnlineFriends" && document.getElementById("friend-list")) {
 					let listRoomSpaces = [];
-					// Set up the page layout
-					const newSlot = document.createElement("th");
-					newSlot.style.setProperty("width", "10%");
-
-					let BCTweaksID = "BCTweaksSlots";
-					if (!document.getElementById(BCTweaksID) && document.getElementsByClassName("friend-list-row")) {
-						newSlot.id = BCTweaksID;
-                        newSlot.classList.add("friend-list-column");
-                        newSlot.classList.add("mode-specific-content");
-                        newSlot.classList.add("fl-online-friends-content");
-
-                        const getBeepEle = document.querySelector("tr");
-                        newSlot.innerText = "Slots";
-                        getBeepEle?.insertBefore(newSlot, getBeepEle.children[5]);
-					}
 					const friendTable = document.getElementById("friend-list");
 
 					for(const row of friendTable.children){
-						const slotSpan = document.createElement("td");
-						slotSpan.style.setProperty("user-select", "none");
-                        slotSpan.classList.add("friend-list-column", "bctweaks-slots");
-						slotSpan.style.setProperty("width", "10%");
-
 						// Initialize with old results
 						let foundRoom;
 						let friendNumber = parseInt(row.children[1].innerText);
@@ -2418,11 +2401,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 						if (roomSpace != null && !listRoomSpaces.includes(roomSpace)) {
 							listRoomSpaces.push(roomSpace);
 						}
-						let slotContent;
-						if(foundRoom) slotContent = document.createTextNode(foundRoom.MemberCount + "/" + foundRoom.MemberLimit);	
-						else slotContent = document.createTextNode("-");
-						slotSpan.appendChild(slotContent);
-						row.insertBefore(slotSpan, row.children[4]);
+                        const slotsElem = row.querySelector(".ChatRoomMemberCount");
+						if (!slotsElem) {
+							continue;
+						}
+						if(!!foundRoom && slotsElem.innerText !== "-") slotsElem.innerText = foundRoom.MemberCount + "/" + foundRoom.MemberLimit;
 					}
 
 					let roomsWithFriends = [];
@@ -2462,9 +2445,10 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							});
 							// If not, search for it
 							if(!foundRoom){
-								const results = roomSearchQuery(roomName,roomSpace);
-								if(!!results[roomName] && results[roomName].length > 0){
-									foundRoom = results[roomName][0];
+								const results = await roomSearchQuery(roomName,roomSpace);
+                                console.log(results);
+								if(!!results[0] && results.length > 0){
+									foundRoom = results[0];
 									privateRooms.push(foundRoom);
 									foundRoomUpdate(foundRoom);
 								}
@@ -2483,7 +2467,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							}
 						}
 
-						const slotsElem = row.querySelector(".bctweaks-slots");
+						const slotsElem = row.querySelector(".ChatRoomMemberCount");
 						if (!slotsElem) {
 							continue;
 						}
