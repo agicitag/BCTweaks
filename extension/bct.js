@@ -2299,7 +2299,7 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 				let retry = 3;
 				let success = false;
 				while (retry-- > 0) {
-					console.log(`BCTweaks: ${job.query}, retries left: ${retry}`);
+					//console.log(`BCTweaks: ${job.query}, retries left: ${retry}`);
 					const results = await ServerRoomSearch(
 						job.query,
 						{
@@ -2312,11 +2312,11 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 					);
 
 					if (results.err) {
-						console.log(`BCTweaks: ${job.query}, errored, sleeping`, results.error);
+						//console.log(`BCTweaks: ${job.query}, errored, sleeping`, results.error);
 						await sleep(2000);
 						continue;
 					} else {
-						console.log(`BCTweaks: ${job.query}, succeeded`);
+						//console.log(`BCTweaks: ${job.query}, succeeded`);
 						success = true;
 						job.resolve(results.value);
 						break;
@@ -2446,7 +2446,6 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 							// If not, search for it
 							if(!foundRoom){
 								const results = await roomSearchQuery(roomName,roomSpace);
-                                console.log(results);
 								if(!!results[0] && results.length > 0){
 									foundRoom = results[0];
 									privateRooms.push(foundRoom);
