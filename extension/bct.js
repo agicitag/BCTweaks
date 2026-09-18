@@ -1162,8 +1162,8 @@ Input should be comma separated Member IDs. (Maximum 30 members)`
 	setInterval(addEveryTs, 3000);
 
 	modAPI.patchFunction("ChatRoomCharacterViewDrawOverlay", {
-		"if (ChatRoomHideIconState == 0)":
-		"if (ChatRoomHideIconState == 0 && (!Player.BCT.bctSettings.allIconOnlyShowOnHover || MouseHovering(CharX,CharY,500*Zoom,70*Zoom)))"
+		"if (ChatRoomHideIconState == ChatRoomHideIconStateType.SHOW_ALL)":
+		"if (ChatRoomHideIconState == ChatRoomHideIconStateType.SHOW_ALL && (!Player.BCT.bctSettings.allIconOnlyShowOnHover || MouseHovering(CharX,CharY,500*Zoom,70*Zoom)))"
 	});
 	modAPI.hookFunction("ChatRoomCharacterViewDrawOverlay", 2, (args,next) => {		
 		const [C, CharX, CharY, Zoom] = args;
