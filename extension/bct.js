@@ -499,7 +499,7 @@ async function runBCT(){
 		 * @returns {void} - Nothing
 		 */
 		function DrawTextWrapGood(Text, X, Y, Width, Height, ForeColor = "Black", BackColor = undefined, BorderColor = "Black", MaxLine = undefined) {
-			ControllerAddActiveArea(X, Y);
+			// ControllerAddActiveArea(X, Y);
 			// Draw the rectangle if we need too
 			if (BackColor != null) {
 				MainCanvas.beginPath();
@@ -803,7 +803,7 @@ async function runBCT(){
 				//DrawButton(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90, "", "White", "Icons/" + bctSettingsCategories[A] + ".png");
 				DrawButton(500 + 420 * Math.floor(A / 7), 160 + 110 * (A % 7), 400, 90, "", "White", "Icons/Arcade.png");
 				DrawTextFit(bctSettingCategoryLabels[bctSettingsCategories[A]], 745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7), 310, "Black");
-				ControllerAddActiveArea(745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7));
+				// ControllerAddActiveArea(745 + 420 * Math.floor(A / 7), 205 + 110 * (A % 7));
 			}
 		};
 
